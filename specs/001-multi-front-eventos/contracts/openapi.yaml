@@ -1,0 +1,498 @@
+openapi: 3.0.3
+info:
+  title: ProEventos API
+  version: 1.0.0
+  description: |
+    Shared study API for Vue / React (Vite) / Angular frontends.
+    Auth/Identity is out of scope. Base URL examples:
+    http://localhost:5000 or https://localhost:5001
+servers:
+  - url: http://localhost:5000
+  - url: https://localhost:5001
+tags:
+  - name: Eventos
+  - name: Lotes
+  - name: Palestrantes
+  - name: RedesSociais
+paths:
+  /eventos:
+    get:
+      tags: [Eventos]
+      summary: List all eventos
+      operationId: getEventos
+      responses:
+        "200":
+          description: Array of eventos
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Evento"
+        "204":
+          description: No content
+    post:
+      tags: [Eventos]
+      summary: Create evento
+      operationId: createEvento
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/EventoInput"
+      responses:
+        "200":
+          description: Created evento
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Evento"
+        "400":
+          description: Validation error
+  /eventos/{id}:
+    parameters:
+      - $ref: "#/components/parameters/EventoId"
+    get:
+      tags: [Eventos]
+      summary: Get evento by id
+      operationId: getEventoById
+      responses:
+        "200":
+          description: Evento
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Evento"
+        "404":
+          description: Not found
+    put:
+      tags: [Eventos]
+      summary: Update evento
+      operationId: updateEvento
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/EventoInput"
+      responses:
+        "200":
+          description: Updated evento
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Evento"
+        "400":
+          description: Validation error
+        "404":
+          description: Not found
+    delete:
+      tags: [Eventos]
+      summary: Delete evento
+      operationId: deleteEvento
+      responses:
+        "200":
+          description: Deleted
+        "404":
+          description: Not found
+  /eventos/tema/{tema}:
+    get:
+      tags: [Eventos]
+      summary: Search eventos by tema
+      operationId: getEventosByTema
+      parameters:
+        - name: tema
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Matching eventos
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Evento"
+  /lotes/{eventoId}:
+    parameters:
+      - $ref: "#/components/parameters/EventoIdPath"
+    get:
+      tags: [Lotes]
+      summary: List lotes by evento
+      operationId: getLotesByEvento
+      responses:
+        "200":
+          description: Lotes
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Lote"
+    put:
+      tags: [Lotes]
+      summary: Save lotes for evento
+      operationId: saveLotes
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: array
+              items:
+                $ref: "#/components/schemas/LoteInput"
+      responses:
+        "200":
+          description: Saved lotes
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Lote"
+  /lotes/{eventoId}/{loteId}:
+    delete:
+      tags: [Lotes]
+      summary: Delete lote
+      operationId: deleteLote
+      parameters:
+        - $ref: "#/components/parameters/EventoIdPath"
+        - name: loteId
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Deleted
+        "404":
+          description: Not found
+  /palestrantes:
+    get:
+      tags: [Palestrantes]
+      summary: List palestrantes
+      operationId: getPalestrantes
+      responses:
+        "200":
+          description: Array of palestrantes
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Palestrante"
+    post:
+      tags: [Palestrantes]
+      summary: Create palestrante
+      operationId: createPalestrante
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/PalestranteInput"
+      responses:
+        "200":
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Palestrante"
+  /palestrantes/{id}:
+    parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: integer
+    get:
+      tags: [Palestrantes]
+      summary: Get palestrante by id
+      operationId: getPalestranteById
+      responses:
+        "200":
+          description: Palestrante
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Palestrante"
+        "404":
+          description: Not found
+    put:
+      tags: [Palestrantes]
+      summary: Update palestrante
+      operationId: updatePalestrante
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/PalestranteInput"
+      responses:
+        "200":
+          description: Updated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Palestrante"
+        "404":
+          description: Not found
+    delete:
+      tags: [Palestrantes]
+      summary: Delete palestrante
+      operationId: deletePalestrante
+      responses:
+        "200":
+          description: Deleted
+        "404":
+          description: Not found
+  /redes-sociais/evento/{eventoId}:
+    parameters:
+      - $ref: "#/components/parameters/EventoIdPath"
+    get:
+      tags: [RedesSociais]
+      summary: List redes sociais by evento
+      operationId: getRedesByEvento
+      responses:
+        "200":
+          description: Redes
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/RedeSocial"
+    put:
+      tags: [RedesSociais]
+      summary: Save redes sociais for evento
+      operationId: saveRedesByEvento
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: array
+              items:
+                $ref: "#/components/schemas/RedeSocialInput"
+      responses:
+        "200":
+          description: Saved
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/RedeSocial"
+  /redes-sociais/evento/{eventoId}/{redeSocialId}:
+    delete:
+      tags: [RedesSociais]
+      summary: Delete rede social of evento
+      operationId: deleteRedeByEvento
+      parameters:
+        - $ref: "#/components/parameters/EventoIdPath"
+        - name: redeSocialId
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Deleted
+        "404":
+          description: Not found
+  /redes-sociais/palestrante/{palestranteId}:
+    parameters:
+      - name: palestranteId
+        in: path
+        required: true
+        schema:
+          type: integer
+    get:
+      tags: [RedesSociais]
+      summary: List redes sociais by palestrante
+      operationId: getRedesByPalestrante
+      responses:
+        "200":
+          description: Redes
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/RedeSocial"
+    put:
+      tags: [RedesSociais]
+      summary: Save redes sociais for palestrante
+      operationId: saveRedesByPalestrante
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: array
+              items:
+                $ref: "#/components/schemas/RedeSocialInput"
+      responses:
+        "200":
+          description: Saved
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/RedeSocial"
+  /redes-sociais/palestrante/{palestranteId}/{redeSocialId}:
+    delete:
+      tags: [RedesSociais]
+      summary: Delete rede social of palestrante
+      operationId: deleteRedeByPalestrante
+      parameters:
+        - name: palestranteId
+          in: path
+          required: true
+          schema:
+            type: integer
+        - name: redeSocialId
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Deleted
+        "404":
+          description: Not found
+components:
+  parameters:
+    EventoId:
+      name: id
+      in: path
+      required: true
+      schema:
+        type: integer
+    EventoIdPath:
+      name: eventoId
+      in: path
+      required: true
+      schema:
+        type: integer
+  schemas:
+    Evento:
+      allOf:
+        - $ref: "#/components/schemas/EventoInput"
+        - type: object
+          properties:
+            id:
+              type: integer
+            lotes:
+              type: array
+              items:
+                $ref: "#/components/schemas/Lote"
+            redesSociais:
+              type: array
+              items:
+                $ref: "#/components/schemas/RedeSocial"
+    EventoInput:
+      type: object
+      required: [tema, telefone, email, qtdPessoas]
+      properties:
+        local:
+          type: string
+        dataEvento:
+          type: string
+          description: Date string as accepted by API (ISO or form format)
+        tema:
+          type: string
+          minLength: 3
+          maxLength: 50
+        qtdPessoas:
+          type: integer
+          minimum: 1
+          maximum: 120000
+        imagemURL:
+          type: string
+        telefone:
+          type: string
+        email:
+          type: string
+          format: email
+    Lote:
+      allOf:
+        - $ref: "#/components/schemas/LoteInput"
+        - type: object
+          properties:
+            id:
+              type: integer
+    LoteInput:
+      type: object
+      properties:
+        id:
+          type: integer
+          description: Omit or 0 when creating
+        nome:
+          type: string
+        preco:
+          type: number
+          format: decimal
+        dataIncio:
+          type: string
+          format: date-time
+        dataFim:
+          type: string
+          format: date-time
+        quantidade:
+          type: integer
+        eventoId:
+          type: integer
+    Palestrante:
+      allOf:
+        - $ref: "#/components/schemas/PalestranteInput"
+        - type: object
+          properties:
+            id:
+              type: integer
+            redesSociais:
+              type: array
+              items:
+                $ref: "#/components/schemas/RedeSocial"
+    PalestranteInput:
+      type: object
+      required: [nome]
+      properties:
+        nome:
+          type: string
+        miniCurriculo:
+          type: string
+        imagemURL:
+          type: string
+        telefone:
+          type: string
+        email:
+          type: string
+          format: email
+    RedeSocial:
+      allOf:
+        - $ref: "#/components/schemas/RedeSocialInput"
+        - type: object
+          properties:
+            id:
+              type: integer
+            eventoId:
+              type: integer
+              nullable: true
+            palestranteId:
+              type: integer
+              nullable: true
+    RedeSocialInput:
+      type: object
+      required: [nome, url]
+      properties:
+        id:
+          type: integer
+        nome:
+          type: string
+        url:
+          type: string
