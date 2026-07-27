@@ -1,0 +1,151 @@
+openapi: 3.0.3
+info:
+  title: ProEventos API — List UX / Seeds / ImagemURL (006)
+  version: 1.0.0
+  description: |
+    Delta contract for feature 006-eventos-list-ux.
+
+    Pagination for the eventos list is implemented on clients over existing
+    array responses (GET /eventos, GET /eventos/tema/{tema}). This document
+    records the ImagemURL validation relaxation and seed expectations.
+    Baseline paths: specs/001-multi-front-eventos and 005-eventos-domain-rules.
+
+    Unsplash: Evento.imagemURL may be an https://images.unsplash.com/... URL.
+    Clients MUST NOT send the ProEventos Bearer JWT when loading that image URL.
+servers:
+  - url: http://localhost:5000
+  - url: https://localhost:5001
+tags:
+  - name: Eventos
+  - name: Lotes
+paths:
+  /eventos:
+    get:
+      tags: [Eventos]
+      summary: List all eventos (clients paginate)
+      responses:
+        '200':
+          description: Full array of eventos
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/EventoListResponse'
+  /eventos/tema/{tema}:
+    get:
+      tags: [Eventos]
+      summary: Search eventos by tema (clients paginate filtered array)
+      parameters:
+        - name: tema
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Filtered array
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/EventoListResponse'
+  /lotes/{eventoId}:
+    put:
+      tags: [Lotes]
+      summary: Upsert lotes for evento (unchanged); dates validated DataIncio <= DataFim
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: eventoId
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: array
+              items:
+                $ref: '#/components/schemas/LoteDto'
+      responses:
+        '200':
+          description: Saved lotes
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/LoteDto'
+        '400':
+          description: Validation error (including date order)
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+  schemas:
+    EventoListResponse:
+      type: array
+      items:
+        $ref: '#/components/schemas/EventoDto'
+      description: Unchanged array response; clients paginate locally (pageSize 10|20|30).
+    EventoDto:
+      type: object
+      description: Same shape as prior features. imagemURL validation is relaxed for 006.
+      required: [local, dataEvento, tema, qtdPessoas, telefone, email]
+      properties:
+        id:
+          type: integer
+        local:
+          type: string
+        dataEvento:
+          type: string
+          description: Wire format may be ISO or existing string; UI displays dd/MM/yyyy
+        tema:
+          type: string
+          minLength: 3
+          maxLength: 50
+        qtdPessoas:
+          type: integer
+          minimum: 1
+          maximum: 120000
+        imagemURL:
+          type: string
+          description: |
+            Optional. Accepts (a) relative/file name ending in gif|jpg|jpeg|bmp|png,
+            OR (b) absolute https URL (Unsplash CDN allowed).
+          example: https://images.unsplash.com/photo-1540575467063-178a50c2df87?w=200&fit=max
+        telefone:
+          type: string
+        email:
+          type: string
+          format: email
+        lotes:
+          type: array
+          items:
+            $ref: '#/components/schemas/LoteDto'
+    LoteDto:
+      type: object
+      required: [nome, preco, dataIncio, dataFim, quantidade, eventoId]
+      properties:
+        id:
+          type: integer
+        nome:
+          type: string
+        preco:
+          type: number
+          exclusiveMinimum: 0
+        dataIncio:
+          type: string
+          format: date-time
+          description: Persistence spelling dataIncio retained; UI label Data início (dd/MM/yyyy)
+        dataFim:
+          type: string
+          format: date-time
+          description: Must be >= dataIncio; UI label Data fim (dd/MM/yyyy)
+        quantidade:
+          type: integer
+          minimum: 1
+        eventoId:
+          type: integer
