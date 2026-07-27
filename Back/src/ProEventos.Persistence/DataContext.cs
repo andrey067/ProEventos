@@ -1,12 +1,13 @@
+using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore;
 using ProEventos.Domain.Entities;
-using ProEventos.Persistence.Seeds;
 
 namespace ProEventos.Persistence
 {
-    public class DataContext : DbContext
+    public class DataContext : IdentityDbContext<User>
     {
         public DataContext(DbContextOptions<DataContext> options) : base(options) { }
+
         public DbSet<Evento> Eventos { get; set; }
         public DbSet<Lote> Lotes { get; set; }
         public DbSet<Palestrante> Palestrantes { get; set; }
@@ -16,15 +17,7 @@ namespace ProEventos.Persistence
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
             base.OnModelCreating(modelBuilder);
-
-            modelBuilder.Entity<Palestrante_Evento>().HasKey(PE => new { PE.EventoId, PE.PalestranteId });
-
-            modelBuilder.Entity<Evento>()
-                .HasMany(e => e.RedeSociais)
-                .WithOne(rs => rs.Evento)
-                .OnDelete(DeleteBehavior.Cascade);
-
-            modelBuilder.Entity<Palestrante>().HasMany(e => e.RedeSociais).WithOne(rs => rs.Palestrante).OnDelete(DeleteBehavior.Cascade);                     
+            modelBuilder.ApplyConfigurationsFromAssembly(typeof(DataContext).Assembly);
         }
     }
 }

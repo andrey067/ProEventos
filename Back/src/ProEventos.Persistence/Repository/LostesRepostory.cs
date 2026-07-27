@@ -9,16 +9,17 @@ namespace ProEventos.Persistence.Repository
 {
     public class LostesRepostory : BaseRepository<Lote>, ILotesRepository
     {
-        private readonly DbSet<Lote> _eventoContext;
-        public LostesRepostory(DataContext context) : base(context) => _eventoContext = context.Set<Lote>();
+        private readonly DbSet<Lote> _loteContext;
+        public LostesRepostory(DataContext context) : base(context) => _loteContext = context.Set<Lote>();
 
         public async Task<Lote> GetLoteByIdsAsync(int eventoId, int id) =>
-                                             await _eventoContext.AsNoTracking()
-                                            .Where(lote => lote.Evento.Id == eventoId && lote.Id == id)
-                                            .FirstOrDefaultAsync();
+            await _loteContext.AsNoTracking()
+                .Where(lote => lote.EventoId == eventoId && lote.Id == id)
+                .FirstOrDefaultAsync();
 
-
-        public async Task<List<Lote>> GetLotesByEventoIdAsync(int eventoId) => await _eventoContext.AsNoTracking()
-                         .Where(lote => lote.Evento.Id == eventoId).ToListAsync();
+        public async Task<List<Lote>> GetLotesByEventoIdAsync(int eventoId) =>
+            await _loteContext.AsNoTracking()
+                .Where(lote => lote.EventoId == eventoId)
+                .ToListAsync();
     }
 }

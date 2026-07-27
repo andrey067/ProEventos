@@ -1,10 +1,12 @@
-using AutoMapper;
+using ErrorOr;
+using Mapster;
 using ProEventos.Domain.Entities;
+using ProEventos.Domain.Exceptions;
 using ProEventos.Domain.Interfaces;
 using ProEventos.Domain.Interfaces.Repositories;
 using ProEventos.Interfaces;
 using ProEventos.Services.Dtos;
-using System;
+using ProEventos.Services.Errors;
 using System.Collections.Generic;
 using System.Threading.Tasks;
 
@@ -14,126 +16,100 @@ namespace ProEventos.Services
     {
         private readonly IRepository<Evento> _repository;
         private readonly IEventoRepository _eventoRepository;
-        private readonly IMapper _mapper;
 
-        public EventoService(IRepository<Evento> repository, IEventoRepository eventoRepository, IMapper mapper)
+        public EventoService(IRepository<Evento> repository, IEventoRepository eventoRepository)
         {
             _repository = repository;
             _eventoRepository = eventoRepository;
-            _mapper = mapper;
         }
 
-        public async Task<EventoDto> AddEvento(EventoDto model)
+        public async Task<ErrorOr<EventoDto>> AddEvento(EventoDto model)
         {
             try
             {
-                var eventoSalvo = await _repository.InsertAsync(_mapper.Map<Evento>(model));
-                if (await _repository.SaveChangesAsync())
-                    return _mapper.Map<EventoDto>(await _eventoRepository.GetAllEventosByIdAsync(eventoSalvo.Id, false));
-                return null;
+                var entity = model.Adapt<Evento>();
+                entity.Id = 0;
+                var eventoSalvo = await _repository.InsertAsync(entity);
+                var dto = (await _eventoRepository.GetAllEventosByIdAsync(eventoSalvo.Id, false)).Adapt<EventoDto>();
+                return dto;
             }
-            catch (Exception ex)
+            catch (AppException ex)
             {
-                throw new Exception("Erro ao adicionar Evento:" + ex.Message);
+                return ex.ToError();
             }
         }
 
-        public async Task<bool> DeleteEvento(int eventoId)
+        public async Task<ErrorOr<Success>> DeleteEvento(int eventoId)
         {
             try
             {
                 var evento = await _eventoRepository.GetAllEventosByIdAsync(eventoId, false);
-                if (evento == null) throw new Exception("Evento não foi encontrado");
-                await _repository.DeleteAsync(evento.Id);
+                if (evento == null)
+                    return Error.NotFound("Evento.Delete.NotFound", "Evento não foi encontrado");
 
-                return await _repository.SaveChangesAsync();
+                await _repository.DeleteAsync(evento.Id);
+                return Result.Success;
             }
-            catch (Exception ex)
+            catch (AppException ex)
             {
-                throw new Exception("Erro ao deletar: " + ex.Message);
+                return ex.ToError();
             }
         }
 
-        public async Task<EventoDto> Get(int id)
+        public async Task<ErrorOr<EventoDto>> Get(int id)
         {
             var entity = await _repository.SelectAsync(id);
-            if(entity != null )
-                return _mapper.Map<EventoDto>(entity);      
-            //TODO - Tratar Erro
-            return null;
+            if (entity == null)
+                return Error.NotFound("Evento.Get.NotFound", "Evento não foi encontrado");
+            return entity.Adapt<EventoDto>();
         }
 
-        public async Task<IEnumerable<EventoDto>> GetAll()
+        public async Task<ErrorOr<IEnumerable<EventoDto>>> GetAll()
         {
             var listEntity = await _repository.SelectAsyncAll();
-            var listEventoDto = _mapper.Map<IEnumerable<EventoDto>>(listEntity);
-            return listEventoDto;
+            return listEntity.Adapt<List<EventoDto>>();
         }
 
-        public async Task<EventoDto> UpdateEvento(int eventoId, EventoDto model)
+        public async Task<ErrorOr<EventoDto>> UpdateEvento(int eventoId, EventoDto model)
         {
             try
             {
                 var evento = await _eventoRepository.GetAllEventosByIdAsync(eventoId, false);
-                if (evento == null) return null;
-                var eventoSalvo = await _repository.UpdateAsync(_mapper.Map<Evento>(model));
-                
+                if (evento == null)
+                    return Error.NotFound("Evento.Update.NotFound", "Evento não foi encontrado");
 
-                if (await _repository.SaveChangesAsync())
-                    return _mapper.Map<EventoDto>(await _eventoRepository.GetAllEventosByIdAsync(eventoSalvo.Id, false));
-                return null;
+                model.Id = eventoId;
+                var entity = model.Adapt<Evento>();
+                var eventoSalvo = await _repository.UpdateAsync(entity);
+                if (eventoSalvo == null)
+                    return Error.NotFound("Evento.Update.NotFound", "Evento não foi encontrado");
+
+                return (await _eventoRepository.GetAllEventosByIdAsync(eventoId, false)).Adapt<EventoDto>();
             }
-            catch (Exception ex)
+            catch (AppException ex)
             {
-                throw new Exception("Erro ao atualizar: " + ex.Message);
+                return ex.ToError();
             }
         }
 
-        public async Task<List<EventoDto>> GetAllEventosAsync(bool includePalestrante = false)
+        public async Task<ErrorOr<List<EventoDto>>> GetAllEventosAsync(bool includePalestrante = false)
         {
-            try
-            {
-                var eventos = await _eventoRepository.GetAllEventosAsync(includePalestrante);
-                if (eventos == null) return null;
-
-                var eventoRetorno = _mapper.Map<List<EventoDto>>(eventos);
-
-                return eventoRetorno;
-            }
-            catch (Exception ex)
-            {
-                throw new Exception("Erro ao buscar:" + ex.Message);
-            }
+            var eventos = await _eventoRepository.GetAllEventosAsync(includePalestrante);
+            return eventos?.Adapt<List<EventoDto>>() ?? new List<EventoDto>();
         }
 
-        public async Task<EventoDto> GetAllEventosByIdAsync(int eventoId, bool includePalestrante)
+        public async Task<ErrorOr<EventoDto>> GetAllEventosByIdAsync(int eventoId, bool includePalestrante)
         {
-            try
-            {
-                var eventos = await _eventoRepository.GetAllEventosByIdAsync(eventoId, includePalestrante);
-                if (eventos == null) return null;
-                var eventoDto = _mapper.Map<EventoDto>(eventos);
-                return eventoDto;
-            }
-            catch (Exception ex)
-            {
-                throw new Exception("Erro ao buscar:" + ex.Message);
-            }
+            var evento = await _eventoRepository.GetAllEventosByIdAsync(eventoId, includePalestrante);
+            if (evento == null)
+                return Error.NotFound("Evento.GetById.NotFound", "Evento não foi encontrado");
+            return evento.Adapt<EventoDto>();
         }
 
-        public async Task<List<EventoDto>> GetAllEventosByTemaAsync(string tema, bool includePalestrante)
+        public async Task<ErrorOr<List<EventoDto>>> GetAllEventosByTemaAsync(string tema, bool includePalestrante)
         {
-            try
-            {
-                var eventos = await _eventoRepository.GetAllEventosByTemaAsync(tema, includePalestrante);
-                if (eventos == null) return null;
-                var eventoDto = _mapper.Map<List<EventoDto>>(eventos);
-                return eventoDto;
-            }
-            catch (Exception ex)
-            {
-                throw new Exception("Erro ao buscar:" + ex.Message);
-            }
+            var eventos = await _eventoRepository.GetAllEventosByTemaAsync(tema, includePalestrante);
+            return eventos?.Adapt<List<EventoDto>>() ?? new List<EventoDto>();
         }
     }
 }
