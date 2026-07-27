@@ -72,12 +72,27 @@ public class AccountEndpointsTests
         });
         updated.StatusCode.Should().Be(HttpStatusCode.OK);
 
+        var oldRefresh = auth.RefreshToken;
+
         var pwd = await client.PutAsJsonAsync("/account/change-password", new ChangePasswordDto
         {
             CurrentPassword = "Senha@123",
             NewPassword = "Senha@456"
         });
-        pwd.StatusCode.Should().Be(HttpStatusCode.NoContent);
+        pwd.StatusCode.Should().Be(HttpStatusCode.OK);
+        var pwdAuth = await pwd.Content.ReadFromJsonAsync<AuthResponseDto>(JsonOptions);
+        pwdAuth!.Token.Should().NotBeNullOrWhiteSpace();
+        pwdAuth.RefreshToken.Should().NotBeNullOrWhiteSpace();
+        pwdAuth.RefreshToken.Should().NotBe(oldRefresh);
+
+        var reusedOldRefresh = await client.PostAsJsonAsync("/account/refresh-token", new RefreshTokenRequestDto
+        {
+            RefreshToken = oldRefresh
+        });
+        reusedOldRefresh.StatusCode.Should().Be(HttpStatusCode.Unauthorized);
+
+        client.DefaultRequestHeaders.Authorization =
+            new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", pwdAuth.Token);
 
         var badPwd = await client.PutAsJsonAsync("/account/change-password", new ChangePasswordDto
         {

@@ -27,6 +27,7 @@ namespace ProEventos.CrossCutting.DependencyInjection
             serviceCollection.AddTransient<IPalestranteService, PalestranteService>();
             serviceCollection.AddTransient<IRedeSocialService, RedeSocialService>();
             serviceCollection.AddTransient<IAccountService, AccountService>();
+            serviceCollection.AddTransient<ITokenService, TokenService>();
 
             if (configuration == null) return;
 
