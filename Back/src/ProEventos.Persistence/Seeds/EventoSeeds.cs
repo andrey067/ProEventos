@@ -1,6 +1,4 @@
-
 using Bogus;
-using Microsoft.EntityFrameworkCore;
 using ProEventos.Domain.Entities;
 using System;
 using System.Collections.Generic;
@@ -9,45 +7,83 @@ namespace ProEventos.Persistence.Seeds
 {
     public static class EventoSeeds
     {
+        public const int MinEventoCount = 50;
+        public const int TargetEventoCount = 60;
+
+        /// <summary>Curated Unsplash CDN thumbs (event-themed). No JWT; CDN GET only.</summary>
+        private static readonly string[] UnsplashEventImages =
+        {
+            "https://images.unsplash.com/photo-1540575467063-178a50c2df87?w=200&fit=max",
+            "https://images.unsplash.com/photo-1492684223066-81342ee5ff30?w=200&fit=max",
+            "https://images.unsplash.com/photo-1505373877841-8d25f7d46678?w=200&fit=max",
+            "https://images.unsplash.com/photo-1475721027785-f74eccf877e2?w=200&fit=max",
+            "https://images.unsplash.com/photo-1511578314322-379afb476865?w=200&fit=max",
+            "https://images.unsplash.com/photo-1501281668745-f7f57925c3b4?w=200&fit=max",
+            "https://images.unsplash.com/photo-1429962714451-bb934ecdc4ec?w=200&fit=max",
+            "https://images.unsplash.com/photo-1459749411175-04bf52967745?w=200&fit=max",
+            "https://images.unsplash.com/photo-1514525253161-7a46d19cd819?w=200&fit=max",
+            "https://images.unsplash.com/photo-1531058020387-3be344406418?w=200&fit=max",
+            "https://images.unsplash.com/photo-1464366400600-7168b8af9bc3?w=200&fit=max",
+            "https://images.unsplash.com/photo-1556761175-b413da4baf72?w=200&fit=max",
+        };
+
         public static void Eventos(DataContext context)
         {
-            var n = Randomizer.Seed.Next(1, 20);
-            List<Evento> eventos = new List<Evento>();
-            List<Lote> lotes = new();
-            for (var i = 1; i < n; i++)
+            // Deterministic Bogus seed for reproducible local demos (US4 / T023)
+            Randomizer.Seed = new Random(40626);
+
+            var faker = new Faker("pt_BR");
+            var eventos = new List<Evento>();
+            var lotes = new List<Lote>();
+
+            for (var i = 0; i < TargetEventoCount; i++)
             {
-                var fakerEvento = new Faker<Evento>()                
-                .RuleFor(l => l.Local, l => l.Name.FullName())
-                .RuleFor(d => d.DataEvento, d => d.Date.Future())
-                .RuleFor(t => t.Tema, t => t.Company.CompanyName())
-                .RuleFor(qtd => qtd.QtdPessoas, qtd => qtd.Random.Number(0, 100))
-                .RuleFor(img => img.ImagemURL, img => img.Image.DataUri(150, 200))
-                .RuleFor(tel => tel.Telefone, tel => tel.Phone.PhoneNumber())
-                .RuleFor(e => e.Email, e => e.Person.Email)
-                .RuleFor(e => e.CreateAt, DateTime.Now)
-                .RuleFor(e => e.Lotes, new List<Lote>()).Generate();
-                eventos.Add(fakerEvento);
+                var tema = faker.Commerce.ProductName();
+                if (tema.Length < 3)
+                    tema = "Evento " + (i + 1);
+                if (tema.Length > 50)
+                    tema = tema[..50];
+
+                var evento = new Evento
+                {
+                    Local = faker.Address.City(),
+                    DataEvento = faker.Date.Future(2, DateTime.UtcNow.Date),
+                    Tema = tema,
+                    QtdPessoas = faker.Random.Int(50, 5000),
+                    ImagemURL = faker.PickRandom(UnsplashEventImages),
+                    Telefone = "(11) 9" + faker.Random.ReplaceNumbers("####-####"),
+                    Email = faker.Internet.Email().ToLowerInvariant(),
+                    CreateAt = DateTime.UtcNow,
+                    Lotes = new List<Lote>(),
+                };
+                eventos.Add(evento);
             }
+
             context.AddRange(eventos);
             context.SaveChanges();
 
-            eventos.ForEach(evento =>
+            foreach (var evento in eventos)
             {
-                for (var ivento = 1; ivento < n; ivento++)
+                var loteCount = faker.Random.Int(1, 3);
+                for (var l = 0; l < loteCount; l++)
                 {
-                    var fakerLote = new Faker<Lote>()                    
-                    .RuleFor(l => l.Nome, l => l.Name.FullName())
-                    .RuleFor(d => d.Quantidade, d => d.Random.Number(0, 100))
-                    .RuleFor(d => d.DataIncio, d => d.Date.Recent())
-                    .RuleFor(d => d.DataFim, d => d.Date.Future())
-                    .RuleFor(d => d.Preco, d => d.Random.Number(0, 100))
-                    .RuleFor(lote => lote.EventoId, evento.Id)
-                    .RuleFor(lote => lote.Evento, evento)
-                    .Generate();
-                    lotes.Add(fakerLote);
-                    ivento++;
+                    var inicio = faker.Date.Between(
+                        DateTime.UtcNow.Date.AddDays(-30),
+                        DateTime.UtcNow.Date.AddDays(60));
+                    var fim = inicio.AddDays(faker.Random.Int(0, 45));
+
+                    lotes.Add(new Lote
+                    {
+                        Nome = faker.PickRandom("Pista", "VIP", "Camarote", "Early Bird", "Meia")
+                               + " " + (l + 1),
+                        Quantidade = faker.Random.Int(10, 500),
+                        DataIncio = inicio,
+                        DataFim = fim,
+                        Preco = Math.Round(faker.Random.Decimal(20, 800), 2),
+                        EventoId = evento.Id,
+                    });
                 }
-            });
+            }
 
             context.AddRange(lotes);
             context.SaveChanges();

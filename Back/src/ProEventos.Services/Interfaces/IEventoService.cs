@@ -1,4 +1,4 @@
-using ProEventos.Domain.Entities;
+using ErrorOr;
 using ProEventos.Services.Dtos;
 using System.Collections.Generic;
 using System.Threading.Tasks;
@@ -7,13 +7,13 @@ namespace ProEventos.Interfaces
 {
     public interface IEventoService
     {
-        Task<EventoDto> Get(int id);
-        Task<IEnumerable<EventoDto>> GetAll();
-        Task<EventoDto> AddEvento(EventoDto model);
-        Task<EventoDto> UpdateEvento(int eventoId, EventoDto model);
-        Task<bool> DeleteEvento(int eventoId);
-        Task<List<EventoDto>> GetAllEventosByTemaAsync(string tema, bool includePalestrante);
-        Task<List<EventoDto>> GetAllEventosAsync(bool includePalestrante = false);
-        Task<EventoDto> GetAllEventosByIdAsync(int eventoId, bool includePalestrante);
+        Task<ErrorOr<EventoDto>> Get(int id);
+        Task<ErrorOr<IEnumerable<EventoDto>>> GetAll();
+        Task<ErrorOr<EventoDto>> AddEvento(EventoDto model);
+        Task<ErrorOr<EventoDto>> UpdateEvento(int eventoId, EventoDto model);
+        Task<ErrorOr<Success>> DeleteEvento(int eventoId);
+        Task<ErrorOr<List<EventoDto>>> GetAllEventosByTemaAsync(string tema, bool includePalestrante);
+        Task<ErrorOr<List<EventoDto>>> GetAllEventosAsync(bool includePalestrante = false);
+        Task<ErrorOr<EventoDto>> GetAllEventosByIdAsync(int eventoId, bool includePalestrante);
     }
 }

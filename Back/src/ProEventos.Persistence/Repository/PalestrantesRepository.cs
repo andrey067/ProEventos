@@ -1,66 +1,93 @@
 using System.Collections.Generic;
+using System.Linq;
 using System.Threading.Tasks;
+using Microsoft.EntityFrameworkCore;
 using ProEventos.Domain.Entities;
 using ProEventos.Domain.Interfaces.Repositories;
 
 namespace ProEventos.Persistence.Repository
 {
-    
-    public class PalestrantesRepository : IPalestrantesRepository
+    public class PalestrantesRepository : BaseRepository<Palestrante>, IPalestrantesRepository
     {
-        public Task<bool> DeleteAsync(int id)
+        private readonly DataContext _db;
+        private readonly DbSet<Palestrante> _set;
+
+        public PalestrantesRepository(DataContext context) : base(context)
         {
-            throw new System.NotImplementedException();
+            _db = context;
+            _set = context.Set<Palestrante>();
         }
 
-        public void DeleteRange(Palestrante[] entity)
+        public async Task<List<Palestrante>> GetAllPalestrantesAsync(bool includeRedes = true)
         {
-            throw new System.NotImplementedException();
+            IQueryable<Palestrante> query = _set;
+            if (includeRedes)
+                query = query.Include(p => p.RedeSociais);
+            return await query.AsNoTracking().OrderBy(p => p.Id).ToListAsync();
         }
 
-        public Task<bool> ExistAsync(int id)
+        public async Task<Palestrante> GetPalestranteByIdAsync(int id, bool includeRedes = true)
         {
-            throw new System.NotImplementedException();
+            IQueryable<Palestrante> query = _set.Where(p => p.Id == id);
+            if (includeRedes)
+                query = query.Include(p => p.RedeSociais);
+            return await query.AsNoTracking().FirstOrDefaultAsync();
         }
 
-        public Task<Palestrante[]> GetAllPalestrantesAsync(string palestrante, bool includeEventos)
+        public async Task<Palestrante> GetPalestranteByUserIdAsync(string userId)
         {
-            throw new System.NotImplementedException();
+            if (string.IsNullOrWhiteSpace(userId))
+                return null;
+            return await _set.AsNoTracking().FirstOrDefaultAsync(p => p.UserId == userId);
         }
 
-        public Task<Palestrante[]> GetAllPalestrantesByIdAsync(string palestrante, bool includeEventos)
+        public async Task<Palestrante[]> GetAllPalestrantesByNameAsync(string nome, bool includeEventos)
         {
-            throw new System.NotImplementedException();
+            IQueryable<Palestrante> query = _set.Where(p => p.Nome.ToLower().Contains(nome.ToLower()));
+            if (includeEventos)
+                query = query.Include(p => p.PalestrantesEventos).ThenInclude(pe => pe.Evento);
+            return await query.AsNoTracking().ToArrayAsync();
         }
 
-        public Task<Palestrante[]> GetAllPalestrantesByNameAsync(string palestrante, bool includeEventos)
+        public async Task<List<Palestrante>> GetAllPalestrantesByTemaAsync(string tema)
         {
-            throw new System.NotImplementedException();
+            var temaLower = tema.ToLower();
+            return await _set
+                .Where(p => p.PalestrantesEventos.Any(pe => pe.Evento.Tema.ToLower().Contains(temaLower)))
+                .Include(p => p.RedeSociais)
+                .Include(p => p.PalestrantesEventos).ThenInclude(pe => pe.Evento)
+                .AsNoTracking()
+                .OrderBy(p => p.Id)
+                .ToListAsync();
         }
 
-        public Task<Palestrante> InsertAsync(Palestrante item)
+        public async Task<bool> AssociateAsync(int eventoId, int palestranteId)
         {
-            throw new System.NotImplementedException();
+            var exists = await _db.PalestranteEvento
+                .AnyAsync(pe => pe.EventoId == eventoId && pe.PalestranteId == palestranteId);
+            if (exists) return true;
+
+            var eventoOk = await _db.Eventos.AnyAsync(e => e.Id == eventoId);
+            var palestranteOk = await _set.AnyAsync(p => p.Id == palestranteId);
+            if (!eventoOk || !palestranteOk) return false;
+
+            await _db.PalestranteEvento.AddAsync(new Palestrante_Evento
+            {
+                EventoId = eventoId,
+                PalestranteId = palestranteId
+            });
+            await _db.SaveChangesAsync();
+            return true;
         }
 
-        public Task<bool> SaveChangesAsync()
+        public async Task<bool> DisassociateAsync(int eventoId, int palestranteId)
         {
-            throw new System.NotImplementedException();
-        }
-
-        public Task<Palestrante> SelectAsync(int id)
-        {
-            throw new System.NotImplementedException();
-        }
-
-        public Task<IEnumerable<Palestrante>> SelectAsyncAll()
-        {
-            throw new System.NotImplementedException();
-        }
-
-        public Task<Palestrante> UpdateAsync(Palestrante item)
-        {
-            throw new System.NotImplementedException();
+            var link = await _db.PalestranteEvento
+                .FirstOrDefaultAsync(pe => pe.EventoId == eventoId && pe.PalestranteId == palestranteId);
+            if (link == null) return false;
+            _db.PalestranteEvento.Remove(link);
+            await _db.SaveChangesAsync();
+            return true;
         }
     }
 }
