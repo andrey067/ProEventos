@@ -1,0 +1,53 @@
+<header class="sticky top-0 z-10 border-b border-line bg-panel">
+  <div class="mx-auto flex max-w-7xl items-center justify-between gap-4 px-4 py-3">
+    <a routerLink="/eventos" class="text-xl font-semibold text-accent-dark">ProEventos Angular</a>
+    <nav class="flex flex-wrap gap-1">
+      <a
+        routerLink="/eventos"
+        routerLinkActive="bg-accent-soft text-accent-dark"
+        [routerLinkActiveOptions]="{ exact: false }"
+        class="rounded-[length:var(--radius-control)] px-3 py-2 text-sm font-medium text-muted transition-colors hover:bg-accent-soft hover:text-accent-dark"
+      >
+        Eventos
+      </a>
+      <a
+        routerLink="/palestrantes"
+        routerLinkActive="bg-accent-soft text-accent-dark"
+        class="rounded-[length:var(--radius-control)] px-3 py-2 text-sm font-medium text-muted transition-colors hover:bg-accent-soft hover:text-accent-dark"
+      >
+        Palestrantes
+      </a>
+      @if (isLoggedIn) {
+        <a
+          routerLink="/perfil"
+          routerLinkActive="bg-accent-soft text-accent-dark"
+          class="rounded-[length:var(--radius-control)] px-3 py-2 text-sm font-medium text-muted transition-colors hover:bg-accent-soft hover:text-accent-dark"
+        >
+          Perfil
+        </a>
+        <button
+          type="button"
+          class="rounded-[length:var(--radius-control)] px-3 py-2 text-sm font-medium text-muted transition-colors hover:bg-accent-soft hover:text-accent-dark"
+          (click)="logout()"
+        >
+          Sair
+        </button>
+      } @else {
+        <a
+          routerLink="/login"
+          routerLinkActive="bg-accent-soft text-accent-dark"
+          class="rounded-[length:var(--radius-control)] px-3 py-2 text-sm font-medium text-muted transition-colors hover:bg-accent-soft hover:text-accent-dark"
+        >
+          Login
+        </a>
+        <a
+          routerLink="/register"
+          routerLinkActive="bg-accent-soft text-accent-dark"
+          class="rounded-[length:var(--radius-control)] px-3 py-2 text-sm font-medium text-muted transition-colors hover:bg-accent-soft hover:text-accent-dark"
+        >
+          Cadastro
+        </a>
+      }
+    </nav>
+  </div>
+</header>

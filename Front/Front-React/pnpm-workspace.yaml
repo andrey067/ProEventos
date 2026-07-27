@@ -1,0 +1,10 @@
+# Single-package project settings (pnpm 11). App installs/runs from this folder only.
+packages:
+  - "."
+allowBuilds:
+  esbuild: set this to true or false
+confirmModulesPurge: false
+
+shamefullyHoist: true
+strictDepBuilds: false
+strictPeerDependencies: false
