@@ -1,0 +1,43 @@
+# OS
+.DS_Store
+Thumbs.db
+*.tmp
+*.swp
+
+# IDE
+.idea/
+*.user
+*.suo
+*.userosscache
+
+# .NET
+**/bin/
+**/obj/
+*.db
+*.db-shm
+*.db-wal
+packages/
+**/coverage.cobertura.xml
+**/TestResults/
+
+# Node
+**/node_modules/
+**/dist/
+**/.next/
+**/out/
+**/.angular/
+**/coverage/
+*.log
+.pnpm-store/
+**/package-lock.json
+**/yarn.lock
+
+# Env
+.env
+.env.local
+.env.*.local
+!.env.example
+!.env.local.example
+
+# Speckit / misc
+*.DotSettings.user
