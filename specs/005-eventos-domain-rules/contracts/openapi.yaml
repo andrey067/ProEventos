@@ -1,0 +1,408 @@
+openapi: 3.0.3
+info:
+  title: ProEventos API — Domain Rules & Auth (005)
+  version: 1.1.0
+  description: |
+    Extension contract for feature 005-eventos-domain-rules.
+    Baseline CRUD paths remain as in specs/001-multi-front-eventos/contracts/openapi.yaml.
+    This document adds Account/Auth, security scheme, lote validation semantics,
+    palestrante search, and evento–palestrante association.
+
+    Authorization policy:
+    - GET list/detail/search: anonymous allowed
+    - POST/PUT/DELETE on domain resources + profile/password: Bearer required
+servers:
+  - url: http://localhost:5000
+  - url: https://localhost:5001
+tags:
+  - name: Account
+  - name: Eventos
+  - name: Lotes
+  - name: Palestrantes
+  - name: RedesSociais
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+  parameters:
+    EventoId:
+      name: id
+      in: path
+      required: true
+      schema:
+        type: integer
+    EventoIdPath:
+      name: eventoId
+      in: path
+      required: true
+      schema:
+        type: integer
+    PalestranteId:
+      name: palestranteId
+      in: path
+      required: true
+      schema:
+        type: integer
+    NomePath:
+      name: nome
+      in: path
+      required: true
+      schema:
+        type: string
+    TemaPath:
+      name: tema
+      in: path
+      required: true
+      schema:
+        type: string
+  schemas:
+    RegisterRequest:
+      type: object
+      required: [nome, userName, email, password]
+      properties:
+        nome:
+          type: string
+        userName:
+          type: string
+        email:
+          type: string
+          format: email
+        password:
+          type: string
+          minLength: 1
+    LoginRequest:
+      type: object
+      required: [userName, password]
+      properties:
+        userName:
+          type: string
+        password:
+          type: string
+    AuthResponse:
+      type: object
+      required: [token, userName, email]
+      properties:
+        token:
+          type: string
+          description: Access credential for Authorization Bearer header
+        userName:
+          type: string
+        email:
+          type: string
+          format: email
+        nome:
+          type: string
+    UserProfile:
+      type: object
+      properties:
+        userName:
+          type: string
+        email:
+          type: string
+          format: email
+        nome:
+          type: string
+    UpdateProfileRequest:
+      type: object
+      properties:
+        nome:
+          type: string
+        email:
+          type: string
+          format: email
+        userName:
+          type: string
+    ChangePasswordRequest:
+      type: object
+      required: [currentPassword, newPassword]
+      properties:
+        currentPassword:
+          type: string
+        newPassword:
+          type: string
+          minLength: 1
+    EventoInput:
+      type: object
+      required: [tema, local, dataEvento, qtdPessoas, telefone, email]
+      properties:
+        tema:
+          type: string
+          minLength: 3
+          maxLength: 50
+        local:
+          type: string
+          minLength: 1
+        dataEvento:
+          type: string
+        qtdPessoas:
+          type: integer
+          minimum: 1
+          maximum: 120000
+        imagemURL:
+          type: string
+        telefone:
+          type: string
+        email:
+          type: string
+          format: email
+    LoteInput:
+      type: object
+      required: [nome, preco, dataIncio, dataFim, quantidade]
+      properties:
+        id:
+          type: integer
+        nome:
+          type: string
+          minLength: 1
+        preco:
+          type: number
+          exclusiveMinimum: 0
+        dataIncio:
+          type: string
+          format: date-time
+          description: Persistence field spelling DataIncio (known typo retained)
+        dataFim:
+          type: string
+          format: date-time
+        quantidade:
+          type: integer
+          exclusiveMinimum: 0
+        eventoId:
+          type: integer
+    ErrorProblem:
+      type: object
+      description: Validation or auth failure payload
+      additionalProperties: true
+paths:
+  /account/register:
+    post:
+      tags: [Account]
+      summary: Register user
+      operationId: register
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/RegisterRequest"
+      responses:
+        "200":
+          description: Registered (may return AuthResponse or profile)
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AuthResponse"
+        "400":
+          description: Validation or duplicate email
+  /account/login:
+    post:
+      tags: [Account]
+      summary: Login and receive access token
+      operationId: login
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/LoginRequest"
+      responses:
+        "200":
+          description: Token issued
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AuthResponse"
+        "401":
+          description: Invalid credentials
+  /account/profile:
+    get:
+      tags: [Account]
+      summary: Get current user profile
+      operationId: getProfile
+      security:
+        - bearerAuth: []
+      responses:
+        "200":
+          description: Profile
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/UserProfile"
+        "401":
+          description: Unauthorized
+    put:
+      tags: [Account]
+      summary: Update profile
+      operationId: updateProfile
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpdateProfileRequest"
+      responses:
+        "200":
+          description: Updated profile
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/UserProfile"
+        "400":
+          description: Validation or email conflict
+        "401":
+          description: Unauthorized
+  /account/change-password:
+    put:
+      tags: [Account]
+      summary: Change password
+      operationId: changePassword
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ChangePasswordRequest"
+      responses:
+        "204":
+          description: Password changed
+        "400":
+          description: Current password incorrect or new password invalid
+        "401":
+          description: Unauthorized
+  /eventos:
+    post:
+      tags: [Eventos]
+      summary: Create evento (auth required)
+      operationId: createEventoAuth
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/EventoInput"
+      responses:
+        "200":
+          description: Created
+        "400":
+          description: Validation
+        "401":
+          description: Unauthorized
+  /eventos/{id}:
+    parameters:
+      - $ref: "#/components/parameters/EventoId"
+    put:
+      tags: [Eventos]
+      summary: Update evento (auth required)
+      operationId: updateEventoAuth
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/EventoInput"
+      responses:
+        "200":
+          description: Updated
+        "400":
+          description: Validation
+        "401":
+          description: Unauthorized
+        "404":
+          description: Not found
+    delete:
+      tags: [Eventos]
+      summary: Delete evento and cascade lotes + redes (auth required)
+      operationId: deleteEventoAuth
+      security:
+        - bearerAuth: []
+      responses:
+        "200":
+          description: Deleted
+        "401":
+          description: Unauthorized
+        "404":
+          description: Not found
+  /lotes/{eventoId}:
+    parameters:
+      - $ref: "#/components/parameters/EventoIdPath"
+    put:
+      tags: [Lotes]
+      summary: Upsert lotes for evento (auth; validate price/qty/dates)
+      operationId: saveLotesAuth
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: array
+              items:
+                $ref: "#/components/schemas/LoteInput"
+      responses:
+        "200":
+          description: Saved
+        "400":
+          description: Validation (preco/quantidade ≤ 0 or dataIncio > dataFim)
+        "401":
+          description: Unauthorized
+  /palestrantes/nome/{nome}:
+    get:
+      tags: [Palestrantes]
+      summary: Search palestrantes by name (contains)
+      operationId: getPalestrantesByNome
+      parameters:
+        - $ref: "#/components/parameters/NomePath"
+      responses:
+        "200":
+          description: Matching palestrantes
+  /palestrantes/tema/{tema}:
+    get:
+      tags: [Palestrantes]
+      summary: Search palestrantes by associated evento theme
+      operationId: getPalestrantesByTema
+      parameters:
+        - $ref: "#/components/parameters/TemaPath"
+      responses:
+        "200":
+          description: Matching palestrantes
+  /eventos/{eventoId}/palestrantes/{palestranteId}:
+    parameters:
+      - $ref: "#/components/parameters/EventoIdPath"
+      - $ref: "#/components/parameters/PalestranteId"
+    put:
+      tags: [Palestrantes]
+      summary: Associate palestrante with evento (idempotent; auth)
+      operationId: associatePalestrante
+      security:
+        - bearerAuth: []
+      responses:
+        "200":
+          description: Associated
+        "401":
+          description: Unauthorized
+        "404":
+          description: Evento or palestrante missing
+    delete:
+      tags: [Palestrantes]
+      summary: Disassociate palestrante from evento (auth)
+      operationId: disassociatePalestrante
+      security:
+        - bearerAuth: []
+      responses:
+        "200":
+          description: Disassociated
+        "401":
+          description: Unauthorized
+        "404":
+          description: Link or entity missing

@@ -1,0 +1,314 @@
+openapi: 3.0.3
+info:
+  title: ProEventos API — NetDevPack Identity & Roles (007)
+  version: 1.3.0
+  description: |
+    Contract delta for feature 007-netdevpack-identity-roles.
+    Baseline paths remain as in specs/005-eventos-domain-rules/contracts/openapi.yaml
+    and specs/001-multi-front-eventos/contracts/openapi.yaml.
+
+    Changes:
+    - Auth responses include `roles`, `refreshToken`, `expiresIn` (and optional `palestranteId`)
+    - New `POST /account/register-palestrante`
+    - New `POST /account/refresh-token` (NetDevPack OneTime refresh)
+    - Maintenance writes require role `User` (not merely authenticated)
+    - Role `Palestrante` is ReadOnly for maintenance resources
+    - JWT config moves to AppJwtSettings (NetDevPack); signing via library keys
+
+    Authorization policy:
+    - GET list/detail/search: anonymous allowed (unchanged)
+    - POST/PUT/DELETE on domain resources: Bearer + role `User`
+    - Account profile/password: Bearer (any authenticated role)
+    - register / login / register-palestrante / refresh-token: anonymous
+servers:
+  - url: http://localhost:5000
+  - url: https://localhost:5001
+tags:
+  - name: Account
+  - name: Eventos
+  - name: Lotes
+  - name: Palestrantes
+  - name: RedesSociais
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+  schemas:
+    RegisterRequest:
+      type: object
+      required: [nome, userName, email, password]
+      properties:
+        nome:
+          type: string
+        userName:
+          type: string
+        email:
+          type: string
+          format: email
+        password:
+          type: string
+          minLength: 1
+      description: Creates organizer User and assigns role `User`.
+    RegisterPalestranteRequest:
+      type: object
+      required: [nome, userName, email, password]
+      properties:
+        nome:
+          type: string
+          description: Display name for User and default Palestrante.Nome
+        userName:
+          type: string
+        email:
+          type: string
+          format: email
+        password:
+          type: string
+          minLength: 1
+        miniCurriculo:
+          type: string
+        telefone:
+          type: string
+        imagemURL:
+          type: string
+      description: |
+        Creates User + Palestrante (UserId set) and assigns role `Palestrante` only.
+    LoginRequest:
+      type: object
+      required: [userName, password]
+      properties:
+        userName:
+          type: string
+        password:
+          type: string
+    RefreshTokenRequest:
+      type: object
+      required: [refreshToken]
+      properties:
+        refreshToken:
+          type: string
+    AuthResponse:
+      type: object
+      required: [token, refreshToken, userName, email, nome, roles]
+      properties:
+        token:
+          type: string
+          description: Access JWT including role claims (NetDevPack IJwtBuilder)
+        refreshToken:
+          type: string
+          description: Refresh JWT (OneTime — previous RT invalidated after use)
+        expiresIn:
+          type: number
+          description: Access token lifetime in seconds
+        userName:
+          type: string
+        email:
+          type: string
+        nome:
+          type: string
+        roles:
+          type: array
+          items:
+            type: string
+            enum: [User, Palestrante]
+          description: Exactly one of User or Palestrante for didactic accounts
+        palestranteId:
+          type: integer
+          nullable: true
+          description: Present when a Palestrante profile is linked to this User
+    Palestrante:
+      type: object
+      required: [nome, userId]
+      properties:
+        id:
+          type: integer
+        nome:
+          type: string
+        miniCurriculo:
+          type: string
+        imagemURL:
+          type: string
+        telefone:
+          type: string
+        email:
+          type: string
+        userId:
+          type: string
+          description: Required FK to Identity User.Id
+    ProblemDetails:
+      type: object
+      properties:
+        type:
+          type: string
+        title:
+          type: string
+        status:
+          type: integer
+        detail:
+          type: string
+paths:
+  /account/register:
+    post:
+      tags: [Account]
+      summary: Register organizer (role User)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RegisterRequest'
+      responses:
+        '200':
+          description: Registered; JWT with role User
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AuthResponse'
+        '409':
+          description: Email or username already in use
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+  /account/register-palestrante:
+    post:
+      tags: [Account]
+      summary: Register speaker (User + Palestrante + role Palestrante)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RegisterPalestranteRequest'
+      responses:
+        '200':
+          description: Registered; JWT with role Palestrante and palestranteId
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AuthResponse'
+        '409':
+          description: Email or username already in use
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+  /account/login:
+    post:
+      tags: [Account]
+      summary: Login (User identity; roles from AspNetUserRoles)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LoginRequest'
+      responses:
+        '200':
+          description: Authenticated (access + refresh tokens)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AuthResponse'
+        '401':
+          description: Invalid credentials
+  /account/refresh-token:
+    post:
+      tags: [Account]
+      summary: Exchange a valid refresh token for a new access + refresh pair
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RefreshTokenRequest'
+      responses:
+        '200':
+          description: New AuthResponse (OneTime — prior refresh token no longer valid)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AuthResponse'
+        '401':
+          description: Invalid, expired, or already-used refresh token
+  /eventos:
+    post:
+      tags: [Eventos]
+      summary: Create evento (requires role User)
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Created
+        '401':
+          description: Missing/invalid token
+        '403':
+          description: Authenticated but role is not User (e.g. Palestrante)
+  /eventos/{id}:
+    put:
+      tags: [Eventos]
+      summary: Update evento (requires role User)
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Updated
+        '401':
+          description: Unauthorized
+        '403':
+          description: Forbidden (ReadOnly role)
+    delete:
+      tags: [Eventos]
+      summary: Delete evento (requires role User)
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Deleted
+        '401':
+          description: Unauthorized
+        '403':
+          description: Forbidden (ReadOnly role)
+  /palestrantes:
+    post:
+      tags: [Palestrantes]
+      summary: Create palestrante (requires role User; body must include userId)
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Palestrante'
+      responses:
+        '200':
+          description: Created
+        '400':
+          description: Missing/invalid userId
+        '403':
+          description: Forbidden for Palestrante role
+x-policy-notes:
+  maintenanceWriteRoles: [User]
+  readOnlyRoles: [Palestrante]
+  anonymousGets: true
+  config:
+    AppJwtSettings:
+      Audience: ProEventos
+      Expiration: "hours (access token)"
+      RefreshTokenExpiration: "days"
+      RefreshTokenType: OneTime
+      Issuer: optional
