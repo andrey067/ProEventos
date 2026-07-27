@@ -58,9 +58,7 @@ namespace ProEventos.Api.Endpoints
                 var userId = user.FindFirstValue(ClaimTypes.NameIdentifier)
                     ?? user.FindFirstValue("sub");
                 var result = await service.ChangePasswordAsync(userId, model);
-                if (result.IsError)
-                    return result.ToHttpResult();
-                return Results.NoContent();
+                return result.ToHttpResult();
             }).RequireAuthorization();
         }
     }

@@ -12,6 +12,6 @@ namespace ProEventos.Services.Interfaces
         Task<ErrorOr<AuthResponseDto>> RefreshTokenAsync(RefreshTokenRequestDto model);
         Task<ErrorOr<UserDto>> GetProfileAsync(string userId);
         Task<ErrorOr<UserDto>> UpdateProfileAsync(string userId, UserUpdateDto model);
-        Task<ErrorOr<Success>> ChangePasswordAsync(string userId, ChangePasswordDto model);
+        Task<ErrorOr<AuthResponseDto>> ChangePasswordAsync(string userId, ChangePasswordDto model);
     }
 }

@@ -1,9 +1,7 @@
-using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 using ErrorOr;
 using Microsoft.AspNetCore.Identity;
-using NetDevPack.Identity.Interfaces;
 using ProEventos.Domain.Entities;
 using ProEventos.Domain.Identity;
 using ProEventos.Domain.Interfaces.Repositories;
@@ -16,18 +14,18 @@ namespace ProEventos.Services.Services
     {
         private readonly UserManager<User> _userManager;
         private readonly RoleManager<IdentityRole> _roleManager;
-        private readonly IJwtBuilder _jwtBuilder;
+        private readonly ITokenService _tokenService;
         private readonly IPalestrantesRepository _palestrantesRepository;
 
         public AccountService(
             UserManager<User> userManager,
             RoleManager<IdentityRole> roleManager,
-            IJwtBuilder jwtBuilder,
+            ITokenService tokenService,
             IPalestrantesRepository palestrantesRepository)
         {
             _userManager = userManager;
             _roleManager = roleManager;
-            _jwtBuilder = jwtBuilder;
+            _tokenService = tokenService;
             _palestrantesRepository = palestrantesRepository;
         }
 
@@ -59,7 +57,7 @@ namespace ProEventos.Services.Services
             await EnsureRoleExistsAsync(AppRoles.User);
             await _userManager.AddToRoleAsync(user, AppRoles.User);
 
-            return await BuildAuthResponseAsync(user);
+            return await _tokenService.BuildAuthResponseAsync(user);
         }
 
         public async Task<ErrorOr<AuthResponseDto>> RegisterPalestranteAsync(UserRegisterPalestranteDto model)
@@ -100,7 +98,7 @@ namespace ProEventos.Services.Services
                 UserId = user.Id
             });
 
-            return await BuildAuthResponseAsync(user, palestrante.Id);
+            return await _tokenService.BuildAuthResponseAsync(user, palestrante.Id);
         }
 
         public async Task<ErrorOr<AuthResponseDto>> LoginAsync(UserLoginDto model)
@@ -112,7 +110,7 @@ namespace ProEventos.Services.Services
             if (!await _userManager.CheckPasswordAsync(user, model.Password))
                 return Error.Unauthorized("Account.Login.InvalidCredentials", "Credenciais inválidas.");
 
-            return await BuildAuthResponseAsync(user);
+            return await _tokenService.BuildAuthResponseAsync(user);
         }
 
         public async Task<ErrorOr<AuthResponseDto>> RefreshTokenAsync(RefreshTokenRequestDto model)
@@ -120,20 +118,20 @@ namespace ProEventos.Services.Services
             if (model == null || string.IsNullOrWhiteSpace(model.RefreshToken))
                 return Error.Validation("Account.Refresh.Required", "RefreshToken é obrigatório.");
 
-            var validation = await _jwtBuilder.ValidateRefreshToken(model.RefreshToken);
-            if (!validation.IsValid || string.IsNullOrWhiteSpace(validation.UserId))
+            var (isValid, userId, reason) = await _tokenService.ValidateRefreshTokenAsync(model.RefreshToken);
+            if (!isValid || string.IsNullOrWhiteSpace(userId))
             {
-                var reason = string.IsNullOrWhiteSpace(validation.Reason)
+                var message = string.IsNullOrWhiteSpace(reason)
                     ? "Refresh token inválido ou expirado."
-                    : validation.Reason;
-                return Error.Unauthorized("Account.Refresh.Invalid", reason);
+                    : reason;
+                return Error.Unauthorized("Account.Refresh.Invalid", message);
             }
 
-            var user = await _userManager.FindByIdAsync(validation.UserId);
+            var user = await _userManager.FindByIdAsync(userId);
             if (user == null)
                 return Error.Unauthorized("Account.Refresh.UserNotFound", "Usuário do refresh token não encontrado.");
 
-            return await BuildAuthResponseAsync(user);
+            return await _tokenService.BuildAuthResponseAsync(user);
         }
 
         public async Task<ErrorOr<UserDto>> GetProfileAsync(string userId)
@@ -181,7 +179,7 @@ namespace ProEventos.Services.Services
             return ToDto(user);
         }
 
-        public async Task<ErrorOr<Success>> ChangePasswordAsync(string userId, ChangePasswordDto model)
+        public async Task<ErrorOr<AuthResponseDto>> ChangePasswordAsync(string userId, ChangePasswordDto model)
         {
             var user = await _userManager.FindByIdAsync(userId);
             if (user == null)
@@ -194,44 +192,16 @@ namespace ProEventos.Services.Services
                 return Error.Validation("Account.ChangePassword.Failed", error);
             }
 
-            return Result.Success;
+            // ChangePassword already updates SecurityStamp; rotate JWT pair so prior
+            // refresh tokens fail OneTime LastRefreshToken validation.
+            await _userManager.UpdateSecurityStampAsync(user);
+            return await _tokenService.BuildAuthResponseAsync(user);
         }
 
         private async Task EnsureRoleExistsAsync(string roleName)
         {
             if (!await _roleManager.RoleExistsAsync(roleName))
                 await _roleManager.CreateAsync(new IdentityRole(roleName));
-        }
-
-        private async Task<AuthResponseDto> BuildAuthResponseAsync(User user, int? palestranteId = null)
-        {
-            var roles = await _userManager.GetRolesAsync(user);
-            var userResponse = await _jwtBuilder
-                .WithEmail(user.Email)
-                .WithUserId(user.Id)
-                .WithJwtClaims()
-                .WithUserClaims()
-                .WithUserRoles()
-                .WithRefreshToken()
-                .BuildUserResponse();
-
-            if (palestranteId == null)
-            {
-                var linked = await _palestrantesRepository.GetPalestranteByUserIdAsync(user.Id);
-                palestranteId = linked?.Id;
-            }
-
-            return new AuthResponseDto
-            {
-                Token = userResponse.AccessToken,
-                RefreshToken = userResponse.RefreshToken,
-                ExpiresIn = userResponse.ExpiresIn,
-                UserName = user.UserName,
-                Email = user.Email,
-                Nome = user.Nome,
-                Roles = roles?.ToList() ?? new List<string>(),
-                PalestranteId = palestranteId
-            };
         }
 
         private static UserDto ToDto(User user) => new UserDto
