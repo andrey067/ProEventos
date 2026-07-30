@@ -1,3 +1,4 @@
+using Microsoft.Data.Sqlite;
 using Microsoft.EntityFrameworkCore;
 using ProEventos.Domain.Entities;
 using ProEventos.Persistence;
@@ -12,6 +13,16 @@ internal static class DataContextFactory
             .UseInMemoryDatabase(Guid.NewGuid().ToString())
             .Options;
         return new DataContext(options);
+    }
+
+    public static (DataContext Context, SqliteConnection Connection) CreateSqlite()
+    {
+        var connection = new SqliteConnection("DataSource=:memory:");
+        connection.Open();
+        var options = new DbContextOptionsBuilder<DataContext>()
+            .UseSqlite(connection)
+            .Options;
+        return (new DataContext(options), connection);
     }
 
     public static async Task<User> SeedUserAsync(DataContext ctx, string userName = "test-user")

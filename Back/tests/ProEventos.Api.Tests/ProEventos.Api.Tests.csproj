@@ -6,12 +6,12 @@
     <IsPackable>false</IsPackable>
     <CollectCoverage>true</CollectCoverage>
     <CoverletOutputFormat>cobertura</CoverletOutputFormat>
-    <Threshold>80</Threshold>
-    <ThresholdType>line,method</ThresholdType>
+    <Threshold>90</Threshold>
+    <ThresholdType>line,branch,method</ThresholdType>
     <ThresholdStat>total</ThresholdStat>
     <Include>[ProEventos.Api]ProEventos.Api.*,[ProEventos.CrossCutting]*</Include>
     <Exclude>[*.Tests]*</Exclude>
-    <ExcludeByFile>**/Migrations/**/*.cs,**/*.Designer.cs,**/ConfigureService.cs,**/AccountEndpoints.cs,**/Program.cs,**/AppExceptionHandler.cs</ExcludeByFile>
+    <ExcludeByFile>**/Migrations/**/*.cs,**/*.Designer.cs</ExcludeByFile>
   </PropertyGroup>
   <ItemGroup>
     <PackageReference Include="ErrorOr" Version="2.1.1" />

@@ -14,6 +14,8 @@ namespace ProEventos.Services.Tests;
 
 public class EventoServiceTests
 {
+    private const string OwnerUserId = "user-1";
+
     private readonly Mock<IRepository<Evento>> _repo = new();
     private readonly Mock<IEventoRepository> _eventoRepo = new();
     private readonly EventoService _sut;
@@ -39,18 +41,33 @@ public class EventoServiceTests
     public async Task AddEvento_Should_Insert_Not_Update_Or_Delete()
     {
         var dto = SampleDto();
+        Evento inserted = null;
         _repo.Setup(r => r.InsertAsync(It.IsAny<Evento>()))
+            .Callback<Evento>(e => inserted = e)
             .ReturnsAsync((Evento e) => { e.Id = 42; return e; });
         _eventoRepo.Setup(r => r.GetAllEventosByIdAsync(42, false))
-            .ReturnsAsync(new Evento { Id = 42, Tema = dto.Tema, Telefone = dto.Telefone, Email = dto.Email, QtdPessoas = dto.QtdPessoas });
+            .ReturnsAsync(new Evento { Id = 42, UserId = OwnerUserId, Tema = dto.Tema, Telefone = dto.Telefone, Email = dto.Email, QtdPessoas = dto.QtdPessoas });
 
-        var result = await _sut.AddEvento(dto);
+        var result = await _sut.AddEvento(dto, OwnerUserId);
 
         result.IsError.Should().BeFalse();
         result.Value.Id.Should().Be(42);
+        inserted.Should().NotBeNull();
+        inserted!.UserId.Should().Be(OwnerUserId);
         _repo.Verify(r => r.InsertAsync(It.IsAny<Evento>()), Times.Once);
         _repo.Verify(r => r.UpdateAsync(It.IsAny<Evento>()), Times.Never);
         _repo.Verify(r => r.DeleteAsync(It.IsAny<int>()), Times.Never);
+    }
+
+    [Fact]
+    public async Task AddEvento_Should_Return_Validation_When_UserId_Blank()
+    {
+        var result = await _sut.AddEvento(SampleDto(), " ");
+
+        result.IsError.Should().BeTrue();
+        result.FirstError.Type.Should().Be(ErrorType.Validation);
+        result.FirstError.Code.Should().Be("Evento.Add.UserIdRequired");
+        _repo.Verify(r => r.InsertAsync(It.IsAny<Evento>()), Times.Never);
     }
 
     [Fact]
@@ -58,33 +75,61 @@ public class EventoServiceTests
     {
         var dto = SampleDto(7);
         _eventoRepo.Setup(r => r.GetAllEventosByIdAsync(7, false))
-            .ReturnsAsync(new Evento { Id = 7, Tema = "Old" });
+            .ReturnsAsync(new Evento { Id = 7, UserId = OwnerUserId, Tema = "Old" });
         _repo.Setup(r => r.UpdateAsync(It.IsAny<Evento>()))
             .ReturnsAsync((Evento e) => e);
         _eventoRepo.Setup(r => r.GetAllEventosByIdAsync(7, false))
-            .ReturnsAsync(new Evento { Id = 7, Tema = "Meetup DotNet", Telefone = dto.Telefone, Email = dto.Email, QtdPessoas = 10 });
+            .ReturnsAsync(new Evento { Id = 7, UserId = OwnerUserId, Tema = "Meetup DotNet", Telefone = dto.Telefone, Email = dto.Email, QtdPessoas = 10 });
 
-        var result = await _sut.UpdateEvento(7, dto);
+        var result = await _sut.UpdateEvento(7, dto, OwnerUserId);
 
         result.IsError.Should().BeFalse();
-        _repo.Verify(r => r.UpdateAsync(It.Is<Evento>(e => e.Id == 7)), Times.Once);
+        _repo.Verify(r => r.UpdateAsync(It.Is<Evento>(e => e.Id == 7 && e.UserId == OwnerUserId)), Times.Once);
         _repo.Verify(r => r.DeleteAsync(It.IsAny<int>()), Times.Never);
         _repo.Verify(r => r.InsertAsync(It.IsAny<Evento>()), Times.Never);
+    }
+
+    [Fact]
+    public async Task UpdateEvento_Should_Return_Forbidden_When_UserId_Mismatches()
+    {
+        _eventoRepo.Setup(r => r.GetAllEventosByIdAsync(7, false))
+            .ReturnsAsync(new Evento { Id = 7, UserId = OwnerUserId, Tema = "Old" });
+
+        var result = await _sut.UpdateEvento(7, SampleDto(7), "other-user");
+
+        result.IsError.Should().BeTrue();
+        result.FirstError.Type.Should().Be(ErrorType.Forbidden);
+        result.FirstError.Code.Should().Be("Evento.Update.Forbidden");
+        _repo.Verify(r => r.UpdateAsync(It.IsAny<Evento>()), Times.Never);
     }
 
     [Fact]
     public async Task DeleteEvento_Should_Delete()
     {
         _eventoRepo.Setup(r => r.GetAllEventosByIdAsync(5, false))
-            .ReturnsAsync(new Evento { Id = 5, Tema = "X" });
+            .ReturnsAsync(new Evento { Id = 5, UserId = OwnerUserId, Tema = "X" });
         _repo.Setup(r => r.DeleteAsync(5)).ReturnsAsync(true);
 
-        var ok = await _sut.DeleteEvento(5);
+        var ok = await _sut.DeleteEvento(5, OwnerUserId);
 
         ok.IsError.Should().BeFalse();
         ok.Value.Should().Be(Result.Success);
         _repo.Verify(r => r.DeleteAsync(5), Times.Once);
         _repo.Verify(r => r.UpdateAsync(It.IsAny<Evento>()), Times.Never);
+    }
+
+    [Fact]
+    public async Task DeleteEvento_Should_Return_Forbidden_When_UserId_Mismatches()
+    {
+        _eventoRepo.Setup(r => r.GetAllEventosByIdAsync(5, false))
+            .ReturnsAsync(new Evento { Id = 5, UserId = OwnerUserId, Tema = "X" });
+
+        var result = await _sut.DeleteEvento(5, "other-user");
+
+        result.IsError.Should().BeTrue();
+        result.FirstError.Type.Should().Be(ErrorType.Forbidden);
+        result.FirstError.Code.Should().Be("Evento.Delete.Forbidden");
+        _repo.Verify(r => r.DeleteAsync(It.IsAny<int>()), Times.Never);
     }
 
     [Fact]
@@ -152,7 +197,7 @@ public class EventoServiceTests
     {
         _eventoRepo.Setup(r => r.GetAllEventosByIdAsync(99, false)).ReturnsAsync((Evento)null);
 
-        var result = await _sut.UpdateEvento(99, SampleDto());
+        var result = await _sut.UpdateEvento(99, SampleDto(), OwnerUserId);
 
         result.IsError.Should().BeTrue();
         result.FirstError.Type.Should().Be(ErrorType.NotFound);
@@ -164,10 +209,10 @@ public class EventoServiceTests
     {
         var dto = SampleDto(8);
         _eventoRepo.Setup(r => r.GetAllEventosByIdAsync(8, false))
-            .ReturnsAsync(new Evento { Id = 8, Tema = "Old" });
+            .ReturnsAsync(new Evento { Id = 8, UserId = OwnerUserId, Tema = "Old" });
         _repo.Setup(r => r.UpdateAsync(It.IsAny<Evento>())).ReturnsAsync((Evento)null);
 
-        var result = await _sut.UpdateEvento(8, dto);
+        var result = await _sut.UpdateEvento(8, dto, OwnerUserId);
 
         result.IsError.Should().BeTrue();
         result.FirstError.Type.Should().Be(ErrorType.NotFound);
@@ -178,7 +223,7 @@ public class EventoServiceTests
     {
         _eventoRepo.Setup(r => r.GetAllEventosByIdAsync(404, false)).ReturnsAsync((Evento)null);
 
-        var result = await _sut.DeleteEvento(404);
+        var result = await _sut.DeleteEvento(404, OwnerUserId);
 
         result.IsError.Should().BeTrue();
         result.FirstError.Code.Should().Be("Evento.Delete.NotFound");
@@ -189,7 +234,7 @@ public class EventoServiceTests
     {
         _repo.Setup(r => r.InsertAsync(It.IsAny<Evento>())).ThrowsAsync(new InvalidOperationException("db"));
 
-        var act = () => _sut.AddEvento(SampleDto());
+        var act = () => _sut.AddEvento(SampleDto(), OwnerUserId);
 
         await act.Should().ThrowAsync<InvalidOperationException>().WithMessage("db");
     }
@@ -200,7 +245,7 @@ public class EventoServiceTests
         _repo.Setup(r => r.InsertAsync(It.IsAny<Evento>()))
             .ThrowsAsync(new ConflictException("BaseRepository.InsertAsync", "Item já cadastrado"));
 
-        var result = await _sut.AddEvento(SampleDto());
+        var result = await _sut.AddEvento(SampleDto(), OwnerUserId);
 
         result.IsError.Should().BeTrue();
         result.FirstError.Type.Should().Be(ErrorType.Conflict);
@@ -252,14 +297,42 @@ public class EventoServiceTests
     }
 
     [Fact]
+    public async Task GetPagedEventosAsync_Returns_Envelope()
+    {
+        _eventoRepo.Setup(r => r.GetPagedEventosAsync(1, 10, null, false))
+            .ReturnsAsync((new List<Evento> { new() { Id = 1, Tema = "A", Telefone = "11", Email = "a@b.com", QtdPessoas = 1 } }, 1));
+
+        var result = await _sut.GetPagedEventosAsync(1, 10);
+
+        result.IsError.Should().BeFalse();
+        result.Value.Items.Should().ContainSingle(e => e.Tema == "A");
+        result.Value.TotalCount.Should().Be(1);
+    }
+
+    [Fact]
+    public async Task GetPagedEventosAsync_Requeries_When_Page_Beyond_Last()
+    {
+        _eventoRepo.SetupSequence(r => r.GetPagedEventosAsync(It.IsAny<int>(), 10, null, false))
+            .ReturnsAsync((new List<Evento>(), 5))
+            .ReturnsAsync((new List<Evento> { new() { Id = 5, Tema = "Last", Telefone = "11", Email = "a@b.com", QtdPessoas = 1 } }, 5));
+
+        var result = await _sut.GetPagedEventosAsync(99, 10);
+
+        result.IsError.Should().BeFalse();
+        result.Value.Page.Should().Be(1);
+        result.Value.Items.Should().ContainSingle(e => e.Tema == "Last");
+        _eventoRepo.Verify(r => r.GetPagedEventosAsync(It.IsAny<int>(), 10, null, false), Times.Exactly(2));
+    }
+
+    [Fact]
     public async Task DeleteEvento_Should_Map_AppException()
     {
         _eventoRepo.Setup(r => r.GetAllEventosByIdAsync(5, false))
-            .ReturnsAsync(new Evento { Id = 5, Tema = "X" });
+            .ReturnsAsync(new Evento { Id = 5, UserId = OwnerUserId, Tema = "X" });
         _repo.Setup(r => r.DeleteAsync(5))
             .ThrowsAsync(new NotFoundException("BaseRepository.DeleteAsync", "Item não encontrado"));
 
-        var result = await _sut.DeleteEvento(5);
+        var result = await _sut.DeleteEvento(5, OwnerUserId);
 
         result.IsError.Should().BeTrue();
         result.FirstError.Type.Should().Be(ErrorType.NotFound);
