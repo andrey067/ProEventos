@@ -1,3 +1,4 @@
+using System.Security.Claims;
 using Microsoft.AspNetCore.Mvc;
 using ProEventos.Api.Extensions;
 using ProEventos.Services.Dtos;
@@ -17,21 +18,33 @@ namespace ProEventos.Api.Endpoints
                 return result.ToHttpResult(value => Results.Ok(value ?? new List<LoteDto>()));
             });
 
-            group.MapPut("/{eventoId:int}", async (int eventoId, [FromBody] List<LoteDto> models, ILotesService service) =>
+            group.MapPut("/{eventoId:int}", async (
+                int eventoId,
+                ClaimsPrincipal user,
+                [FromBody] List<LoteDto> models,
+                ILotesService service) =>
             {
-                var result = await service.SaveLotes(eventoId, models ?? new List<LoteDto>());
+                var result = await service.SaveLotes(eventoId, models ?? new List<LoteDto>(), GetUserId(user));
                 return result.ToHttpResult(value => Results.Ok(value ?? new List<LoteDto>()));
             }).RequireAuthorization(ProEventos.Domain.Identity.AppRoles.RequireUserRolePolicy);
 
-            group.MapDelete("/{eventoId:int}/{loteId:int}", async (int eventoId, int loteId, ILotesService service) =>
+            group.MapDelete("/{eventoId:int}/{loteId:int}", async (
+                int eventoId,
+                int loteId,
+                ClaimsPrincipal user,
+                ILotesService service) =>
             {
                 var existing = await service.GetLoteByIdsAsync(eventoId, loteId);
                 if (existing.IsError)
                     return existing.ToHttpResult();
 
-                var result = await service.DeleteLote(eventoId, loteId);
+                var result = await service.DeleteLote(eventoId, loteId, GetUserId(user));
                 return result.ToHttpResult(new { message = "Lote Deletado" });
             }).RequireAuthorization(ProEventos.Domain.Identity.AppRoles.RequireUserRolePolicy);
         }
+
+        private static string GetUserId(ClaimsPrincipal user) =>
+            user.FindFirstValue(ClaimTypes.NameIdentifier)
+            ?? user.FindFirstValue("sub");
     }
 }

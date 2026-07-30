@@ -23,6 +23,16 @@ public class OwnershipParityEndpointsTests
         ImagemURL = "foto.jpg"
     };
 
+    private static LoteDto SampleLote(string nome = "Lote A") => new()
+    {
+        Id = 0,
+        Nome = nome,
+        Preco = 50,
+        Quantidade = 10,
+        DataIncio = DateTime.UtcNow.Date,
+        DataFim = DateTime.UtcNow.Date.AddDays(7)
+    };
+
     [Fact]
     public async Task Evento_Mutations_Deny_Non_Owner()
     {
@@ -51,6 +61,38 @@ public class OwnershipParityEndpointsTests
                 new List<RedeSocialDto> { new() { Id = 0, Nome = "IG", URL = "https://ig.com" } }))
             .StatusCode.Should().Be(HttpStatusCode.OK);
     }
+
+    [Fact]
+    public async Task Lote_Mutations_Deny_Non_Owner()
+    {
+        using var factory = new CustomWebApplicationFactory();
+        var owner = factory.CreateClient();
+        await AuthTestHelper.AuthenticateAsync(owner, "loteown");
+
+        var create = await owner.PostAsJsonAsync("/eventos", SampleEvento("Lote Own"));
+        create.StatusCode.Should().Be(HttpStatusCode.OK);
+        var evento = await create.Content.ReadFromJsonAsync<EventoDto>(JsonOptions);
+        evento.Should().NotBeNull();
+
+        var saveOwner = await owner.PutAsJsonAsync($"/lotes/{evento!.Id}",
+            new List<LoteDto> { SampleLote() });
+        saveOwner.StatusCode.Should().Be(HttpStatusCode.OK);
+        var lotes = await saveOwner.Content.ReadFromJsonAsync<List<LoteDto>>(JsonOptions);
+        var loteId = lotes!.Single().Id;
+
+        var other = factory.CreateClient();
+        await AuthTestHelper.AuthenticateAsync(other, "loteoth");
+
+        (await other.PutAsJsonAsync($"/lotes/{evento.Id}",
+                new List<LoteDto> { SampleLote("Hacked") }))
+            .StatusCode.Should().Be(HttpStatusCode.Forbidden);
+        (await other.DeleteAsync($"/lotes/{evento.Id}/{loteId}"))
+            .StatusCode.Should().Be(HttpStatusCode.Forbidden);
+
+        (await owner.DeleteAsync($"/lotes/{evento.Id}/{loteId}"))
+            .StatusCode.Should().Be(HttpStatusCode.OK);
+    }
+
 
     [Fact]
     public async Task RedeSocial_Palestrante_Self_Scoped_Works()

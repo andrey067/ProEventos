@@ -13,13 +13,17 @@ namespace ProEventos.Services.Tests;
 
 public class LotesServiceTests
 {
+    private const string OwnerId = "owner-1";
     private readonly Mock<ILotesRepository> _repo = new();
+    private readonly Mock<IEventoRepository> _eventos = new();
     private readonly LotesServices _sut;
 
     public LotesServiceTests()
     {
         MapsterConfig.Register();
-        _sut = new LotesServices(_repo.Object);
+        _eventos.Setup(e => e.GetAllEventosByIdAsync(It.IsAny<int>(), false))
+            .ReturnsAsync((int id, bool _) => new Evento { Id = id, UserId = OwnerId });
+        _sut = new LotesServices(_repo.Object, _eventos.Object);
     }
 
     [Fact]
@@ -40,7 +44,7 @@ public class LotesServiceTests
         _repo.Setup(r => r.GetLoteByIdsAsync(1, 2)).ReturnsAsync(new Lote { Id = 2, EventoId = 1 });
         _repo.Setup(r => r.DeleteAsync(2)).ReturnsAsync(true);
 
-        var ok = await _sut.DeleteLote(1, 2);
+        var ok = await _sut.DeleteLote(1, 2, OwnerId);
 
         ok.IsError.Should().BeFalse();
     }
@@ -100,7 +104,7 @@ public class LotesServiceTests
             new() { Id = 10, Nome = "Updated", Preco = 2, Quantidade = 2, DataIncio = DateTime.UtcNow, DataFim = DateTime.UtcNow.AddDays(1) }
         };
 
-        var result = await _sut.SaveLotes(2, models);
+        var result = await _sut.SaveLotes(2, models, OwnerId);
 
         result.IsError.Should().BeFalse();
         result.Value.Should().HaveCount(2);
@@ -113,10 +117,23 @@ public class LotesServiceTests
     {
         _repo.Setup(r => r.GetLoteByIdsAsync(1, 99)).ReturnsAsync((Lote)null);
 
-        var result = await _sut.DeleteLote(1, 99);
+        var result = await _sut.DeleteLote(1, 99, OwnerId);
 
         result.IsError.Should().BeTrue();
         result.FirstError.Code.Should().Be("Lote.Delete.NotFound");
+    }
+
+    [Fact]
+    public async Task SaveLotes_Deny_Non_Owner()
+    {
+        var result = await _sut.SaveLotes(1, new List<LoteDto>
+        {
+            new() { Nome = "A", Preco = 1, Quantidade = 1, DataIncio = DateTime.UtcNow, DataFim = DateTime.UtcNow.AddDays(1) }
+        }, "other-user");
+
+        result.IsError.Should().BeTrue();
+        result.FirstError.Code.Should().Be("Lote.Evento.Forbidden");
+        _repo.Verify(r => r.InsertAsync(It.IsAny<Lote>()), Times.Never);
     }
 
     [Fact]
@@ -125,7 +142,7 @@ public class LotesServiceTests
         var badPrice = await _sut.SaveLotes(1, new List<LoteDto>
         {
             new() { Nome = "A", Preco = 0, Quantidade = 1, DataIncio = DateTime.UtcNow, DataFim = DateTime.UtcNow.AddDays(1) }
-        });
+        }, OwnerId);
         badPrice.IsError.Should().BeTrue();
         badPrice.FirstError.Type.Should().Be(ErrorType.Validation);
         badPrice.FirstError.Description.Should().Contain("Preço");
@@ -133,14 +150,14 @@ public class LotesServiceTests
         var badQty = await _sut.SaveLotes(1, new List<LoteDto>
         {
             new() { Nome = "A", Preco = 1, Quantidade = 0, DataIncio = DateTime.UtcNow, DataFim = DateTime.UtcNow.AddDays(1) }
-        });
+        }, OwnerId);
         badQty.IsError.Should().BeTrue();
         badQty.FirstError.Description.Should().Contain("Quantidade");
 
         var badDates = await _sut.SaveLotes(1, new List<LoteDto>
         {
             new() { Nome = "A", Preco = 1, Quantidade = 1, DataIncio = DateTime.UtcNow.AddDays(2), DataFim = DateTime.UtcNow }
-        });
+        }, OwnerId);
         badDates.IsError.Should().BeTrue();
         badDates.FirstError.Description.Should().Contain("Data");
     }
@@ -179,7 +196,7 @@ public class LotesServiceTests
         _repo.Setup(r => r.DeleteAsync(2))
             .ThrowsAsync(new NotFoundException("BaseRepository.DeleteAsync", "Item não encontrado"));
 
-        var result = await _sut.DeleteLote(1, 2);
+        var result = await _sut.DeleteLote(1, 2, OwnerId);
 
         result.IsError.Should().BeTrue();
         result.FirstError.Type.Should().Be(ErrorType.NotFound);
@@ -196,7 +213,7 @@ public class LotesServiceTests
         var result = await _sut.SaveLotes(2, new List<LoteDto>
         {
             new() { Id = 999, Nome = "Ghost", Preco = 1, Quantidade = 1, DataIncio = DateTime.UtcNow, DataFim = DateTime.UtcNow.AddDays(1) }
-        });
+        }, OwnerId);
 
         result.IsError.Should().BeFalse();
         _repo.Verify(r => r.UpdateAsync(It.IsAny<Lote>()), Times.Never);
