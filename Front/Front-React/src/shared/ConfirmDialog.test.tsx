@@ -4,12 +4,14 @@ import { ConfirmDialog } from "@/shared/ConfirmDialog";
 
 describe("ConfirmDialog", () => {
   it("não renderiza quando fechado", () => {
+    const onConfirm = vi.fn();
+    const onCancel = vi.fn();
     const { container } = render(
       <ConfirmDialog
         open={false}
         message="Apagar?"
-        onConfirm={() => {}}
-        onCancel={() => {}}
+        onConfirm={onConfirm}
+        onCancel={onCancel}
       />,
     );
     expect(container).toBeEmptyDOMElement();
@@ -40,12 +42,13 @@ describe("ConfirmDialog", () => {
   });
 
   it("fecha com Escape e clique no backdrop", () => {
+    const onConfirm = vi.fn();
     const onCancel = vi.fn();
     render(
       <ConfirmDialog
         open
         message="Apagar?"
-        onConfirm={() => {}}
+        onConfirm={onConfirm}
         onCancel={onCancel}
       />,
     );

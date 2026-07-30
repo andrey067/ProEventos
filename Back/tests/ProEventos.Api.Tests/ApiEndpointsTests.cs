@@ -1,3 +1,4 @@
+using System.Linq;
 using System.Net;
 using System.Net.Http.Json;
 using System.Text.Json;
@@ -229,7 +230,10 @@ public class ApiEndpointsTests
         preflight.Headers.Add("Origin", "http://localhost:5173");
         preflight.Headers.Add("Access-Control-Request-Method", "GET");
         var cors = await client.SendAsync(preflight);
-        cors.Headers.Contains("Access-Control-Allow-Origin").Should().BeTrue();
+        var allowOrigin = cors.Headers.TryGetValues("Access-Control-Allow-Origin", out var values)
+            ? values.FirstOrDefault()
+            : null;
+        allowOrigin.Should().Be("http://localhost:5173");
     }
 
     [Fact]
@@ -237,7 +241,7 @@ public class ApiEndpointsTests
     {
         using var factory = new CustomWebApplicationFactory();
         var client = factory.CreateClient();
-        await AuthTestHelper.AuthenticateAsync(client);
+        await AuthTestHelper.LoginAsAdminAsync(client);
         var evento = await CreateEventoAsync(client);
         var lotes = new List<LoteDto>
         {

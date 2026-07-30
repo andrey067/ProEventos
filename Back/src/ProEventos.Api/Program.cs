@@ -65,7 +65,8 @@ builder.Services.AddCors(options =>
 var app = builder.Build();
 
 app.UseExceptionHandler();
-
+app.UseCors("Frontends");
+app.UseAuthConfiguration();
 
 app.MapOpenApi();
 app.MapScalarApiReference("/docs", options =>
@@ -78,16 +79,12 @@ app.MapScalarApiReference("/docs", options =>
             scheme.Description =
                 "JWT Authorization header using the Bearer scheme. Example: \"Authorization: Bearer {token}\"";
         })
-        .HideSearch()        
+        .HideSearch()
         .HideTestRequestButton()
         .HideDocumentDownload()
         .HideDeveloperTools()
         .WithTheme(ScalarTheme.Kepler);
 });
-
-
-app.UseCors("Frontends");
-app.UseAuthConfiguration();
 
 app.MapAccountEndpoints();
 app.MapEventoEndpoints();

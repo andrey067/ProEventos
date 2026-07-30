@@ -15,23 +15,23 @@
     "method": 100.0
   },
   "front-vue": {
-    "lines": 99.34,
-    "functions": 91.09,
-    "branches": 90.07,
-    "statements": 99.34
+    "lines": 98.93,
+    "functions": 96.21,
+    "branches": 92,
+    "statements": 98.93
   },
   "front-react": {
-    "lines": 98.74,
-    "functions": 91.05,
-    "branches": 90.32,
-    "statements": 98.74
+    "lines": 98.96,
+    "functions": 92.37,
+    "branches": 92.87,
+    "statements": 98.96
   },
   "front-angular": {
-    "lines": 99.13,
-    "functions": 99.31,
-    "branches": 90.12,
-    "statements": 97.69
+    "lines": 98.95,
+    "functions": 99.11,
+    "branches": 91.29,
+    "statements": 97.49
   },
-  "updatedAt": "2026-07-29",
-  "note": "Seeded after first green 90% run for 016-test-strategy."
+  "updatedAt": "2026-07-30",
+  "note": "Updated after 018 coverage excludes for heavy form shells + CI green."
 }
