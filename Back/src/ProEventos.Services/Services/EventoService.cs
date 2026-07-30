@@ -115,14 +115,16 @@ namespace ProEventos.Services
             int? page,
             int? pageSize,
             string q = null,
-            bool includePalestrante = false)
+            bool includePalestrante = false,
+            string userId = null)
         {
             var (normalizedPage, normalizedSize) = PaginationHelper.Normalize(page, pageSize);
             var (items, totalCount) = await _eventoRepository.GetPagedEventosAsync(
                 normalizedPage,
                 normalizedSize,
                 q,
-                includePalestrante);
+                includePalestrante,
+                userId);
 
             var clampedPage = PaginationHelper.ClampPage(normalizedPage, normalizedSize, totalCount);
             if (clampedPage != normalizedPage && totalCount > 0)
@@ -131,7 +133,8 @@ namespace ProEventos.Services
                     clampedPage,
                     normalizedSize,
                     q,
-                    includePalestrante);
+                    includePalestrante,
+                    userId);
                 normalizedPage = clampedPage;
             }
 

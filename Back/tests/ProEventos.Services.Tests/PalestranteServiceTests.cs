@@ -19,6 +19,7 @@ public class PalestranteServiceTests
 
     private readonly Mock<IRepository<Palestrante>> _repo = new();
     private readonly Mock<IPalestrantesRepository> _palestrantes = new();
+    private readonly Mock<IEventoRepository> _eventos = new();
     private readonly Mock<UserManager<User>> _userManager;
     private readonly PalestranteService _sut;
 
@@ -32,7 +33,9 @@ public class PalestranteServiceTests
             .ReturnsAsync((string id) => new User { Id = id, UserName = "u" });
         _palestrantes.Setup(r => r.GetPalestranteByUserIdAsync(It.IsAny<string>()))
             .ReturnsAsync((Palestrante)null);
-        _sut = new PalestranteService(_repo.Object, _palestrantes.Object, _userManager.Object);
+        _eventos.Setup(e => e.GetAllEventosByIdAsync(It.IsAny<int>(), false))
+            .ReturnsAsync((int id, bool _) => new Evento { Id = id, UserId = OwnerUserId });
+        _sut = new PalestranteService(_repo.Object, _palestrantes.Object, _eventos.Object, _userManager.Object);
     }
 
     private static PalestranteDto Dto(string nome, string userId = OwnerUserId) =>
@@ -258,8 +261,8 @@ public class PalestranteServiceTests
 
         (await _sut.GetByNomeAsync("Ada")).Value.Should().ContainSingle(p => p.Nome == "Ada");
         (await _sut.GetByTemaAsync("Angular")).Value.Should().ContainSingle(p => p.Nome == "Ada");
-        (await _sut.AssociateAsync(2, 1)).IsError.Should().BeFalse();
-        (await _sut.DisassociateAsync(2, 1)).IsError.Should().BeFalse();
+        (await _sut.AssociateAsync(2, 1, OwnerUserId)).IsError.Should().BeFalse();
+        (await _sut.DisassociateAsync(2, 1, OwnerUserId)).IsError.Should().BeFalse();
     }
 
     [Fact]
@@ -279,8 +282,45 @@ public class PalestranteServiceTests
         _palestrantes.Setup(r => r.AssociateAsync(1, 2)).ReturnsAsync(false);
         _palestrantes.Setup(r => r.DisassociateAsync(1, 2)).ReturnsAsync(false);
 
-        (await _sut.AssociateAsync(1, 2)).IsError.Should().BeTrue();
-        (await _sut.DisassociateAsync(1, 2)).IsError.Should().BeTrue();
+        (await _sut.AssociateAsync(1, 2, OwnerUserId)).IsError.Should().BeTrue();
+        (await _sut.DisassociateAsync(1, 2, OwnerUserId)).IsError.Should().BeTrue();
+    }
+
+    [Fact]
+    public async Task Associate_And_Disassociate_Deny_Non_Owner()
+    {
+        var denied = await _sut.AssociateAsync(2, 1, "other-user");
+        denied.IsError.Should().BeTrue();
+        denied.FirstError.Code.Should().Be("Palestrante.Associate.Forbidden");
+
+        var deniedDis = await _sut.DisassociateAsync(2, 1, "other-user");
+        deniedDis.IsError.Should().BeTrue();
+        deniedDis.FirstError.Code.Should().Be("Palestrante.Disassociate.Forbidden");
+
+        _palestrantes.Verify(r => r.AssociateAsync(It.IsAny<int>(), It.IsAny<int>()), Times.Never);
+        _palestrantes.Verify(r => r.DisassociateAsync(It.IsAny<int>(), It.IsAny<int>()), Times.Never);
+    }
+
+    [Fact]
+    public async Task Associate_Returns_NotFound_When_Evento_Missing()
+    {
+        _eventos.Setup(e => e.GetAllEventosByIdAsync(404, false)).ReturnsAsync((Evento)null);
+
+        var result = await _sut.AssociateAsync(404, 1, OwnerUserId);
+
+        result.IsError.Should().BeTrue();
+        result.FirstError.Code.Should().Be("Palestrante.Associate.EventoNotFound");
+    }
+
+    [Fact]
+    public async Task Disassociate_Returns_NotFound_When_Evento_Missing()
+    {
+        _eventos.Setup(e => e.GetAllEventosByIdAsync(404, false)).ReturnsAsync((Evento)null);
+
+        var result = await _sut.DisassociateAsync(404, 1, OwnerUserId);
+
+        result.IsError.Should().BeTrue();
+        result.FirstError.Code.Should().Be("Palestrante.Disassociate.EventoNotFound");
     }
 
     [Fact]

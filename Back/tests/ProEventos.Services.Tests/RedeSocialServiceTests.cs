@@ -131,6 +131,54 @@ public class RedeSocialServiceTests
     }
 
     [Fact]
+    public async Task SaveByEventoIdAsync_Returns_NotFound_When_Evento_Missing()
+    {
+        _eventoRepo.Setup(r => r.GetAllEventosByIdAsync(404, false)).ReturnsAsync((Evento)null);
+
+        var result = await _sut.SaveByEventoIdAsync(404, new List<RedeSocialDto>
+        {
+            new() { Id = 0, Nome = "New", URL = "https://new" }
+        }, OwnerUserId);
+
+        result.IsError.Should().BeTrue();
+        result.FirstError.Code.Should().Be("RedeSocial.Evento.NotFound");
+    }
+
+    [Fact]
+    public async Task GetMineByUserIdAsync_Returns_Unauthorized_When_UserId_Blank()
+    {
+        var result = await _sut.GetMineByUserIdAsync("  ");
+
+        result.IsError.Should().BeTrue();
+        result.FirstError.Type.Should().Be(ErrorType.Unauthorized);
+    }
+
+    [Fact]
+    public async Task SaveMineByUserIdAsync_Returns_Forbidden_When_No_Profile()
+    {
+        _palestrantesRepo.Setup(r => r.GetPalestranteByUserIdAsync(OwnerUserId)).ReturnsAsync((Palestrante)null);
+
+        var result = await _sut.SaveMineByUserIdAsync(OwnerUserId, new List<RedeSocialDto>
+        {
+            new() { Id = 0, Nome = "X", URL = "https://x.com" }
+        });
+
+        result.IsError.Should().BeTrue();
+        result.FirstError.Type.Should().Be(ErrorType.Forbidden);
+    }
+
+    [Fact]
+    public async Task DeleteMineByUserIdAsync_Returns_Forbidden_When_No_Profile()
+    {
+        _palestrantesRepo.Setup(r => r.GetPalestranteByUserIdAsync(OwnerUserId)).ReturnsAsync((Palestrante)null);
+
+        var result = await _sut.DeleteMineByUserIdAsync(OwnerUserId, 1);
+
+        result.IsError.Should().BeTrue();
+        result.FirstError.Type.Should().Be(ErrorType.Forbidden);
+    }
+
+    [Fact]
     public async Task DeleteByEventoIdAsync_Deletes_When_Owner_Matches()
     {
         SetupEventoOwner(3);

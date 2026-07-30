@@ -72,9 +72,13 @@ namespace ProEventos.Persistence.Repository
             int page,
             int pageSize,
             string q = null,
-            bool includePalestrante = false)
+            bool includePalestrante = false,
+            string userId = null)
         {
             IQueryable<Evento> query = _eventoContext.AsQueryable();
+
+            if (!string.IsNullOrWhiteSpace(userId))
+                query = query.Where(e => e.UserId == userId);
 
             if (!string.IsNullOrWhiteSpace(q))
                 query = query.Where(new EventoGlobalSearchSpecification(q));

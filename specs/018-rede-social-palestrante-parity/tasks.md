@@ -29,6 +29,9 @@
 
 - [x] T017–T020 Profile redes editor on 3 fronts + tests
 
-## Phase 4 — Optional (GAP-05)
+## Phase 5 — Evento derived ownership + meus (2026-07-30)
 
-- [ ] T021 List filter by Funcao.Palestrante — deferred
+- [x] T022 Lote PUT/DELETE require event owner
+- [x] T023 Associate/Disassociate require event owner
+- [x] T024 `GET /eventos/meus` paginated + auth
+- [x] T025 API/service/persistence tests

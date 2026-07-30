@@ -104,10 +104,10 @@ public class EndpointBranchCoverageTests
         public Task<ErrorOr<Success>> AddLote(int eventoId, LoteDto model) =>
             Task.FromResult<ErrorOr<Success>>(Result.Success);
 
-        public Task<ErrorOr<List<LoteDto>>> SaveLotes(int eventoId, List<LoteDto> models) =>
+        public Task<ErrorOr<List<LoteDto>>> SaveLotes(int eventoId, List<LoteDto> models, string userId) =>
             Task.FromResult<ErrorOr<List<LoteDto>>>((List<LoteDto>)null);
 
-        public Task<ErrorOr<Success>> DeleteLote(int eventoId, int loteId) =>
+        public Task<ErrorOr<Success>> DeleteLote(int eventoId, int loteId, string userId) =>
             Task.FromResult<ErrorOr<Success>>(Result.Success);
 
         public Task<ErrorOr<List<LoteDto>>> GetLotesByEventoIdAsync(int eventoId) =>

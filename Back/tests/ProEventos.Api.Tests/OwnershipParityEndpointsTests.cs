@@ -23,6 +23,16 @@ public class OwnershipParityEndpointsTests
         ImagemURL = "foto.jpg"
     };
 
+    private static LoteDto SampleLote(string nome = "Lote A") => new()
+    {
+        Id = 0,
+        Nome = nome,
+        Preco = 50,
+        Quantidade = 10,
+        DataIncio = DateTime.UtcNow.Date,
+        DataFim = DateTime.UtcNow.Date.AddDays(7)
+    };
+
     [Fact]
     public async Task Evento_Mutations_Deny_Non_Owner()
     {
@@ -50,6 +60,96 @@ public class OwnershipParityEndpointsTests
         (await owner.PutAsJsonAsync($"/redes-sociais/evento/{evento.Id}",
                 new List<RedeSocialDto> { new() { Id = 0, Nome = "IG", URL = "https://ig.com" } }))
             .StatusCode.Should().Be(HttpStatusCode.OK);
+    }
+
+    [Fact]
+    public async Task Lote_Mutations_Deny_Non_Owner()
+    {
+        using var factory = new CustomWebApplicationFactory();
+        var owner = factory.CreateClient();
+        await AuthTestHelper.AuthenticateAsync(owner, "loteown");
+
+        var create = await owner.PostAsJsonAsync("/eventos", SampleEvento("Lote Own"));
+        create.StatusCode.Should().Be(HttpStatusCode.OK);
+        var evento = await create.Content.ReadFromJsonAsync<EventoDto>(JsonOptions);
+        evento.Should().NotBeNull();
+
+        var saveOwner = await owner.PutAsJsonAsync($"/lotes/{evento!.Id}",
+            new List<LoteDto> { SampleLote() });
+        saveOwner.StatusCode.Should().Be(HttpStatusCode.OK);
+        var lotes = await saveOwner.Content.ReadFromJsonAsync<List<LoteDto>>(JsonOptions);
+        var loteId = lotes!.Single().Id;
+
+        var other = factory.CreateClient();
+        await AuthTestHelper.AuthenticateAsync(other, "loteoth");
+
+        (await other.PutAsJsonAsync($"/lotes/{evento.Id}",
+                new List<LoteDto> { SampleLote("Hacked") }))
+            .StatusCode.Should().Be(HttpStatusCode.Forbidden);
+        (await other.DeleteAsync($"/lotes/{evento.Id}/{loteId}"))
+            .StatusCode.Should().Be(HttpStatusCode.Forbidden);
+
+        (await owner.DeleteAsync($"/lotes/{evento.Id}/{loteId}"))
+            .StatusCode.Should().Be(HttpStatusCode.OK);
+    }
+
+    [Fact]
+    public async Task Associate_Deny_Non_Owner()
+    {
+        using var factory = new CustomWebApplicationFactory();
+        var owner = factory.CreateClient();
+        await AuthTestHelper.AuthenticateAsync(owner, "ascown");
+
+        var create = await owner.PostAsJsonAsync("/eventos", SampleEvento("Assoc Own"));
+        create.StatusCode.Should().Be(HttpStatusCode.OK);
+        var evento = await create.Content.ReadFromJsonAsync<EventoDto>(JsonOptions);
+
+        var speaker = factory.CreateClient();
+        var auth = await AuthTestHelper.RegisterPalestranteAsync(speaker, "ascsp");
+        speaker.DefaultRequestHeaders.Authorization =
+            new AuthenticationHeaderValue("Bearer", auth.Token);
+        var me = await (await speaker.GetAsync("/palestrantes/me"))
+            .Content.ReadFromJsonAsync<PalestranteDto>(JsonOptions);
+
+        var other = factory.CreateClient();
+        await AuthTestHelper.AuthenticateAsync(other, "ascoth");
+
+        (await other.PutAsync($"/eventos/{evento!.Id}/palestrantes/{me!.Id}", null))
+            .StatusCode.Should().Be(HttpStatusCode.Forbidden);
+        (await other.DeleteAsync($"/eventos/{evento.Id}/palestrantes/{me.Id}"))
+            .StatusCode.Should().Be(HttpStatusCode.Forbidden);
+
+        (await owner.PutAsync($"/eventos/{evento.Id}/palestrantes/{me.Id}", null))
+            .StatusCode.Should().Be(HttpStatusCode.OK);
+        (await owner.DeleteAsync($"/eventos/{evento.Id}/palestrantes/{me.Id}"))
+            .StatusCode.Should().Be(HttpStatusCode.OK);
+    }
+
+    [Fact]
+    public async Task Eventos_Meus_Returns_Only_Caller_Events()
+    {
+        using var factory = new CustomWebApplicationFactory();
+        var ownerA = factory.CreateClient();
+        await AuthTestHelper.AuthenticateAsync(ownerA, "meusa");
+        var createA = await ownerA.PostAsJsonAsync("/eventos", SampleEvento("Meus A"));
+        createA.StatusCode.Should().Be(HttpStatusCode.OK);
+        var eventoA = await createA.Content.ReadFromJsonAsync<EventoDto>(JsonOptions);
+
+        var ownerB = factory.CreateClient();
+        await AuthTestHelper.AuthenticateAsync(ownerB, "meusb");
+        var createB = await ownerB.PostAsJsonAsync("/eventos", SampleEvento("Meus B"));
+        createB.StatusCode.Should().Be(HttpStatusCode.OK);
+
+        var meus = await ownerA.GetAsync("/eventos/meus?page=1&pageSize=10");
+        meus.StatusCode.Should().Be(HttpStatusCode.OK);
+        var items = await meus.Content.ReadFromJsonAsync<List<EventoDto>>(JsonOptions);
+        items.Should().NotBeNull();
+        items!.Should().Contain(e => e.Id == eventoA!.Id);
+        items.Should().OnlyContain(e => e.Tema == "Meus A" || e.UserId == eventoA.UserId);
+        items.Should().NotContain(e => e.Tema == "Meus B");
+
+        var anon = factory.CreateClient();
+        (await anon.GetAsync("/eventos/meus")).StatusCode.Should().Be(HttpStatusCode.Unauthorized);
     }
 
     [Fact]

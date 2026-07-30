@@ -5,6 +5,7 @@ using ProEventos.Domain.Exceptions;
 using ProEventos.Domain.Interfaces.Repositories;
 using ProEventos.Services.Dtos;
 using ProEventos.Services.Errors;
+using ProEventos.Services.Helpers;
 using ProEventos.Services.Interfaces;
 using System.Collections.Generic;
 using System.Linq;
@@ -15,10 +16,12 @@ namespace ProEventos.Services.Services
     public class LotesServices : ILotesService
     {
         private readonly ILotesRepository _lotesRepository;
+        private readonly IEventoRepository _eventoRepository;
 
-        public LotesServices(ILotesRepository lotesRepository)
+        public LotesServices(ILotesRepository lotesRepository, IEventoRepository eventoRepository)
         {
             _lotesRepository = lotesRepository;
+            _eventoRepository = eventoRepository;
         }
 
         public async Task<ErrorOr<Success>> AddLote(int eventoId, LoteDto model)
@@ -42,8 +45,12 @@ namespace ProEventos.Services.Services
             }
         }
 
-        public async Task<ErrorOr<Success>> DeleteLote(int eventoId, int loteId)
+        public async Task<ErrorOr<Success>> DeleteLote(int eventoId, int loteId, string userId)
         {
+            var ownership = await EnsureEventoOwnerAsync(eventoId, userId);
+            if (ownership.IsError)
+                return ownership.Errors;
+
             try
             {
                 var lote = await _lotesRepository.GetLoteByIdsAsync(eventoId, loteId);
@@ -73,8 +80,12 @@ namespace ProEventos.Services.Services
             return lotes?.Adapt<List<LoteDto>>() ?? new List<LoteDto>();
         }
 
-        public async Task<ErrorOr<List<LoteDto>>> SaveLotes(int eventoId, List<LoteDto> models)
+        public async Task<ErrorOr<List<LoteDto>>> SaveLotes(int eventoId, List<LoteDto> models, string userId)
         {
+            var ownership = await EnsureEventoOwnerAsync(eventoId, userId);
+            if (ownership.IsError)
+                return ownership.Errors;
+
             foreach (var model in models)
             {
                 var validation = ValidateLote(model);
@@ -113,6 +124,18 @@ namespace ProEventos.Services.Services
             {
                 return ex.ToError();
             }
+        }
+
+        private async Task<ErrorOr<Success>> EnsureEventoOwnerAsync(int eventoId, string userId)
+        {
+            var evento = await _eventoRepository.GetAllEventosByIdAsync(eventoId, false);
+            if (evento == null)
+                return Error.NotFound("Lote.Evento.NotFound", "Evento não encontrado");
+
+            if (!ResourceOwnership.IsOwner(evento.UserId, userId))
+                return Error.Forbidden("Lote.Evento.Forbidden", "Você não é o dono deste evento.");
+
+            return Result.Success;
         }
 
         private static ErrorOr<Success> ValidateLote(LoteDto model)

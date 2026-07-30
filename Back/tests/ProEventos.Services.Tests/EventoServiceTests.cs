@@ -299,7 +299,7 @@ public class EventoServiceTests
     [Fact]
     public async Task GetPagedEventosAsync_Returns_Envelope()
     {
-        _eventoRepo.Setup(r => r.GetPagedEventosAsync(1, 10, null, false))
+        _eventoRepo.Setup(r => r.GetPagedEventosAsync(1, 10, null, false, null))
             .ReturnsAsync((new List<Evento> { new() { Id = 1, Tema = "A", Telefone = "11", Email = "a@b.com", QtdPessoas = 1 } }, 1));
 
         var result = await _sut.GetPagedEventosAsync(1, 10);
@@ -312,7 +312,7 @@ public class EventoServiceTests
     [Fact]
     public async Task GetPagedEventosAsync_Requeries_When_Page_Beyond_Last()
     {
-        _eventoRepo.SetupSequence(r => r.GetPagedEventosAsync(It.IsAny<int>(), 10, null, false))
+        _eventoRepo.SetupSequence(r => r.GetPagedEventosAsync(It.IsAny<int>(), 10, null, false, null))
             .ReturnsAsync((new List<Evento>(), 5))
             .ReturnsAsync((new List<Evento> { new() { Id = 5, Tema = "Last", Telefone = "11", Email = "a@b.com", QtdPessoas = 1 } }, 5));
 
@@ -321,7 +321,35 @@ public class EventoServiceTests
         result.IsError.Should().BeFalse();
         result.Value.Page.Should().Be(1);
         result.Value.Items.Should().ContainSingle(e => e.Tema == "Last");
-        _eventoRepo.Verify(r => r.GetPagedEventosAsync(It.IsAny<int>(), 10, null, false), Times.Exactly(2));
+        _eventoRepo.Verify(r => r.GetPagedEventosAsync(It.IsAny<int>(), 10, null, false, null), Times.Exactly(2));
+    }
+
+    [Fact]
+    public async Task GetPagedEventosAsync_Filters_By_UserId_And_Handles_Null_Items()
+    {
+        _eventoRepo.Setup(r => r.GetPagedEventosAsync(1, 10, "q", false, OwnerUserId))
+            .ReturnsAsync((null, 0));
+
+        var result = await _sut.GetPagedEventosAsync(1, 10, "q", false, OwnerUserId);
+
+        result.IsError.Should().BeFalse();
+        result.Value.Items.Should().BeEmpty();
+        result.Value.TotalCount.Should().Be(0);
+        _eventoRepo.Verify(r => r.GetPagedEventosAsync(1, 10, "q", false, OwnerUserId), Times.Once);
+    }
+
+    [Fact]
+    public async Task UpdateEvento_Maps_AppException()
+    {
+        _eventoRepo.Setup(r => r.GetAllEventosByIdAsync(5, false))
+            .ReturnsAsync(new Evento { Id = 5, UserId = OwnerUserId, Tema = "X", Telefone = "11", Email = "a@b.com", QtdPessoas = 1 });
+        _repo.Setup(r => r.UpdateAsync(It.IsAny<Evento>()))
+            .ThrowsAsync(new ConflictException("BaseRepository.UpdateAsync", "conflito"));
+
+        var result = await _sut.UpdateEvento(5, new EventoDto { Tema = "Y", Telefone = "11", Email = "a@b.com", QtdPessoas = 1 }, OwnerUserId);
+
+        result.IsError.Should().BeTrue();
+        result.FirstError.Type.Should().Be(ErrorType.Conflict);
     }
 
     [Fact]

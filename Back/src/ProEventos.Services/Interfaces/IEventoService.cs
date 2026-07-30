@@ -18,7 +18,8 @@ namespace ProEventos.Interfaces
             int? page,
             int? pageSize,
             string q = null,
-            bool includePalestrante = false);
+            bool includePalestrante = false,
+            string userId = null);
         Task<ErrorOr<EventoDto>> GetAllEventosByIdAsync(int eventoId, bool includePalestrante);
     }
 }
