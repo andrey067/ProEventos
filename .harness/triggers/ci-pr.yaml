@@ -1,14 +1,13 @@
-# Trigger: run ProEventos CI on Harness Code pull requests targeting main.
-# After importing the CI pipeline, import this trigger (or recreate in UI)
-# and set org/project/pipeline identifiers to match.
+# Reference only — Harness Code configures triggers in the UI (see .harness/README.md).
+# Enterprise import stub: PR → main → pipeline ci (quality + e2e_all_fronts).
 trigger:
-  name: CI on PR
+  name: pr
   identifier: proeventos_ci_pr
   enabled: true
-  description: Mirrors GitHub Actions on: pull_request
+  description: "UI: PR Created + Updated + Reopened; target main"
   orgIdentifier: PLACEHOLDER_ORG
   projectIdentifier: PLACEHOLDER_PROJECT
-  pipelineIdentifier: proeventos_ci
+  pipelineIdentifier: ci
   stagesToExecute: []
   source:
     type: Webhook
@@ -32,7 +31,7 @@ trigger:
           headerConditions: []
   inputYaml: |
     pipeline:
-      identifier: proeventos_ci
+      identifier: ci
       properties:
         ci:
           codebase:

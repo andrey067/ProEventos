@@ -52,6 +52,69 @@ There is **no** separate `.harness/e2e.yaml`: E2E runs as the last step
 Edit the root file and copy into `pipelines/` so both layouts stay in sync.
 Harness Code binds the UI pipeline to **`.harness/ci.yaml`**.
 
+Checklist curto (pipeline + triggers na UI): [`.harness/README.md`](../.harness/README.md).
+
+## Pipeline + triggers (Harness Code UI)
+
+### Cadastrar a pipeline
+
+| Campo | Valor |
+|-------|--------|
+| Name / Identifier | `ci` |
+| YAML path | `.harness/ci.yaml` |
+
+Não cadastre `e2e` separada — o step `e2e_all_fronts` já roda no fim de `ci`.
+
+### Fluxo profissional
+
+```text
+feature/* ──PR──► main
+              │
+              └─ trigger "pr" → pipeline ci (unit/coverage + E2E 3 fronts)
+                    │
+              merge / push main
+                    │
+                    └─ trigger "main" → pipeline ci de novo
+```
+
+### Trigger A — `pr`
+
+Na tela **Triggers → Event Categories** (mesma UI do trigger `default`):
+
+| Event | Enabled |
+|-------|---------|
+| Branch Created | no |
+| Branch Updated | no |
+| Pull Request Created | **yes** |
+| Pull Request Updated | **yes** |
+| Pull Request Reopened | **yes** |
+| Pull Request Closed | no |
+| Pull Request Merged | no |
+| Tag Created / Updated | no |
+
+Disable trigger: **unchecked**. Prefer rename `default` → `pr`.  
+Se houver filtro: **target branch = `main`**.
+
+### Trigger B — `main`
+
+**+ New Trigger** with:
+
+| Event | Enabled |
+|-------|---------|
+| Branch Created | no |
+| Branch Updated | **yes** (somente se puder filtrar branch `main`) |
+| Pull Request Created / Updated / Reopened | no |
+| Pull Request Closed | no |
+| Pull Request Merged | **yes** (alternativa segura sem filtro de branch) |
+| Tag Created / Updated | no |
+
+Sem filtro de branch na UI: **não** ligue Branch Updated sozinho (dispara em toda
+feature). Use **Pull Request Merged** e/ou Branch Updated **só** com filtro `main`.
+
+### Branch protection
+
+Em `main`, exija o check **`ci`** antes do merge.
+
 ## Clone DNS failure (`Could not resolve host: harness.homelab.local`)
 
 ### Root cause

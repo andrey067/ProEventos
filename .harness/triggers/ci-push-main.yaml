@@ -1,12 +1,13 @@
-# Trigger: run ProEventos CI on push to main (Harness Code).
+# Reference only — Harness Code configures triggers in the UI (see .harness/README.md).
+# Enterprise import stub: push/merge to main → pipeline ci.
 trigger:
-  name: CI on push main
-  identifier: proeventos_ci_push_main
+  name: main
+  identifier: proeventos_ci_main
   enabled: true
-  description: Mirrors GitHub Actions on: push branches [main]
+  description: "UI: Branch Updated (main only) and/or Pull Request Merged"
   orgIdentifier: PLACEHOLDER_ORG
   projectIdentifier: PLACEHOLDER_PROJECT
-  pipelineIdentifier: proeventos_ci
+  pipelineIdentifier: ci
   stagesToExecute: []
   source:
     type: Webhook
@@ -26,7 +27,7 @@ trigger:
           headerConditions: []
   inputYaml: |
     pipeline:
-      identifier: proeventos_ci
+      identifier: ci
       properties:
         ci:
           codebase:
