@@ -2,8 +2,35 @@
 
 GitHub already runs checks via `.github/workflows/ci.yaml` and `e2e.yaml`
 (extension **`.yaml`**, not `.yml`). Harness Code does **not** execute those
-GitHub Actions files. Use the Harness pipeline YAML under `.harness/` with
-Harness CI + triggers so PRs on `harness.homelab.local` get the same gates.
+GitHub Actions files. Put pipelines under `.harness/` using the **Harness Open
+Source / Harness Code native** schema so PR checks auto-discover and run.
+
+## Schema (critical)
+
+Harness Code expects:
+
+```yaml
+version: 1
+kind: pipeline
+spec:
+  stages:
+    - name: …
+      type: ci
+      spec:
+        steps:
+          - name: …
+            type: run
+            spec:
+              container: alpine
+              script: …
+```
+
+Do **not** use Enterprise Harness CI YAML (`pipeline:`, `orgIdentifier`,
+`PLACEHOLDER_*`, `account.harnessImage`, nested `stage.spec.execution`). That
+format fails to parse on Harness Code and the check shows **Errored in 0s**
+without starting.
+
+Reference: [Harness Open Source pipelines](https://developer.harness.io/docs/open-source/pipelines/steps/run/).
 
 ## Canonical paths (`.yaml`)
 
@@ -11,51 +38,19 @@ Harness CI + triggers so PRs on `harness.homelab.local` get the same gates.
 |------|---------|
 | `.harness/ci.yaml` | Backend Coverlet + Vue/React/Angular coverage + baseline compare |
 | `.harness/e2e.yaml` | Playwright Vue smoke (API + Vue) |
-| `.harness/pipelines/ci.yaml` | Same CI pipeline (duplicate for Git Experience layouts) |
+| `.harness/pipelines/ci.yaml` | Same CI pipeline (duplicate for layouts that expect `pipelines/`) |
 | `.harness/pipelines/e2e.yaml` | Same E2E pipeline |
-| `.harness/triggers/ci-pr.yaml` | Run CI on PR → `main` |
-| `.harness/triggers/ci-push-main.yaml` | Run CI on push to `main` |
-| `.harness/triggers/e2e-pr.yaml` | Run E2E on PR → `main` |
+| `.harness/triggers/*.yaml` | Legacy Enterprise trigger stubs (optional; not used by native Code runner) |
 
-Prefer importing **`.harness/ci.yaml`** and **`.harness/e2e.yaml`**.
-
-## One-time setup (UI)
-
-1. **Connector**  
-   Create a Harness Code connector that can clone `Homelab/ProEventos`.
-
-2. **Import pipelines**  
-   - Pipelines → Create Pipeline → YAML  
-   - Paste `.harness/ci.yaml` (then `.harness/e2e.yaml`)  
-   - Replace:
-     - `PLACEHOLDER_ORG`
-     - `PLACEHOLDER_PROJECT`
-     - `PLACEHOLDER_CODE_CONNECTOR`  
-   - If you do not use Harness Cloud runners, change `runtime` to your
-     Kubernetes/Docker delegate runtime.
-
-3. **Import triggers**  
-   - Open each pipeline → Triggers → New Trigger → YAML  
-   - Paste the matching file under `.harness/triggers/`  
-   - Align `orgIdentifier`, `projectIdentifier`, `pipelineIdentifier`, `repoName`.
-
-4. **Required checks (optional but recommended)**  
-   In the Code repo (or project) branch protection / merge checks, require
-   `proeventos_ci` (and optionally `proeventos_e2e`) before merge.
-
-5. **Verify**  
-   Open or push to a PR against `main` on Harness Code and confirm the pipeline
-   starts and reports status on the PR.
+Harness Code auto-discovers **`.harness/ci.yaml`** and **`.harness/e2e.yaml`**.
 
 ## Runtime notes
 
-- CI steps share the workspace in one stage so Cobertura + Vitest summaries
-  remain on disk for `compare-coverage.mjs`.
-- Image refs use `account.harnessImage` + public images (`dotnet/sdk:10.0`,
-  `node:22-bookworm`, Playwright). Point `connectorRef` at your Docker Hub /
-  mirror connector if the default is unavailable.
-- Homelab without Harness Cloud: switch `runtime.type` to `Kubernetes` (or
-  Docker) and set your delegate infra.
+- Workspace is shared across steps in a stage (coverage files from backend/front
+  steps remain available for `compare-coverage.mjs`).
+- Images are public (`dotnet/sdk:10.0`, `node:22-bookworm`, Playwright jammy).
+- E2E installs .NET 10 via `dotnet-install.sh` inside the Playwright image, starts
+  API `:5050` and Vue `:5173`, then runs `playwright test --project=vue`.
 
 ## Parity with GitHub
 

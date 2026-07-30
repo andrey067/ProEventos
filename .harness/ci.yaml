@@ -1,117 +1,79 @@
-# Harness CI — mirrors .github/workflows/ci.yaml
-# Import in Harness UI (Pipelines → Create from YAML) or sync via Git Experience.
-# Replace PLACEHOLDER_* values (or leave <+input> and set at import time).
-pipeline:
-  name: ProEventos CI
-  identifier: proeventos_ci
-  projectIdentifier: PLACEHOLDER_PROJECT # e.g. Homelab
-  orgIdentifier: PLACEHOLDER_ORG # e.g. default
-  tags:
-    repo: ProEventos
-    kind: ci
-  properties:
-    ci:
-      codebase:
-        connectorRef: PLACEHOLDER_CODE_CONNECTOR # Harness Code connector for Homelab/ProEventos
-        repoName: Homelab/ProEventos
-        build: <+input>
+# Harness Code CI — mirrors .github/workflows/ci.yaml
+# Native Harness Open Source / Harness Code schema (version/kind).
+# Do NOT use Enterprise CI YAML here (pipeline:/PLACEHOLDER_*/account.harnessImage);
+# that format fails to parse and the check errors in 0s.
+version: 1
+kind: pipeline
+spec:
   stages:
-    - stage:
-        name: Quality Gate
-        identifier: quality_gate
-        description: Backend Coverlet + three front Vitest coverage + baseline compare
-        type: CI
-        spec:
-          cloneCodebase: true
-          platform:
-            os: Linux
-            arch: Amd64
-          # Homelab: prefer Kubernetes/Docker runner if Cloud is unavailable.
-          runtime:
-            type: Cloud
-            spec: {}
-          execution:
-            steps:
-              - step:
-                  type: Run
-                  name: Backend tests (Coverlet 90%)
-                  identifier: backend_tests
-                  spec:
-                    connectorRef: account.harnessImage
-                    image: mcr.microsoft.com/dotnet/sdk:10.0
-                    shell: Sh
-                    command: |-
-                      set -euo pipefail
-                      dotnet test Back/src/ProEventos.sln --configuration Release
-                  failureStrategies: []
+    - name: quality_gate
+      type: ci
+      spec:
+        steps:
+          - name: backend_tests
+            type: run
+            spec:
+              container: mcr.microsoft.com/dotnet/sdk:10.0
+              shell: sh
+              script: |-
+                set -euo pipefail
+                dotnet test Back/src/ProEventos.sln --configuration Release
 
-              - step:
-                  type: Run
-                  name: Front Vue coverage
-                  identifier: front_vue
-                  spec:
-                    connectorRef: account.harnessImage
-                    image: node:22-bookworm
-                    shell: Sh
-                    command: |-
-                      set -euo pipefail
-                      corepack enable
-                      corepack prepare pnpm@9 --activate
-                      cd Front/Front-Vue
-                      pnpm install --frozen-lockfile
-                      pnpm test:coverage
+          - name: front_vue
+            type: run
+            spec:
+              container: node:22-bookworm
+              shell: sh
+              script: |-
+                set -euo pipefail
+                corepack enable
+                corepack prepare pnpm@9 --activate
+                cd Front/Front-Vue
+                pnpm install --frozen-lockfile
+                pnpm test:coverage
 
-              - step:
-                  type: Run
-                  name: Front React coverage
-                  identifier: front_react
-                  spec:
-                    connectorRef: account.harnessImage
-                    image: node:22-bookworm
-                    shell: Sh
-                    command: |-
-                      set -euo pipefail
-                      corepack enable
-                      corepack prepare pnpm@9 --activate
-                      cd Front/Front-React
-                      pnpm install --frozen-lockfile
-                      pnpm test:coverage
+          - name: front_react
+            type: run
+            spec:
+              container: node:22-bookworm
+              shell: sh
+              script: |-
+                set -euo pipefail
+                corepack enable
+                corepack prepare pnpm@9 --activate
+                cd Front/Front-React
+                pnpm install --frozen-lockfile
+                pnpm test:coverage
 
-              - step:
-                  type: Run
-                  name: Front Angular coverage
-                  identifier: front_angular
-                  spec:
-                    connectorRef: account.harnessImage
-                    image: node:22-bookworm
-                    shell: Sh
-                    command: |-
-                      set -euo pipefail
-                      corepack enable
-                      corepack prepare pnpm@9 --activate
-                      cd Front/Front-Angular
-                      pnpm install --frozen-lockfile
-                      pnpm test:coverage
+          - name: front_angular
+            type: run
+            spec:
+              container: node:22-bookworm
+              shell: sh
+              script: |-
+                set -euo pipefail
+                corepack enable
+                corepack prepare pnpm@9 --activate
+                cd Front/Front-Angular
+                pnpm install --frozen-lockfile
+                pnpm test:coverage
 
-              - step:
-                  type: Run
-                  name: Compare coverage baselines
-                  identifier: compare_baselines
-                  spec:
-                    connectorRef: account.harnessImage
-                    image: node:22-bookworm
-                    shell: Sh
-                    command: |-
-                      set -euo pipefail
-                      SVC=$(find Back/tests -path '*Services.Tests*' -name coverage.cobertura.xml | head -1)
-                      PERS=$(find Back/tests -path '*Persistence.Tests*' -name coverage.cobertura.xml | head -1)
-                      API=$(find Back/tests -path '*Api.Tests*' -name coverage.cobertura.xml | head -1)
-                      test -n "$SVC" && test -n "$PERS" && test -n "$API"
-                      node quality/compare-coverage.mjs \
-                        --baselines quality/coverage-baselines.json \
-                        --services "$SVC" \
-                        --persistence "$PERS" \
-                        --api "$API" \
-                        --front-vue Front/Front-Vue/coverage/coverage-summary.json \
-                        --front-react Front/Front-React/coverage/coverage-summary.json \
-                        --front-angular Front/Front-Angular/coverage/coverage-summary.json
+          - name: compare_baselines
+            type: run
+            spec:
+              container: node:22-bookworm
+              shell: sh
+              script: |-
+                set -euo pipefail
+                SVC=$(find Back/tests -path '*Services.Tests*' -name coverage.cobertura.xml | head -1)
+                PERS=$(find Back/tests -path '*Persistence.Tests*' -name coverage.cobertura.xml | head -1)
+                API=$(find Back/tests -path '*Api.Tests*' -name coverage.cobertura.xml | head -1)
+                test -n "$SVC" && test -n "$PERS" && test -n "$API"
+                node quality/compare-coverage.mjs \
+                  --baselines quality/coverage-baselines.json \
+                  --services "$SVC" \
+                  --persistence "$PERS" \
+                  --api "$API" \
+                  --front-vue Front/Front-Vue/coverage/coverage-summary.json \
+                  --front-react Front/Front-React/coverage/coverage-summary.json \
+                  --front-angular Front/Front-Angular/coverage/coverage-summary.json
