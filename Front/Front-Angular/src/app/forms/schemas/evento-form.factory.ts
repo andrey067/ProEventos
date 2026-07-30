@@ -8,17 +8,24 @@ export function createEventoForm(fb: FormBuilder): FormGroup {
   return fb.group(
     {
       id: [0],
-      tema: ['', [trimmedMinLength(1)]],
-      local: ['', [trimmedMinLength(1)]],
+      tema: ['', [trimmedMinLength(4), Validators.maxLength(50)]],
+      // Preview two-way fields: value updates on change; errors shown after blur (touched).
+      local: ['', { validators: [trimmedMinLength(1)], updateOn: 'change' }],
       dataEvento: ['', { validators: [Validators.required], updateOn: 'change' }],
-      qtdPessoas: [1, [Validators.min(1)]],
-      telefone: ['', [trimmedMinLength(1)]],
-      email: ['', [Validators.required, Validators.email]],
+      qtdPessoas: [1, [Validators.min(1), Validators.max(120000)]],
+      telefone: ['', { validators: [trimmedMinLength(1)], updateOn: 'change' }],
+      email: [
+        '',
+        {
+          validators: [Validators.required, Validators.email],
+          updateOn: 'change',
+        },
+      ],
       imagemURL: [''],
       lotes: fb.array<FormGroup>([]),
       redes: fb.array<FormGroup>([]),
     },
-    { updateOn: 'submit' },
+    { updateOn: 'blur' },
   );
 }
 
@@ -47,8 +54,8 @@ export function createLoteGroup(fb: FormBuilder, eventoId = 0): FormGroup {
 export function createRedeGroup(fb: FormBuilder, eventoId = 0): FormGroup {
   return fb.group({
     id: [0],
-    nome: [''],
-    url: [''],
+    nome: ['', [trimmedMinLength(1)]],
+    url: ['', [trimmedMinLength(1)]],
     eventoId: [eventoId],
   });
 }

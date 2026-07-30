@@ -1,28 +1,44 @@
-<section class="flex flex-col gap-6">
+<section class="flex min-w-0 flex-col gap-6">
   <div class="flex flex-wrap items-center justify-between gap-4">
     <div>
       <h1 class="text-2xl font-semibold tracking-tight">Eventos</h1>
-      <p class="mt-1 text-sm text-muted">Lista, busca por tema e gerenciamento básico.</p>
+      <p class="mt-1 text-sm text-muted">Lista, busca e gerenciamento básico.</p>
     </div>
-    <a
-      routerLink="/eventos/new"
-      class="inline-flex items-center justify-center rounded-[length:var(--radius-control)] bg-accent px-4 py-2 text-sm font-medium text-white transition-transform hover:bg-accent-dark active:scale-[0.98]"
-    >
-      Novo evento
-    </a>
+    @if (canWrite) {
+      <a
+        routerLink="/eventos/new"
+        class="inline-flex items-center justify-center rounded-[length:var(--radius-control)] bg-accent px-4 py-2 text-sm font-medium text-white transition-transform hover:bg-accent-dark active:scale-[0.98]"
+      >
+        Novo evento
+      </a>
+    }
   </div>
+
+  @if (!canWrite) {
+    <p
+      class="rounded-[length:var(--radius-control)] border border-line bg-surface px-4 py-3 text-sm text-muted"
+    >
+      @if (isAuthenticated) {
+        Seu perfil tem acesso somente leitura. Cadastro e exclusão exigem perfil de organizador.
+      } @else {
+        Faça
+        <a routerLink="/login" class="font-medium text-accent-dark hover:underline">login</a>
+        com perfil de organizador para gerenciar eventos.
+      }
+    </p>
+  }
 
   <form
     class="flex flex-wrap items-end gap-3 rounded-[length:var(--radius-control)] border border-line bg-panel p-4"
     [formGroup]="searchForm"
     (ngSubmit)="search()"
   >
-    <label class="flex min-w-60 flex-1 flex-col gap-2 text-sm">
-      <span class="font-medium text-ink">Buscar por tema</span>
+    <label class="flex w-full min-w-0 flex-1 flex-col gap-2 text-sm">
+      <span class="font-medium text-ink">Buscar</span>
       <input
         class="w-full rounded-[length:var(--radius-control)] border border-line bg-panel px-3 py-2 text-sm outline-none focus:border-accent focus:ring-2 focus:ring-accent/20"
-        formControlName="tema"
-        placeholder="Digite parte do tema"
+        formControlName="q"
+        placeholder="Pesquisar eventos"
       />
     </label>
     <button
@@ -40,12 +56,16 @@
     </button>
   </form>
 
+  @if (success) {
+    <p
+      class="rounded-[length:var(--radius-control)] border border-line bg-surface px-4 py-3 text-sm text-accent-dark"
+    >
+      {{ success }}
+    </p>
+  }
+
   @if (loading) {
-    <div class="space-y-2" aria-busy="true">
-      <div class="h-10 animate-pulse rounded bg-line/60"></div>
-      <div class="h-10 animate-pulse rounded bg-line/40"></div>
-      <div class="h-10 animate-pulse rounded bg-line/60"></div>
-    </div>
+    <app-loading-spinner [active]="true" variant="page" />
   } @else if (error) {
     <p
       class="rounded-[length:var(--radius-control)] border border-danger-border bg-danger-soft px-4 py-3 text-sm text-danger"
@@ -53,65 +73,57 @@
       {{ error }}
     </p>
   } @else {
-    <div class="flex flex-wrap items-center justify-between gap-3">
-      <button
-        type="button"
-        class="inline-flex items-center justify-center rounded-[length:var(--radius-control)] border border-line bg-panel px-3 py-1.5 text-sm font-medium text-ink hover:bg-surface"
-        (click)="toggleShowImages()"
-      >
-        {{ showImages ? 'Ocultar imagens' : 'Mostrar imagens' }}
-      </button>
-
-      @if (eventos.length > 0) {
-        <div class="flex flex-wrap items-center gap-3 text-sm">
-          <label class="flex items-center gap-2">
-            <span class="text-muted">Itens por página</span>
-            <select
-              class="rounded-[length:var(--radius-control)] border border-line bg-panel px-2 py-1 outline-none focus:border-accent"
-              [value]="pageSize"
-              (change)="onPageSizeChange(+$any($event.target).value)"
-            >
-              @for (size of pageSizes; track size) {
-                <option [value]="size">{{ size }}</option>
-              }
-            </select>
-          </label>
-          @if (totalPages > 0) {
-            <span class="text-muted">Página {{ page }} de {{ totalPages }}</span>
-            <div class="flex gap-2">
-              <button
-                type="button"
-                class="inline-flex items-center justify-center rounded-[length:var(--radius-control)] border border-line bg-panel px-2 py-1 text-sm hover:bg-surface disabled:cursor-not-allowed disabled:opacity-50"
-                [disabled]="page <= 1"
-                (click)="prevPage()"
-              >
-                Anterior
-              </button>
-              <button
-                type="button"
-                class="inline-flex items-center justify-center rounded-[length:var(--radius-control)] border border-line bg-panel px-2 py-1 text-sm hover:bg-surface disabled:cursor-not-allowed disabled:opacity-50"
-                [disabled]="page >= totalPages"
-                (click)="nextPage()"
-              >
-                Próxima
-              </button>
-            </div>
-          }
-        </div>
-      }
-    </div>
-
-    <div class="overflow-hidden rounded-[length:var(--radius-control)] border border-line bg-panel">
-      <table class="w-full text-sm">
+    <div class="overflow-x-auto rounded-[length:var(--radius-control)] border border-line bg-panel">
+      <table class="w-full min-w-[640px] text-sm">
         <thead>
           <tr class="border-b border-line bg-surface text-left text-muted">
-            @if (showImages) {
-              <th class="px-4 py-3 font-medium">Imagem</th>
-            }
+            <th class="w-12 px-4 py-3">
+              <button
+                type="button"
+                class="inline-flex items-center justify-center rounded p-1 text-muted hover:bg-surface hover:text-ink"
+                [title]="showImages ? 'Ocultar' : 'Mostrar'"
+                [attr.aria-label]="showImages ? 'Ocultar' : 'Mostrar'"
+                (click)="toggleShowImages()"
+              >
+                @if (showImages) {
+                  <svg
+                    xmlns="http://www.w3.org/2000/svg"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="2"
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                    class="h-4 w-4"
+                    aria-hidden="true"
+                  >
+                    <path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7Z" />
+                    <circle cx="12" cy="12" r="3" />
+                  </svg>
+                } @else {
+                  <svg
+                    xmlns="http://www.w3.org/2000/svg"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="2"
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                    class="h-4 w-4"
+                    aria-hidden="true"
+                  >
+                    <path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7Z" />
+                    <circle cx="12" cy="12" r="3" />
+                    <path d="m3 3 18 18" />
+                  </svg>
+                }
+              </button>
+            </th>
             <th class="px-4 py-3 font-medium">Tema</th>
             <th class="px-4 py-3 font-medium">Local</th>
             <th class="px-4 py-3 font-medium">Data</th>
             <th class="px-4 py-3 font-medium">Qtd</th>
+            <th class="px-4 py-3 font-medium">1º lote</th>
             <th class="px-4 py-3 font-medium">Ações</th>
           </tr>
         </thead>
@@ -125,18 +137,16 @@
           } @else {
             @for (evento of pagedEventos; track evento.id) {
               <tr class="hover:bg-surface">
-                @if (showImages) {
-                  <td class="px-4 py-3">
-                    @if (hasImage(evento)) {
-                      <img
-                        [src]="evento.imagemURL"
-                        [alt]="evento.tema"
-                        class="h-10 w-10 rounded object-cover"
-                        (error)="onImageError(evento.id)"
-                      />
-                    }
-                  </td>
-                }
+                <td class="px-4 py-3">
+                  @if (showImages && hasImage(evento)) {
+                    <img
+                      [src]="evento.imagemURL"
+                      [alt]="evento.tema"
+                      class="h-10 w-10 rounded object-cover"
+                      (error)="onImageError(evento.id)"
+                    />
+                  }
+                </td>
                 <td class="px-4 py-3">
                   <a
                     [routerLink]="['/eventos', evento.id]"
@@ -148,21 +158,24 @@
                 <td class="px-4 py-3">{{ evento.local }}</td>
                 <td class="px-4 py-3">{{ formatDateBr(evento.dataEvento) }}</td>
                 <td class="px-4 py-3">{{ evento.qtdPessoas }}</td>
+                <td class="px-4 py-3">{{ firstLoteLabel(evento) }}</td>
                 <td class="px-4 py-3">
                   <div class="flex flex-wrap gap-2">
                     <a
                       [routerLink]="['/eventos', evento.id]"
                       class="inline-flex items-center justify-center rounded-[length:var(--radius-control)] border border-accent/30 bg-panel px-2 py-1 text-xs font-medium text-accent-dark hover:bg-accent-soft"
                     >
-                      Editar
+                      {{ canWrite ? 'Editar' : 'Ver' }}
                     </a>
-                    <button
-                      type="button"
-                      class="inline-flex items-center justify-center rounded-[length:var(--radius-control)] border border-danger-border bg-panel px-2 py-1 text-xs font-medium text-danger hover:bg-danger-soft"
-                      (click)="askDelete(evento)"
-                    >
-                      Excluir
-                    </button>
+                    @if (canWrite) {
+                      <button
+                        type="button"
+                        class="inline-flex items-center justify-center rounded-[length:var(--radius-control)] border border-danger-border bg-panel px-2 py-1 text-xs font-medium text-danger hover:bg-danger-soft"
+                        (click)="askDelete(evento)"
+                      >
+                        Excluir
+                      </button>
+                    }
                   </div>
                 </td>
               </tr>
@@ -170,6 +183,44 @@
           }
         </tbody>
       </table>
+    </div>
+  }
+
+  @if (!loading && !error && (eventos.length > 0 || totalPages > 0)) {
+    <div class="flex flex-wrap items-center justify-between gap-3 text-sm">
+      <label class="flex items-center gap-2">
+        <span class="text-muted">Itens por página</span>
+        <select
+          class="rounded-[length:var(--radius-control)] border border-line bg-panel px-2 py-1 outline-none focus:border-accent"
+          [ngModel]="pageSize"
+          (ngModelChange)="onPageSizeChange($event)"
+        >
+          @for (size of pageSizes; track size) {
+            <option [ngValue]="size">{{ size }}</option>
+          }
+        </select>
+      </label>
+      @if (totalPages > 0) {
+        <div class="flex flex-wrap items-center gap-3">
+          <button
+            type="button"
+            class="inline-flex items-center justify-center rounded-[length:var(--radius-control)] border border-line bg-panel px-2 py-1 text-sm hover:bg-surface disabled:cursor-not-allowed disabled:opacity-50"
+            [disabled]="page <= 1"
+            (click)="prevPage()"
+          >
+            Anterior
+          </button>
+          <span class="text-muted">Página {{ page }} de {{ totalPages }}</span>
+          <button
+            type="button"
+            class="inline-flex items-center justify-center rounded-[length:var(--radius-control)] border border-line bg-panel px-2 py-1 text-sm hover:bg-surface disabled:cursor-not-allowed disabled:opacity-50"
+            [disabled]="page >= totalPages"
+            (click)="nextPage()"
+          >
+            Próxima
+          </button>
+        </div>
+      }
     </div>
   }
 

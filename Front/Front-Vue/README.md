@@ -19,7 +19,7 @@ Porta **5173**. API tipada: `VITE_API_URL` em `.env` (`src/vite-env.d.ts`; defau
 
 ```bash
 pnpm test              # rápido, sem gate
-pnpm test:coverage     # Vitest + v8; falha se lines/functions/branches/statements < 80
+pnpm test:coverage     # Vitest + v8; falha se lines/functions/branches/statements < 90
 ```
 
 Exclusões do denominador: `*.d.ts`, CSS, arquivos de setup de teste. Páginas, router e App **entram** no gate.

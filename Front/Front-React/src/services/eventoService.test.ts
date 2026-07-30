@@ -1,41 +1,79 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { eventoService } from "./eventoService";
 
+const paginationHeader = JSON.stringify({
+  currentPage: 1,
+  itemsPerPage: 10,
+  totalItems: 1,
+  totalPages: 1,
+});
+
+const pageResult = {
+  items: [{ id: 1, tema: "Workshop Vue" }],
+  page: 1,
+  pageSize: 10,
+  totalCount: 1,
+  totalPages: 1,
+};
+
+function mockPagedResponse(body: unknown, header = paginationHeader) {
+  return {
+    ok: true,
+    status: 200,
+    headers: {
+      get: (name: string) =>
+        name.toLowerCase() === "pagination" ? header : null,
+    },
+    json: async () => body,
+  } as unknown as Response;
+}
+
 describe("eventoService", () => {
   beforeEach(() => {
     vi.stubGlobal("fetch", vi.fn());
   });
 
-  it("busca todos os eventos", async () => {
-    const mockEventos = [{ id: 1, tema: "Workshop Vue" }];
-    vi.mocked(fetch).mockResolvedValueOnce({
-      ok: true,
-      status: 200,
-      json: async () => mockEventos,
-    } as Response);
+  it("busca eventos paginados via header Pagination", async () => {
+    vi.mocked(fetch).mockResolvedValueOnce(
+      mockPagedResponse(pageResult.items),
+    );
 
-    const result = await eventoService.getAll();
+    const result = await eventoService.getAll({ page: 1, pageSize: 10 });
 
     expect(fetch).toHaveBeenCalledWith(
-      "http://localhost:5050/eventos",
+      "http://localhost:5050/eventos?page=1&pageSize=10",
       expect.objectContaining({
         headers: { "Content-Type": "application/json" },
       }),
     );
-    expect(result).toEqual(mockEventos);
+    expect(result).toEqual(pageResult);
   });
 
-  it("busca eventos por tema", async () => {
-    vi.mocked(fetch).mockResolvedValueOnce({
-      ok: true,
-      status: 200,
-      json: async () => [],
-    } as Response);
+  it("busca eventos por q via query", async () => {
+    vi.mocked(fetch).mockResolvedValueOnce(
+      mockPagedResponse([], JSON.stringify({
+        currentPage: 1,
+        itemsPerPage: 10,
+        totalItems: 0,
+        totalPages: 0,
+      })),
+    );
 
-    await eventoService.getByTema("angular");
+    await eventoService.getByTema("angular", { page: 1, pageSize: 10 });
 
     expect(fetch).toHaveBeenCalledWith(
-      "http://localhost:5050/eventos/tema/angular",
+      "http://localhost:5050/eventos?page=1&pageSize=10&q=angular",
+      expect.any(Object),
+    );
+  });
+
+  it("envia q no getAll", async () => {
+    vi.mocked(fetch).mockResolvedValueOnce(mockPagedResponse(pageResult.items));
+
+    await eventoService.getAll({ page: 1, pageSize: 10, q: "summit" });
+
+    expect(fetch).toHaveBeenCalledWith(
+      "http://localhost:5050/eventos?page=1&pageSize=10&q=summit",
       expect.any(Object),
     );
   });

@@ -12,8 +12,9 @@ describe("http", () => {
     vi.mocked(fetch).mockResolvedValueOnce({
       ok: true,
       status: 200,
+      headers: { get: () => null },
       json: async () => ({ id: 1 }),
-    } as Response);
+    } as unknown as Response);
 
     const result = await http<{ id: number }>("/eventos");
 

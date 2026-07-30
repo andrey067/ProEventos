@@ -6,8 +6,9 @@ import UserComponent from '../components/user/UserComponent.vue'
 import LoginComponent from '../components/user/login/LoginComponent.vue'
 import RegistrarUsuario from '../components/user/registrar/RegistrarUsuario.vue'
 import PerfilUsuario from '../components/user/perfil/PerfilUsuario.vue'
-import AlterarSenha from '../components/user/senha/AlterarSenha.vue'
+import PalestrantesComponent from '../components/palestrantes/PalestrantesComponent.vue'
 import PalestrantesPage from '../components/palestrantes/PalestrantesPage.vue'
+import PalestranteFormPage from '../components/palestrantes/PalestranteFormPage.vue'
 import { isAuthenticated } from '../services/authToken'
 
 const routes: RouteRecordRaw[] = [
@@ -33,7 +34,7 @@ const routes: RouteRecordRaw[] = [
             },
             {
                 path: 'senha',
-                component: AlterarSenha,
+                redirect: { name: 'perfil' },
                 name: 'senha',
                 meta: { requiresAuth: true }
             }
@@ -59,8 +60,21 @@ const routes: RouteRecordRaw[] = [
     },
     {
         path: '/palestrantes',
-        name: 'palestrantes',
-        component: PalestrantesPage
+        component: PalestrantesComponent,
+        redirect: '/palestrantes/lista',
+        children: [
+            {
+                path: 'detalhes/:id?',
+                name: 'palestrante-detalhe',
+                component: PalestranteFormPage,
+                meta: { requiresAuth: true }
+            },
+            {
+                path: 'lista',
+                name: 'palestrantes-lista',
+                component: PalestrantesPage,
+            }
+        ]
     },
     { path: '/:catchAll(.*)*', redirect: '/eventos/lista' }
 ]

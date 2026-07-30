@@ -15,3 +15,5 @@ export interface Evento {
   redesSociais?: RedeSocial[];
   palestrantes?: Palestrante[];
 }
+
+export const eventoModelKey = "Evento" as const;

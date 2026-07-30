@@ -19,6 +19,8 @@ describe("router/index", () => {
         "/user",
         "/eventos",
         "/palestrantes",
+        "/palestrantes/lista",
+        "/palestrantes/detalhes/:id?",
         "/:catchAll(.*)*",
       ]),
     );
@@ -40,6 +42,14 @@ describe("router/index", () => {
     expect(testRouter.currentRoute.value.path).toBe("/eventos/lista");
   });
 
+  it("redirects /palestrantes to lista", async () => {
+    const history = createMemoryHistory();
+    const testRouter = createRouter({ history, routes: router.getRoutes() });
+    await testRouter.push("/palestrantes");
+    await testRouter.isReady();
+    expect(testRouter.currentRoute.value.path).toBe("/palestrantes/lista");
+  });
+
   it("resolves named routes", async () => {
     const history = createMemoryHistory();
     const testRouter = createRouter({ history, routes: router.getRoutes() });
@@ -48,11 +58,28 @@ describe("router/index", () => {
     expect(testRouter.currentRoute.value.path).toBe("/user/login");
   });
 
-  it("redirects unauthenticated users from protected routes to login", async () => {
+  it("redirects unauthenticated users from protected evento routes to login", async () => {
     vi.mocked(isAuthenticated).mockReturnValue(false);
     await router.push({ name: "detalhe", params: { id: "1" } });
     await router.isReady();
     expect(router.currentRoute.value.name).toBe("login");
     expect(router.currentRoute.value.query.redirect).toBe("/eventos/detalhes/1");
+  });
+
+  it("redirects unauthenticated users from palestrante form routes to login", async () => {
+    vi.mocked(isAuthenticated).mockReturnValue(false);
+    await router.push({ name: "palestrante-detalhe", params: { id: "1" } });
+    await router.isReady();
+    expect(router.currentRoute.value.name).toBe("login");
+    expect(router.currentRoute.value.query.redirect).toBe(
+      "/palestrantes/detalhes/1",
+    );
+  });
+
+  it("marks palestrante form route with requiresAuth", () => {
+    const formRoute = router
+      .getRoutes()
+      .find((r) => r.name === "palestrante-detalhe");
+    expect(formRoute?.meta.requiresAuth).toBe(true);
   });
 });

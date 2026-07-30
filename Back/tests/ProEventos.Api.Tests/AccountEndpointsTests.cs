@@ -1,6 +1,7 @@
 using System.Net;
 using System.Net.Http.Json;
 using System.Text.Json;
+using System.Text.Json.Serialization;
 using FluentAssertions;
 using ProEventos.Services.Dtos;
 using Xunit;
@@ -9,7 +10,11 @@ namespace ProEventos.Api.Tests;
 
 public class AccountEndpointsTests
 {
-    private static readonly JsonSerializerOptions JsonOptions = new() { PropertyNameCaseInsensitive = true };
+    private static readonly JsonSerializerOptions JsonOptions = new()
+    {
+        PropertyNameCaseInsensitive = true,
+        Converters = { new JsonStringEnumConverter() },
+    };
 
     [Fact]
     public async Task Register_Login_Profile_And_ChangePassword_Flow()
@@ -63,14 +68,36 @@ public class AccountEndpointsTests
 
         var profile = await client.GetAsync("/account/profile");
         profile.StatusCode.Should().Be(HttpStatusCode.OK);
+        var profileDto = await profile.Content.ReadFromJsonAsync<UserDto>(JsonOptions);
+        profileDto!.ImagemURL.Should().NotBeNullOrWhiteSpace();
+        profileDto.ImagemURL.Should().StartWith("https://images.unsplash.com/");
+        profileDto.PrimeiroNome.Should().NotBeNullOrWhiteSpace();
+        profileDto.EventosParticipados.Should().Be(0);
 
         var updated = await client.PutAsJsonAsync("/account/profile", new UserUpdateDto
         {
-            Nome = "Org Updated",
+            PrimeiroNome = "Org",
+            UltimoNome = "Updated",
             Email = $"org_{suffix}@test.com",
-            UserName = $"org_{suffix}"
+            UserName = $"org_{suffix}",
+            Titulo = ProEventos.Domain.Enum.Titulo.Bacharel,
+            Funcao = ProEventos.Domain.Enum.Funcao.Participante,
+            Telefone = "11988887777",
+            Descricao = "Organizador de eventos"
         });
         updated.StatusCode.Should().Be(HttpStatusCode.OK);
+        var updatedDto = await updated.Content.ReadFromJsonAsync<UserDto>(JsonOptions);
+        updatedDto!.Telefone.Should().Be("11988887777");
+        updatedDto.Descricao.Should().Be("Organizador de eventos");
+        updatedDto.Nome.Should().Be("Org Updated");
+        updatedDto.PrimeiroNome.Should().Be("Org");
+        updatedDto.UltimoNome.Should().Be("Updated");
+
+        var profileAfterSet = await client.GetAsync("/account/profile");
+        profileAfterSet.StatusCode.Should().Be(HttpStatusCode.OK);
+        var profileAfterSetDto = await profileAfterSet.Content.ReadFromJsonAsync<UserDto>(JsonOptions);
+        profileAfterSetDto!.Telefone.Should().Be("11988887777");
+        profileAfterSetDto.Descricao.Should().Be("Organizador de eventos");
 
         var oldRefresh = auth.RefreshToken;
 

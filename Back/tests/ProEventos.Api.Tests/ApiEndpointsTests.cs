@@ -123,6 +123,38 @@ public class ApiEndpointsTests
     }
 
     [Fact]
+    public async Task Palestrantes_Put_Without_UserId_Succeeds()
+    {
+        using var factory = new CustomWebApplicationFactory();
+        var client = factory.CreateClient();
+        await AuthTestHelper.AuthenticateAsync(client);
+        var organizerAuth = client.DefaultRequestHeaders.Authorization;
+
+        var speaker = await AuthTestHelper.RegisterPalestranteAsync(client);
+        client.DefaultRequestHeaders.Authorization = organizerAuth;
+
+        var get = await client.GetAsync($"/palestrantes/{speaker.PalestranteId}");
+        get.StatusCode.Should().Be(HttpStatusCode.OK);
+        var created = await get.Content.ReadFromJsonAsync<PalestranteDto>(JsonOptions);
+
+        var payload = new
+        {
+            id = created!.Id,
+            nome = "Updated Without UserId",
+            miniCurriculo = created.MiniCurriculo,
+            imagemURL = created.ImagemURL,
+            telefone = created.Telefone,
+            email = created.Email
+        };
+
+        var put = await client.PutAsJsonAsync($"/palestrantes/{created.Id}", payload);
+        put.StatusCode.Should().Be(HttpStatusCode.OK);
+        var updated = await put.Content.ReadFromJsonAsync<PalestranteDto>(JsonOptions);
+        updated!.Nome.Should().Be("Updated Without UserId");
+        updated.UserId.Should().Be(created.UserId);
+    }
+
+    [Fact]
     public async Task Palestrantes_NotFound_Paths()
     {
         using var factory = new CustomWebApplicationFactory();
@@ -191,7 +223,7 @@ public class ApiEndpointsTests
         using var factory = new CustomWebApplicationFactory();
         var client = factory.CreateClient();
         (await client.GetAsync("/openapi/v1.json")).StatusCode.Should().Be(HttpStatusCode.OK);
-        (await client.GetAsync("/scalar/v1")).StatusCode.Should().Be(HttpStatusCode.OK);
+        (await client.GetAsync("/docs/v1")).StatusCode.Should().Be(HttpStatusCode.OK);
 
         var preflight = new HttpRequestMessage(HttpMethod.Options, "/eventos");
         preflight.Headers.Add("Origin", "http://localhost:5173");

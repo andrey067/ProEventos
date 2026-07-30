@@ -11,3 +11,5 @@ export interface Palestrante {
   redesSociais: RedeSocial[];
   palestrantesEventos: Evento[];
 }
+
+export const palestranteModelKey = "Palestrante" as const;

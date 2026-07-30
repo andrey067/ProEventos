@@ -1,83 +1,143 @@
-<section class="mx-auto flex max-w-md flex-col gap-6">
-  <div>
-    <h1 class="text-2xl font-semibold tracking-tight">Cadastro</h1>
-    <p class="mt-1 text-sm text-muted">Crie sua conta para gerenciar eventos e palestrantes.</p>
-  </div>
-
-  <form
-    class="flex flex-col gap-4 rounded-[length:var(--radius-control)] border border-line bg-panel p-6"
-    [formGroup]="form"
-    (ngSubmit)="submit()"
+<section
+  class="-mx-4 -my-6 grid min-h-[calc(100dvh-4.5rem)] grid-cols-1 overflow-hidden md:-my-8 md:grid-cols-[minmax(0,0.4fr)_minmax(0,0.6fr)]"
+>
+  <aside
+    class="hidden min-h-full items-center justify-center bg-surface px-3 py-8 sm:px-6 sm:py-10 md:flex lg:px-10 lg:py-12"
+    aria-hidden="true"
   >
-    <label class="flex flex-col gap-2 text-sm">
-      <span class="font-medium">Nome</span>
-      <input
-        type="text"
-        formControlName="nome"
-        class="w-full rounded-[length:var(--radius-control)] border border-line bg-panel px-3 py-2 text-sm outline-none focus:border-accent focus:ring-2 focus:ring-accent/20"
-        placeholder="Seu nome"
-      />
-      @if (form.get('nome')?.invalid && form.get('nome')?.touched) {
-        <span class="text-xs text-danger">Nome é obrigatório.</span>
-      }
-    </label>
-    <label class="flex flex-col gap-2 text-sm">
-      <span class="font-medium">Usuário</span>
-      <input
-        type="text"
-        formControlName="userName"
-        class="w-full rounded-[length:var(--radius-control)] border border-line bg-panel px-3 py-2 text-sm outline-none focus:border-accent focus:ring-2 focus:ring-accent/20"
-        placeholder="seu.usuario"
-        autocomplete="username"
-      />
-      @if (form.get('userName')?.invalid && form.get('userName')?.touched) {
-        <span class="text-xs text-danger">Usuário é obrigatório.</span>
-      }
-    </label>
-    <label class="flex flex-col gap-2 text-sm">
-      <span class="font-medium">E-mail</span>
-      <input
-        type="email"
-        formControlName="email"
-        class="w-full rounded-[length:var(--radius-control)] border border-line bg-panel px-3 py-2 text-sm outline-none focus:border-accent focus:ring-2 focus:ring-accent/20"
-        placeholder="usuario@exemplo.com"
-        autocomplete="email"
-      />
-      @if (form.get('email')?.invalid && form.get('email')?.touched) {
-        <span class="text-xs text-danger">E-mail válido é obrigatório.</span>
-      }
-    </label>
-    <label class="flex flex-col gap-2 text-sm">
-      <span class="font-medium">Senha</span>
-      <input
-        type="password"
-        formControlName="password"
-        class="w-full rounded-[length:var(--radius-control)] border border-line bg-panel px-3 py-2 text-sm outline-none focus:border-accent focus:ring-2 focus:ring-accent/20"
-        placeholder="••••••••"
-        autocomplete="new-password"
-      />
-      @if (form.get('password')?.invalid && form.get('password')?.touched) {
-        <span class="text-xs text-danger">Senha é obrigatória.</span>
-      }
-    </label>
-    @if (error) {
-      <p
-        class="rounded-[length:var(--radius-control)] border border-danger-border bg-danger-soft px-4 py-3 text-sm text-danger"
-      >
-        {{ error }}
-      </p>
-    }
-    <button
-      type="submit"
-      class="inline-flex w-full items-center justify-center rounded-[length:var(--radius-control)] bg-accent px-4 py-2 text-sm font-medium text-white hover:bg-accent-dark active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-60"
-      [disabled]="saving"
-    >
-      {{ saving ? 'Cadastrando...' : 'Cadastrar' }}
-    </button>
-  </form>
+    <img
+      src="/images/signup-illustration.png"
+      alt=""
+      class="h-auto w-full max-w-[10rem] object-contain sm:max-w-[18rem] md:max-w-[22rem] lg:max-w-[26rem]"
+      width="450"
+      height="450"
+    />
+  </aside>
 
-  <p class="text-center text-sm text-muted">
-    Já tem conta?
-    <a routerLink="/login" class="font-medium text-accent-dark hover:underline">Entrar</a>
-  </p>
+  <div
+    class="flex min-w-0 items-center justify-center bg-surface px-4 py-8 sm:px-8 md:px-12 md:py-12"
+  >
+    <div class="flex w-full max-w-md flex-col gap-6">
+      <header class="flex flex-col gap-2">
+        <h1 class="text-3xl font-semibold tracking-tight text-ink">Cadastro</h1>
+        <p class="text-sm leading-relaxed text-muted">
+          Crie sua conta para gerenciar eventos e palestrantes.
+        </p>
+      </header>
+
+      <form class="flex flex-col gap-5" [formGroup]="form" (ngSubmit)="submit()">
+        <label class="flex flex-col gap-2 text-sm">
+          <span class="font-medium text-ink">Nome</span>
+          <input
+            type="text"
+            formControlName="nome"
+            class="w-full rounded-[length:var(--radius-control)] border border-line bg-panel px-3 py-2.5 text-sm outline-none transition-colors focus:border-accent focus:ring-2 focus:ring-accent/20"
+            placeholder="Seu nome"
+          />
+          @if (form.get('nome')?.invalid && form.get('nome')?.touched) {
+            <span class="text-xs text-danger">Nome é obrigatório.</span>
+          }
+        </label>
+        <label class="flex flex-col gap-2 text-sm">
+          <span class="font-medium text-ink">Usuário</span>
+          <input
+            type="text"
+            formControlName="userName"
+            class="w-full rounded-[length:var(--radius-control)] border border-line bg-panel px-3 py-2.5 text-sm outline-none transition-colors focus:border-accent focus:ring-2 focus:ring-accent/20"
+            placeholder="seu.usuario"
+            autocomplete="username"
+          />
+          @if (form.get('userName')?.invalid && form.get('userName')?.touched) {
+            <span class="text-xs text-danger">Usuário é obrigatório.</span>
+          }
+        </label>
+        <label class="flex flex-col gap-2 text-sm">
+          <span class="font-medium text-ink">E-mail</span>
+          <input
+            type="email"
+            formControlName="email"
+            class="w-full rounded-[length:var(--radius-control)] border border-line bg-panel px-3 py-2.5 text-sm outline-none transition-colors focus:border-accent focus:ring-2 focus:ring-accent/20"
+            placeholder="usuario@exemplo.com"
+            autocomplete="email"
+          />
+          @if (form.get('email')?.invalid && form.get('email')?.touched) {
+            <span class="text-xs text-danger">E-mail válido é obrigatório.</span>
+          }
+        </label>
+        <label class="flex flex-col gap-2 text-sm">
+          <span class="font-medium text-ink">Senha</span>
+          <input
+            type="password"
+            formControlName="password"
+            class="w-full rounded-[length:var(--radius-control)] border border-line bg-panel px-3 py-2.5 text-sm outline-none transition-colors focus:border-accent focus:ring-2 focus:ring-accent/20"
+            placeholder="••••••••"
+            autocomplete="new-password"
+          />
+          @if (form.get('password')?.invalid && form.get('password')?.touched) {
+            <span class="text-xs text-danger">Senha é obrigatória.</span>
+          }
+        </label>
+
+        <label class="flex items-center gap-2.5 text-sm">
+          <input
+            type="checkbox"
+            formControlName="asPalestrante"
+            class="size-4 rounded border-line text-accent focus:ring-accent/20"
+          />
+          <span class="font-medium text-ink">Registrar como palestrante</span>
+        </label>
+
+        @if (asPalestrante) {
+          <label class="flex flex-col gap-2 text-sm">
+            <span class="font-medium text-ink">Mini currículo</span>
+            <textarea
+              formControlName="miniCurriculo"
+              rows="3"
+              class="w-full rounded-[length:var(--radius-control)] border border-line bg-panel px-3 py-2.5 text-sm outline-none transition-colors focus:border-accent focus:ring-2 focus:ring-accent/20"
+              placeholder="Resumo profissional (opcional)"
+            ></textarea>
+          </label>
+          <label class="flex flex-col gap-2 text-sm">
+            <span class="font-medium text-ink">Telefone</span>
+            <input
+              type="text"
+              formControlName="telefone"
+              class="w-full rounded-[length:var(--radius-control)] border border-line bg-panel px-3 py-2.5 text-sm outline-none transition-colors focus:border-accent focus:ring-2 focus:ring-accent/20"
+              placeholder="Opcional"
+            />
+          </label>
+          <label class="flex flex-col gap-2 text-sm">
+            <span class="font-medium text-ink">URL da imagem</span>
+            <input
+              type="url"
+              formControlName="imagemURL"
+              class="w-full rounded-[length:var(--radius-control)] border border-line bg-panel px-3 py-2.5 text-sm outline-none transition-colors focus:border-accent focus:ring-2 focus:ring-accent/20"
+              placeholder="https://... (opcional)"
+            />
+          </label>
+        }
+
+        @if (error) {
+          <p
+            class="rounded-[length:var(--radius-control)] border border-danger-border bg-danger-soft px-4 py-3 text-sm text-danger"
+          >
+            {{ error }}
+          </p>
+        }
+        <button
+          type="submit"
+          class="mt-1 inline-flex w-full items-center justify-center gap-2 rounded-[length:var(--radius-control)] bg-accent px-4 py-2.5 text-sm font-medium text-white transition-[transform,background-color] hover:bg-accent-dark active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-60"
+          [disabled]="saving"
+        >
+          <app-loading-spinner [active]="saving" variant="button" />
+          {{ saving ? 'Cadastrando...' : 'Cadastrar' }}
+        </button>
+      </form>
+
+      <p class="text-center text-sm text-muted">
+        Já tem conta?
+        <a routerLink="/login" class="font-medium text-accent-dark hover:underline">Entrar</a>
+      </p>
+    </div>
+  </div>
 </section>

@@ -12,6 +12,11 @@ namespace ProEventos.Domain.Entities
         public string ImagemURL { get; set; }
         public string Telefone { get; set; }
         public string Email { get; set; }
+
+        /// <summary>Identity user who owns this event (organizer).</summary>
+        public string UserId { get; set; }
+        public User User { get; set; }
+
         public List<Lote> Lotes { get; set; }
         public List<RedeSocial> RedeSociais { get; set; }
         public List<Palestrante_Evento> PalestrantesEventos { get; set; }

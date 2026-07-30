@@ -34,16 +34,29 @@ namespace ProEventos.CrossCutting.DependencyInjection
             serviceCollection
                 .AddCustomIdentity<User>(options =>
                 {
+                    // Senha deve conter:
+                    // - Pelo menos 1 dígito
                     options.Password.RequireDigit = false;
+                    // - Pelo menos 1 letra minúscula
                     options.Password.RequireLowercase = false;
+                    // - Pelo menos 1 letra maiúscula
                     options.Password.RequireUppercase = false;
+                    // - Pelo menos 1 caractere não alfanumérico
                     options.Password.RequireNonAlphanumeric = false;
-                    options.Password.RequiredLength = 1;
+                    // - Pelo menos 8 caracteres
+                    options.Password.RequiredLength = 8;
+                    // - Pelo menos 1 caractere não alfanumérico
+                    options.Password.RequireNonAlphanumeric = false;
+                    // - Pelo menos 1 caractere não alfanumérico
                     options.User.RequireUniqueEmail = true;
+                    // - Email deve ser único
                     options.SignIn.RequireConfirmedEmail = false;
                 })
-                .AddCustomEntityFrameworkStores<DataContext>()
-                .AddDefaultTokenProviders();
+                .AddCustomEntityFrameworkStores<DataContext>()            
+                //.AddRoles<IdentityRole>() // Adiciona o sistema de roles
+                //.AddRoleManager<RoleManager<IdentityRole>>() // Gerencia as roles
+                //.AddSignInManager<SignInManager<User>>() // Gerencia o login
+                .AddDefaultTokenProviders(); // Fornece tokens para o sistema                                
 
             // --- JWT / Identity (NetDevPack) ---
             // Doc mínima: AddJwtConfiguration + AddNetDevPackIdentity + UseAuthConfiguration() no Program.

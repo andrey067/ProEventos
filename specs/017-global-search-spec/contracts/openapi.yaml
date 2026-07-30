@@ -1,0 +1,157 @@
+openapi: 3.0.3
+info:
+  title: ProEventos API — Global list search (017)
+  version: "017.0"
+  description: |
+    Additive/clarifying contract for list search. Primary filter is query param `q`
+    (global multi-field match via Specification pattern). Legacy `tema` / `nome`
+    remain as fallback aliases during migration. Pagination header unchanged.
+servers:
+  - url: http://localhost:5050
+paths:
+  /eventos:
+    get:
+      tags: [Eventos]
+      summary: List eventos (paged, optional global search)
+      parameters:
+        - $ref: "#/components/parameters/Page"
+        - $ref: "#/components/parameters/PageSize"
+        - $ref: "#/components/parameters/Q"
+        - name: tema
+          in: query
+          required: false
+          deprecated: true
+          schema:
+            type: string
+          description: Legacy alias; used only when `q` is absent/blank.
+      responses:
+        "200":
+          description: Array body + Pagination header
+          headers:
+            Pagination:
+              $ref: "#/components/headers/Pagination"
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Evento"
+  /eventos/tema/{tema}:
+    get:
+      tags: [Eventos]
+      summary: Convenience route — applies same global Evento specification
+      parameters:
+        - name: tema
+          in: path
+          required: true
+          schema:
+            type: string
+          description: Treated as global search term (not theme-only).
+        - $ref: "#/components/parameters/Page"
+        - $ref: "#/components/parameters/PageSize"
+      responses:
+        "200":
+          description: Array body + Pagination header
+          headers:
+            Pagination:
+              $ref: "#/components/headers/Pagination"
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Evento"
+  /palestrantes:
+    get:
+      tags: [Palestrantes]
+      summary: List palestrantes (paged, optional global search)
+      parameters:
+        - $ref: "#/components/parameters/Page"
+        - $ref: "#/components/parameters/PageSize"
+        - $ref: "#/components/parameters/Q"
+        - name: nome
+          in: query
+          required: false
+          deprecated: true
+          schema:
+            type: string
+          description: Legacy alias when `q` absent.
+        - name: tema
+          in: query
+          required: false
+          deprecated: true
+          schema:
+            type: string
+          description: Legacy alias when `q` and `nome` absent.
+      responses:
+        "200":
+          description: Array body + Pagination header
+          headers:
+            Pagination:
+              $ref: "#/components/headers/Pagination"
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Palestrante"
+components:
+  parameters:
+    Page:
+      name: page
+      in: query
+      schema:
+        type: integer
+        minimum: 1
+        default: 1
+    PageSize:
+      name: pageSize
+      in: query
+      schema:
+        type: integer
+        default: 10
+    Q:
+      name: q
+      in: query
+      required: false
+      schema:
+        type: string
+      description: |
+        Global search term. Eventos match Tema|Local|Email|Telefone.
+        Palestrantes match Nome|MiniCurriculo|Email|Telefone|linked Evento.Tema.
+        Case-insensitive contains. Empty/whitespace = no filter.
+  headers:
+    Pagination:
+      description: JSON metadata for current page (existing shape)
+      schema:
+        type: string
+        example: '{"currentPage":1,"itemsPerPage":10,"totalItems":42,"totalPages":5}'
+  schemas:
+    Evento:
+      type: object
+      additionalProperties: true
+      properties:
+        id:
+          type: integer
+        tema:
+          type: string
+        local:
+          type: string
+        email:
+          type: string
+        telefone:
+          type: string
+    Palestrante:
+      type: object
+      additionalProperties: true
+      properties:
+        id:
+          type: integer
+        nome:
+          type: string
+        miniCurriculo:
+          type: string
+        email:
+          type: string
+        telefone:
+          type: string

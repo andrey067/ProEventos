@@ -1,0 +1,127 @@
+name: CI
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+jobs:
+  backend:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: .
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: "10.0.x"
+      - name: Test with Coverlet (90%)
+        run: dotnet test Back/src/ProEventos.sln --configuration Release
+      - name: Upload Cobertura
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: coverage-backend
+          path: |
+            Back/tests/**/coverage.cobertura.xml
+          if-no-files-found: warn
+
+  front-vue:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: Front/Front-Vue
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 9
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: pnpm
+          cache-dependency-path: Front/Front-Vue/pnpm-lock.yaml
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm test:coverage
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: coverage-front-vue
+          path: Front/Front-Vue/coverage/coverage-summary.json
+          if-no-files-found: warn
+
+  front-react:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: Front/Front-React
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 9
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: pnpm
+          cache-dependency-path: Front/Front-React/pnpm-lock.yaml
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm test:coverage
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: coverage-front-react
+          path: Front/Front-React/coverage/coverage-summary.json
+          if-no-files-found: warn
+
+  front-angular:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: Front/Front-Angular
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 9
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: pnpm
+          cache-dependency-path: Front/Front-Angular/pnpm-lock.yaml
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm test:coverage
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: coverage-front-angular
+          path: Front/Front-Angular/coverage/coverage-summary.json
+          if-no-files-found: warn
+
+  compare-baselines:
+    runs-on: ubuntu-latest
+    needs: [backend, front-vue, front-react, front-angular]
+    if: always()
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - uses: actions/download-artifact@v4
+        with:
+          path: artifacts
+      - name: Compare coverage vs baselines
+        run: |
+          set -euo pipefail
+          SVC=$(find artifacts -path '*Services.Tests*' -name coverage.cobertura.xml | head -1)
+          PERS=$(find artifacts -path '*Persistence.Tests*' -name coverage.cobertura.xml | head -1)
+          API=$(find artifacts -path '*Api.Tests*' -name coverage.cobertura.xml | head -1)
+          node quality/compare-coverage.mjs \
+            --baselines quality/coverage-baselines.json \
+            --services "$SVC" \
+            --persistence "$PERS" \
+            --api "$API" \
+            --front-vue artifacts/coverage-front-vue/coverage-summary.json \
+            --front-react artifacts/coverage-front-react/coverage-summary.json \
+            --front-angular artifacts/coverage-front-angular/coverage-summary.json

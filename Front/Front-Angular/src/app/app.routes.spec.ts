@@ -2,8 +2,8 @@ import { describe, it, expect } from 'vitest';
 import { routes } from './app.routes';
 import { EventosListComponent } from './components/eventos/eventos-list/eventos-list.component';
 import { EventoFormComponent } from './components/eventos/evento-form/evento-form.component';
+import { PalestranteFormComponent } from './components/palestrantes/palestrante-form/palestrante-form.component';
 import { PalestrantesComponent } from './components/palestrantes/palestrantes/palestrantes.component';
-import { ChangePasswordComponent } from './components/user/change-password/change-password.component';
 import { LoginComponent } from './components/user/login/login.component';
 import { ProfileComponent } from './components/user/profile/profile.component';
 import { RegisterComponent } from './components/user/register/register.component';
@@ -26,6 +26,16 @@ describe('app.routes', () => {
           canActivate: [authGuard],
         }),
         expect.objectContaining({ path: 'palestrantes', component: PalestrantesComponent }),
+        expect.objectContaining({
+          path: 'palestrantes/new',
+          component: PalestranteFormComponent,
+          canActivate: [authGuard],
+        }),
+        expect.objectContaining({
+          path: 'palestrantes/:id',
+          component: PalestranteFormComponent,
+          canActivate: [authGuard],
+        }),
         expect.objectContaining({ path: 'login', component: LoginComponent }),
         expect.objectContaining({ path: 'register', component: RegisterComponent }),
         expect.objectContaining({
@@ -35,8 +45,8 @@ describe('app.routes', () => {
         }),
         expect.objectContaining({
           path: 'change-password',
-          component: ChangePasswordComponent,
-          canActivate: [authGuard],
+          redirectTo: 'perfil',
+          pathMatch: 'full',
         }),
       ]),
     );

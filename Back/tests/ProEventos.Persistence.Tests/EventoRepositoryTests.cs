@@ -91,6 +91,26 @@ public class EventoRepositoryTests
     }
 
     [Fact]
+    public async Task GetAllEventosByTemaAsync_Without_Palestrante()
+    {
+        var (repo, evento, _) = await SeedGraphAsync(true);
+
+        var result = await repo.GetAllEventosByTemaAsync("dotnet", false);
+
+        result.Should().ContainSingle(e => e.Id == evento.Id);
+    }
+
+    [Fact]
+    public async Task GetAllEventosAsync_Without_Palestrante_Flag()
+    {
+        var (repo, evento, _) = await SeedGraphAsync(true);
+
+        var result = await repo.GetAllEventosAsync(false);
+
+        result.Should().ContainSingle(e => e.Id == evento.Id);
+    }
+
+    [Fact]
     public async Task GetAllEventosByTemaAsync_Filters_By_Tema()
     {
         var (repo, evento, _) = await SeedGraphAsync(false);
@@ -98,5 +118,57 @@ public class EventoRepositoryTests
         var result = await repo.GetAllEventosByTemaAsync("dotnet", true);
 
         result.Should().ContainSingle(e => e.Id == evento.Id);
+    }
+
+    [Fact]
+    public async Task GetAllEventosByIdAsync_Returns_Null_When_Not_Found()
+    {
+        var (repo, _, _) = await SeedGraphAsync(false);
+        (await repo.GetAllEventosByIdAsync(99999, false)).Should().BeNull();
+    }
+
+    [Fact]
+    public async Task GetPagedEventosAsync_Paginates_And_Filters_By_Tema()
+    {
+        var ctx = DataContextFactory.Create();
+        var repo = new EventoRepository(ctx);
+        for (var i = 1; i <= 5; i++)
+        {
+            ctx.Eventos.Add(new Evento
+            {
+                Tema = i % 2 == 0 ? $"Angular {i}" : $"DotNet {i}",
+                Telefone = "11",
+                Email = "a@b.com",
+                QtdPessoas = 10,
+                ImagemURL = "img.jpg",
+                Lotes = new List<Lote>
+                {
+                    new() { Nome = "L", Preco = 10, Quantidade = 1, DataIncio = DateTime.UtcNow, DataFim = DateTime.UtcNow.AddDays(1) }
+                }
+            });
+        }
+        await ctx.SaveChangesAsync();
+
+        var page1 = await repo.GetPagedEventosAsync(1, 2, null, false);
+        page1.Items.Should().HaveCount(2);
+        page1.TotalCount.Should().Be(5);
+
+        var filtered = await repo.GetPagedEventosAsync(1, 10, "  angular ", false);
+        filtered.Items.Should().HaveCount(2);
+        filtered.TotalCount.Should().Be(2);
+
+        var page2 = await repo.GetPagedEventosAsync(2, 2, null, false);
+        page2.Items.Should().HaveCount(2);
+    }
+
+    [Fact]
+    public async Task GetPagedEventosAsync_With_Palestrante_Includes_Navigation()
+    {
+        var (repo, evento, palestrante) = await SeedGraphAsync(true);
+
+        var result = await repo.GetPagedEventosAsync(1, 10, "dotnet", true);
+
+        result.TotalCount.Should().Be(1);
+        result.Items.Single().PalestrantesEventos.Should().ContainSingle(pe => pe.PalestranteId == palestrante.Id);
     }
 }

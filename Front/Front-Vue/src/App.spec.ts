@@ -21,7 +21,7 @@ describe("App", () => {
       routes: [
         { path: "/", component: { template: "<div data-test='page'>Home</div>" } },
         { path: "/eventos/lista", name: "lista", component: { template: "<div />" } },
-        { path: "/palestrantes", name: "palestrantes", component: { template: "<div />" } },
+        { path: "/palestrantes/lista", name: "palestrantes-lista", component: { template: "<div />" } },
         { path: "/user/login", name: "login", component: { template: "<div />" } },
       ],
     });

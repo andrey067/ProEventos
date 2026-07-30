@@ -1,3 +1,5 @@
+> **Superseded** by [`specs/016-test-strategy/`](../016-test-strategy/) (90% coverage + CI). Keep this file for historical decisions (80% local-only gate).
+
 # Feature Specification: 80% Coverage Gate
 
 **Feature Branch**: `002-coverage-gate`

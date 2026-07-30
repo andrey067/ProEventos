@@ -46,4 +46,29 @@ describe("redeSocialService", () => {
     await redeSocialService.saveByPalestrante(3, items);
     expect(http.put).toHaveBeenCalledWith("/redes-sociais/palestrante/3", items);
   });
+
+  it("removeByPalestrante calls DELETE /redes-sociais/palestrante/:id/:redeId", async () => {
+    (http.delete as any).mockResolvedValue({ status: 200 });
+    await redeSocialService.removeByPalestrante(3, 9);
+    expect(http.delete).toHaveBeenCalledWith("/redes-sociais/palestrante/3/9");
+  });
+
+  it("listMine calls GET /redes-sociais/palestrante", async () => {
+    (http.get as any).mockResolvedValue({ data: [] });
+    await redeSocialService.listMine();
+    expect(http.get).toHaveBeenCalledWith("/redes-sociais/palestrante");
+  });
+
+  it("saveMine calls PUT /redes-sociais/palestrante", async () => {
+    const items = [{ nome: "GitHub", url: "https://github.com/me" }];
+    (http.put as any).mockResolvedValue({ status: 200 });
+    await redeSocialService.saveMine(items);
+    expect(http.put).toHaveBeenCalledWith("/redes-sociais/palestrante", items);
+  });
+
+  it("removeMine calls DELETE /redes-sociais/palestrante/:id", async () => {
+    (http.delete as any).mockResolvedValue({ status: 200 });
+    await redeSocialService.removeMine(5);
+    expect(http.delete).toHaveBeenCalledWith("/redes-sociais/palestrante/5");
+  });
 });

@@ -1,11 +1,14 @@
 import '@angular/compiler';
 import 'zone.js';
 import 'zone.js/testing';
-import { getTestBed } from '@angular/core/testing';
+import { importProvidersFrom } from '@angular/core';
+import { getTestBed, TestBed } from '@angular/core/testing';
 import {
   BrowserDynamicTestingModule,
   platformBrowserDynamicTesting,
 } from '@angular/platform-browser-dynamic/testing';
+import { provideAnimations } from '@angular/platform-browser/animations';
+import { NgxSpinnerModule } from 'ngx-spinner';
 
 const storage = new Map<string, string>();
 
@@ -33,3 +36,14 @@ getTestBed().initTestEnvironment(
   BrowserDynamicTestingModule,
   platformBrowserDynamicTesting(),
 );
+
+const configureTestingModule = TestBed.configureTestingModule.bind(TestBed);
+TestBed.configureTestingModule = (moduleDef) =>
+  configureTestingModule({
+    ...moduleDef,
+    providers: [
+      ...(moduleDef.providers ?? []),
+      provideAnimations(),
+      importProvidersFrom(NgxSpinnerModule.forRoot()),
+    ],
+  });

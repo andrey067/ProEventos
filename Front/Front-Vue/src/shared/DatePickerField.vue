@@ -10,6 +10,7 @@
     :input-attrs="{ clearable: false }"
     placeholder="Selecione a data"
     @update:model-value="emit('update:modelValue', $event ?? '')"
+    @closed="emit('blur')"
   >
     <template #input-icon>
       <svg
@@ -45,6 +46,7 @@ defineProps<{
 
 const emit = defineEmits<{
   "update:modelValue": [value: string];
+  blur: [];
 }>();
 </script>
 

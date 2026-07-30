@@ -1,0 +1,37 @@
+{
+  "services": {
+    "line": 96.56,
+    "branch": 91.9,
+    "method": 98.07
+  },
+  "persistence-domain": {
+    "line": 97.7,
+    "branch": 90.67,
+    "method": 96.69
+  },
+  "api-crosscutting": {
+    "line": 99.06,
+    "branch": 93.54,
+    "method": 100.0
+  },
+  "front-vue": {
+    "lines": 99.34,
+    "functions": 91.09,
+    "branches": 90.07,
+    "statements": 99.34
+  },
+  "front-react": {
+    "lines": 98.74,
+    "functions": 91.05,
+    "branches": 90.32,
+    "statements": 98.74
+  },
+  "front-angular": {
+    "lines": 99.13,
+    "functions": 99.31,
+    "branches": 90.12,
+    "statements": 97.69
+  },
+  "updatedAt": "2026-07-29",
+  "note": "Seeded after first green 90% run for 016-test-strategy."
+}

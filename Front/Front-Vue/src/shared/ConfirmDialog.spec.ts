@@ -30,4 +30,19 @@ describe("ConfirmDialog", () => {
     await buttons[1].trigger("click");
     expect(wrapper.emitted("confirm")).toBeTruthy();
   });
+
+  it("emits cancel on Escape and backdrop click", async () => {
+    const wrapper = mount(ConfirmDialog, {
+      props: {
+        open: true,
+        message: "Deseja deletar?",
+      },
+    });
+
+    window.dispatchEvent(new KeyboardEvent("keydown", { key: "Escape" }));
+    expect(wrapper.emitted("cancel")).toBeTruthy();
+
+    await wrapper.find('[role="presentation"]').trigger("click");
+    expect(wrapper.emitted("cancel")?.length).toBeGreaterThan(1);
+  });
 });

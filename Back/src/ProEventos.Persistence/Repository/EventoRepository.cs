@@ -1,16 +1,16 @@
 ﻿using Microsoft.EntityFrameworkCore;
 using ProEventos.Domain.Entities;
 using ProEventos.Domain.Interfaces.Repositories;
-using System;
+using ProEventos.Domain.Specifications;
+using ProEventos.Persistence.Extensions;
 using System.Collections.Generic;
 using System.Linq;
-using System.Text;
 using System.Threading.Tasks;
 
 namespace ProEventos.Persistence.Repository
 {
     public class EventoRepository : BaseRepository<Evento>, IEventoRepository
-    {        
+    {
         private readonly DbSet<Evento> _eventoContext;
         public EventoRepository(DataContext context) : base(context) => _eventoContext = context.Set<Evento>();
 
@@ -62,10 +62,43 @@ namespace ProEventos.Persistence.Repository
                 .ThenInclude(pe => pe.Palestrante);
             }
 
-            query = query.OrderBy(e => e.Id)
-                         .Where(ev => ev.Tema.ToLower().Contains(tema.ToLower()));
+            if (!string.IsNullOrWhiteSpace(tema))
+                query = query.Where(new EventoGlobalSearchSpecification(tema));
 
-            return await query.ToListAsync();
-        }        
+            return await query.OrderBy(e => e.Id).ToListAsync();
+        }
+
+        public async Task<(List<Evento> Items, int TotalCount)> GetPagedEventosAsync(
+            int page,
+            int pageSize,
+            string q = null,
+            bool includePalestrante = false)
+        {
+            IQueryable<Evento> query = _eventoContext.AsQueryable();
+
+            if (!string.IsNullOrWhiteSpace(q))
+                query = query.Where(new EventoGlobalSearchSpecification(q));
+
+            var totalCount = await query.CountAsync();
+
+            query = query
+                .Include(e => e.Lotes)
+                .Include(e => e.RedeSociais);
+
+            if (includePalestrante)
+            {
+                query = query
+                    .Include(e => e.PalestrantesEventos)
+                    .ThenInclude(pe => pe.Palestrante);
+            }
+
+            var items = await query
+                .OrderBy(e => e.Id)
+                .Skip((page - 1) * pageSize)
+                .Take(pageSize)
+                .ToListAsync();
+
+            return (items, totalCount);
+        }
     }
 }

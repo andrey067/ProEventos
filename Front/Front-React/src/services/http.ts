@@ -1,5 +1,10 @@
 import { getToken } from "./authToken";
 import { apiErrorMessage } from "@/utils/apiErrorMessage";
+import {
+  PAGINATION_HEADER,
+  pageResultFromHeader,
+  type PageResult,
+} from "@/models/pagination";
 
 const API_URL = import.meta.env.VITE_API_URL ?? "http://localhost:5050";
 
@@ -13,10 +18,10 @@ export class HttpError extends Error {
   }
 }
 
-export async function http<T>(
+async function request(
   path: string,
   options: RequestInit = {},
-): Promise<T> {
+): Promise<Response> {
   const headers: Record<string, string> = {
     "Content-Type": "application/json",
     ...(options.headers as Record<string, string>),
@@ -45,9 +50,31 @@ export async function http<T>(
     );
   }
 
+  return response;
+}
+
+export async function http<T>(
+  path: string,
+  options: RequestInit = {},
+): Promise<T> {
+  const response = await request(path, options);
+
   if (response.status === 204) {
     return undefined as T;
   }
 
   return response.json() as Promise<T>;
+}
+
+/** GET that returns PageResult from array body + Pagination header. */
+export async function httpPaged<T>(
+  path: string,
+  options: RequestInit = {},
+): Promise<PageResult<T>> {
+  const response = await request(path, options);
+  const items = (await response.json()) as T[];
+  const header =
+    response.headers.get(PAGINATION_HEADER) ??
+    response.headers.get(PAGINATION_HEADER.toLowerCase());
+  return pageResultFromHeader(items, header);
 }

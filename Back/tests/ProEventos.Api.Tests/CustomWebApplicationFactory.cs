@@ -12,10 +12,14 @@ namespace ProEventos.Api.Tests;
 public class CustomWebApplicationFactory : WebApplicationFactory<Program>
 {
     private readonly string _databaseName;
+    private readonly Action<IServiceCollection> _configureTestServices;
 
-    public CustomWebApplicationFactory(string databaseName = null)
+    public CustomWebApplicationFactory(
+        string databaseName = null,
+        Action<IServiceCollection> configureTestServices = null)
     {
         _databaseName = databaseName ?? $"ProEventosTests_{Guid.NewGuid()}";
+        _configureTestServices = configureTestServices;
     }
 
     protected override void ConfigureWebHost(IWebHostBuilder builder)
@@ -46,6 +50,8 @@ public class CustomWebApplicationFactory : WebApplicationFactory<Program>
 
             services.AddDbContext<DataContext>(options =>
                 options.UseInMemoryDatabase(_databaseName));
+
+            _configureTestServices?.Invoke(services);
         });
     }
 }

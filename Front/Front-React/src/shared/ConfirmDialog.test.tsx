@@ -38,4 +38,22 @@ describe("ConfirmDialog", () => {
     fireEvent.click(screen.getByRole("button", { name: "Confirmar" }));
     expect(onConfirm).toHaveBeenCalledTimes(1);
   });
+
+  it("fecha com Escape e clique no backdrop", () => {
+    const onCancel = vi.fn();
+    render(
+      <ConfirmDialog
+        open
+        message="Apagar?"
+        onConfirm={() => {}}
+        onCancel={onCancel}
+      />,
+    );
+
+    fireEvent.keyDown(window, { key: "Escape" });
+    expect(onCancel).toHaveBeenCalledTimes(1);
+
+    fireEvent.click(screen.getByRole("presentation"));
+    expect(onCancel).toHaveBeenCalledTimes(2);
+  });
 });

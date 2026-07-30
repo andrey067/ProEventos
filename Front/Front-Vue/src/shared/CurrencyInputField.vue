@@ -11,20 +11,16 @@
 import { watch } from "vue";
 import { CurrencyDisplay, useCurrencyInput } from "vue-currency-input";
 
-const props = withDefaults(
+const model = defineModel<number | null>({ default: null });
+
+withDefaults(
   defineProps<{
-    modelValue?: number | null;
     placeholder?: string;
   }>(),
   {
-    modelValue: null,
     placeholder: "R$ 0,00",
   },
 );
-
-defineEmits<{
-  "update:modelValue": [value: number | null];
-}>();
 
 const { inputRef, setValue } = useCurrencyInput({
   currency: "BRL",
@@ -37,7 +33,7 @@ const { inputRef, setValue } = useCurrencyInput({
 });
 
 watch(
-  () => props.modelValue,
+  model,
   (value) => {
     setValue(value ?? null);
   },

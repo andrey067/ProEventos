@@ -1,0 +1,58 @@
+name: E2E
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+jobs:
+  playwright:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: "10.0.x"
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 9
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: pnpm
+          cache-dependency-path: |
+            e2e/pnpm-lock.yaml
+            Front/Front-Vue/pnpm-lock.yaml
+      - name: Install e2e + Vue
+        run: |
+          cd e2e && pnpm install
+          cd ../Front/Front-Vue && pnpm install --frozen-lockfile
+      - name: Install Playwright browsers
+        run: cd e2e && pnpm exec playwright install --with-deps chromium
+      - name: Start API
+        working-directory: Back/src/ProEventos.Api
+        run: |
+          if [ -f .env.example ] && [ ! -f .env ]; then cp .env.example .env; fi
+          dotnet run --urls http://127.0.0.1:5050 &
+          echo $! > /tmp/api.pid
+          for i in $(seq 1 60); do
+            curl -sf http://127.0.0.1:5050/openapi/v1.json && break
+            sleep 2
+          done
+      - name: Start Vue
+        working-directory: Front/Front-Vue
+        run: |
+          pnpm dev --host 127.0.0.1 --port 5173 &
+          echo $! > /tmp/vue.pid
+          for i in $(seq 1 60); do
+            curl -sf http://127.0.0.1:5173 && break
+            sleep 2
+          done
+      - name: Run Playwright (vue project)
+        working-directory: e2e
+        env:
+          CI: "true"
+          BASE_URL: http://127.0.0.1:5173
+          API_URL: http://127.0.0.1:5050
+        run: pnpm exec playwright test --project=vue

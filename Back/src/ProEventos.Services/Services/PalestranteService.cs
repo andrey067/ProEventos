@@ -7,6 +7,7 @@ using ProEventos.Domain.Interfaces;
 using ProEventos.Domain.Interfaces.Repositories;
 using ProEventos.Services.Dtos;
 using ProEventos.Services.Errors;
+using ProEventos.Services.Helpers;
 using ProEventos.Services.Interfaces;
 using System.Collections.Generic;
 using System.Threading.Tasks;
@@ -35,12 +36,51 @@ namespace ProEventos.Services.Services
             return list.Adapt<List<PalestranteDto>>();
         }
 
+        public async Task<ErrorOr<PageResultDto<PalestranteDto>>> GetPagedAsync(
+            int? page,
+            int? pageSize,
+            string q = null)
+        {
+            var (normalizedPage, normalizedSize) = PaginationHelper.Normalize(page, pageSize);
+            var (items, totalCount) = await _palestrantesRepository.GetPagedPalestrantesAsync(
+                normalizedPage,
+                normalizedSize,
+                q,
+                includeRedes: true);
+
+            var clampedPage = PaginationHelper.ClampPage(normalizedPage, normalizedSize, totalCount);
+            if (clampedPage != normalizedPage && totalCount > 0)
+            {
+                (items, totalCount) = await _palestrantesRepository.GetPagedPalestrantesAsync(
+                    clampedPage,
+                    normalizedSize,
+                    q,
+                    includeRedes: true);
+                normalizedPage = clampedPage;
+            }
+
+            var dtos = items?.Adapt<List<PalestranteDto>>() ?? new List<PalestranteDto>();
+            return PaginationHelper.Build(dtos, normalizedPage, normalizedSize, totalCount);
+        }
+
         public async Task<ErrorOr<PalestranteDto>> GetByIdAsync(int id)
         {
             var entity = await _palestrantesRepository.GetPalestranteByIdAsync(id, includeRedes: true);
             if (entity == null)
                 return Error.NotFound("Palestrante.Get.NotFound", "Palestrante não encontrado");
             return entity.Adapt<PalestranteDto>();
+        }
+
+        public async Task<ErrorOr<PalestranteDto>> GetByUserIdAsync(string userId)
+        {
+            if (string.IsNullOrWhiteSpace(userId))
+                return Error.Unauthorized("Palestrante.Me.Unauthorized", "Usuário não autenticado.");
+
+            var entity = await _palestrantesRepository.GetPalestranteByUserIdAsync(userId);
+            if (entity == null)
+                return Error.NotFound("Palestrante.Me.NotFound", "Palestrante não encontrado para o usuário autenticado.");
+
+            return await GetByIdAsync(entity.Id);
         }
 
         public async Task<ErrorOr<PalestranteDto>> AddAsync(PalestranteDto model)
@@ -66,17 +106,31 @@ namespace ProEventos.Services.Services
             }
         }
 
-        public async Task<ErrorOr<PalestranteDto>> UpdateAsync(int id, PalestranteDto model)
+        public async Task<ErrorOr<PalestranteDto>> UpdateAsync(
+            int id,
+            PalestranteDto model,
+            string callerUserId,
+            bool isOrganizer)
         {
-            var userCheck = await ValidateUserIdAsync(model?.UserId);
-            if (userCheck.IsError)
-                return userCheck.Errors;
-
             try
             {
                 var existing = await _repository.SelectAsync(id);
                 if (existing == null)
                     return Error.NotFound("Palestrante.Update.NotFound", "Palestrante não encontrado");
+
+                var gate = EnsureCanWrite(existing, callerUserId, isOrganizer);
+                if (gate.IsError)
+                    return gate.Errors;
+
+                if (model == null)
+                    return Error.Validation("Palestrante.Update.BodyRequired", "Corpo da requisição é obrigatório.");
+
+                if (string.IsNullOrWhiteSpace(model.UserId))
+                    model.UserId = existing.UserId;
+
+                var userCheck = await ValidateUserIdAsync(model.UserId);
+                if (userCheck.IsError)
+                    return userCheck.Errors;
 
                 var linked = await _palestrantesRepository.GetPalestranteByUserIdAsync(model.UserId);
                 if (linked != null && linked.Id != id)
@@ -92,13 +146,17 @@ namespace ProEventos.Services.Services
             }
         }
 
-        public async Task<ErrorOr<Success>> DeleteAsync(int id)
+        public async Task<ErrorOr<Success>> DeleteAsync(int id, string callerUserId, bool isOrganizer)
         {
             try
             {
                 var existing = await _repository.SelectAsync(id);
                 if (existing == null)
                     return Error.NotFound("Palestrante.Delete.NotFound", "Palestrante não encontrado");
+
+                var gate = EnsureCanWrite(existing, callerUserId, isOrganizer);
+                if (gate.IsError)
+                    return gate.Errors;
 
                 await _repository.DeleteAsync(id);
                 return Result.Success;
@@ -107,6 +165,19 @@ namespace ProEventos.Services.Services
             {
                 return ex.ToError();
             }
+        }
+
+        private static ErrorOr<Success> EnsureCanWrite(Palestrante existing, string callerUserId, bool isOrganizer)
+        {
+            if (isOrganizer)
+                return Result.Success;
+
+            if (!ResourceOwnership.IsOwner(existing.UserId, callerUserId))
+                return Error.Forbidden(
+                    "Palestrante.Write.Forbidden",
+                    "Você só pode alterar o seu próprio perfil de palestrante.");
+
+            return Result.Success;
         }
 
         public async Task<ErrorOr<List<PalestranteDto>>> GetByNomeAsync(string nome)

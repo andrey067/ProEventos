@@ -1,11 +1,14 @@
+using System;
 using System.Linq;
 using System.Threading.Tasks;
 using ErrorOr;
 using Microsoft.AspNetCore.Identity;
 using ProEventos.Domain.Entities;
+using ProEventos.Domain.Enum;
 using ProEventos.Domain.Identity;
 using ProEventos.Domain.Interfaces.Repositories;
 using ProEventos.Services.Dtos;
+using ProEventos.Domain.Helpers;
 using ProEventos.Services.Interfaces;
 
 namespace ProEventos.Services.Services
@@ -39,9 +42,15 @@ namespace ProEventos.Services.Services
             if (existingUser != null)
                 return Error.Conflict("Account.Register.UserNameInUse", "UserName já está em uso.");
 
+            var (primeiro, ultimo) = SplitNome(model.Nome);
             var user = new User
             {
-                Nome = model.Nome,
+                Nome = BuildNome(primeiro, ultimo),
+                PrimeiroNome = primeiro,
+                UltimoNome = ultimo,
+                Titulo = Titulo.NaoInformado,
+                Funcao = Funcao.Participante,
+                ImagemURL = UnsplashPortraitPicker.Next(),
                 UserName = model.UserName,
                 Email = model.Email,
                 EmailConfirmed = true
@@ -70,9 +79,17 @@ namespace ProEventos.Services.Services
             if (existingUser != null)
                 return Error.Conflict("Account.RegisterPalestrante.UserNameInUse", "UserName já está em uso.");
 
+            var (primeiro, ultimo) = SplitNome(model.Nome);
+            var portrait = UnsplashPortraitPicker.Next();
             var user = new User
             {
-                Nome = model.Nome,
+                Nome = BuildNome(primeiro, ultimo),
+                PrimeiroNome = primeiro,
+                UltimoNome = ultimo,
+                Titulo = Titulo.NaoInformado,
+                Funcao = Funcao.Palestrante,
+                Telefone = model.Telefone,
+                ImagemURL = portrait,
                 UserName = model.UserName,
                 Email = model.Email,
                 EmailConfirmed = true
@@ -90,11 +107,11 @@ namespace ProEventos.Services.Services
 
             var palestrante = await _palestrantesRepository.InsertAsync(new Palestrante
             {
-                Nome = model.Nome,
+                Nome = user.Nome,
                 Email = model.Email,
                 Telefone = model.Telefone,
                 MiniCurriculo = model.MiniCurriculo,
-                ImagemURL = model.ImagemURL,
+                ImagemURL = string.IsNullOrWhiteSpace(model.ImagemURL) ? portrait : model.ImagemURL,
                 UserId = user.Id
             });
 
@@ -139,7 +156,7 @@ namespace ProEventos.Services.Services
             var user = await _userManager.FindByIdAsync(userId);
             if (user == null)
                 return Error.NotFound("Account.Profile.NotFound", "Usuário não encontrado.");
-            return ToDto(user);
+            return await ToDtoAsync(user);
         }
 
         public async Task<ErrorOr<UserDto>> UpdateProfileAsync(string userId, UserUpdateDto model)
@@ -148,26 +165,78 @@ namespace ProEventos.Services.Services
             if (user == null)
                 return Error.NotFound("Account.Update.NotFound", "Usuário não encontrado.");
 
-            if (!string.IsNullOrWhiteSpace(model.Email) &&
-                !string.Equals(model.Email, user.Email, System.StringComparison.OrdinalIgnoreCase))
+            if (string.IsNullOrWhiteSpace(model.PrimeiroNome))
+                return Error.Validation("Account.Update.PrimeiroNome", "Primeiro nome é obrigatório.");
+            if (string.IsNullOrWhiteSpace(model.UltimoNome))
+                return Error.Validation("Account.Update.UltimoNome", "Último nome é obrigatório.");
+            if (string.IsNullOrWhiteSpace(model.Email))
+                return Error.Validation("Account.Update.Email", "E-mail é obrigatório.");
+            if (string.IsNullOrWhiteSpace(model.Telefone))
+                return Error.Validation("Account.Update.Telefone", "Telefone é obrigatório.");
+            if (string.IsNullOrWhiteSpace(model.Descricao))
+                return Error.Validation("Account.Update.Descricao", "Descrição é obrigatória.");
+
+            if (!string.Equals(model.Email, user.Email, StringComparison.OrdinalIgnoreCase))
             {
                 var emailOwner = await _userManager.FindByEmailAsync(model.Email);
                 if (emailOwner != null && emailOwner.Id != user.Id)
                     return Error.Conflict("Account.Update.EmailInUse", "Email já está em uso.");
-                user.Email = model.Email;
+                user.Email = model.Email.Trim();
             }
 
             if (!string.IsNullOrWhiteSpace(model.UserName) &&
-                !string.Equals(model.UserName, user.UserName, System.StringComparison.OrdinalIgnoreCase))
+                !string.Equals(model.UserName, user.UserName, StringComparison.OrdinalIgnoreCase))
             {
                 var nameOwner = await _userManager.FindByNameAsync(model.UserName);
                 if (nameOwner != null && nameOwner.Id != user.Id)
                     return Error.Conflict("Account.Update.UserNameInUse", "UserName já está em uso.");
-                user.UserName = model.UserName;
+                user.UserName = model.UserName.Trim();
             }
 
-            if (!string.IsNullOrWhiteSpace(model.Nome))
-                user.Nome = model.Nome;
+            user.PrimeiroNome = model.PrimeiroNome.Trim();
+            user.UltimoNome = model.UltimoNome.Trim();
+            user.Nome = BuildNome(user.PrimeiroNome, user.UltimoNome);
+            user.Titulo = model.Titulo;
+            user.Funcao = model.Funcao;
+            user.Telefone = model.Telefone.Trim();
+            user.Descricao = model.Descricao.Trim();
+
+            if (model.ImagemURL != null)
+            {
+                if (string.IsNullOrWhiteSpace(model.ImagemURL))
+                {
+                    user.ImagemURL = null;
+                }
+                else
+                {
+                    var url = model.ImagemURL.Trim();
+                    if (!Uri.TryCreate(url, UriKind.Absolute, out var uri) ||
+                        uri.Scheme != Uri.UriSchemeHttps)
+                    {
+                        return Error.Validation("Account.Update.ImagemURL", "ImagemURL deve ser uma URL https absoluta.");
+                    }
+                    user.ImagemURL = url;
+                }
+            }
+
+            if (model.Funcao == Funcao.Palestrante)
+            {
+                var ensure = await EnsurePalestranteProfileAsync(user);
+                if (ensure.IsError)
+                    return ensure.Errors;
+            }
+
+            if (!string.IsNullOrWhiteSpace(model.Password))
+            {
+                var token = await _userManager.GeneratePasswordResetTokenAsync(user);
+                var reset = await _userManager.ResetPasswordAsync(user, token, model.Password);
+                if (!reset.Succeeded)
+                {
+                    var error = string.Join(" ", reset.Errors.Select(e => e.Description));
+                    return Error.Validation("Account.Update.PasswordFailed", error);
+                }
+                await _userManager.UpdateSecurityStampAsync(user);
+            }
 
             var result = await _userManager.UpdateAsync(user);
             if (!result.Succeeded)
@@ -176,7 +245,7 @@ namespace ProEventos.Services.Services
                 return Error.Validation("Account.Update.Failed", error);
             }
 
-            return ToDto(user);
+            return await ToDtoAsync(user);
         }
 
         public async Task<ErrorOr<AuthResponseDto>> ChangePasswordAsync(string userId, ChangePasswordDto model)
@@ -192,10 +261,32 @@ namespace ProEventos.Services.Services
                 return Error.Validation("Account.ChangePassword.Failed", error);
             }
 
-            // ChangePassword already updates SecurityStamp; rotate JWT pair so prior
-            // refresh tokens fail OneTime LastRefreshToken validation.
             await _userManager.UpdateSecurityStampAsync(user);
             return await _tokenService.BuildAuthResponseAsync(user);
+        }
+
+        private async Task<ErrorOr<Success>> EnsurePalestranteProfileAsync(User user)
+        {
+            var linked = await _palestrantesRepository.GetPalestranteByUserIdAsync(user.Id);
+            if (linked == null)
+            {
+                await _palestrantesRepository.InsertAsync(new Palestrante
+                {
+                    Nome = user.Nome,
+                    Email = user.Email,
+                    Telefone = user.Telefone,
+                    ImagemURL = user.ImagemURL,
+                    UserId = user.Id
+                });
+            }
+
+            await EnsureRoleExistsAsync(AppRoles.Palestrante);
+            if (await _userManager.IsInRoleAsync(user, AppRoles.User))
+                await _userManager.RemoveFromRoleAsync(user, AppRoles.User);
+            if (!await _userManager.IsInRoleAsync(user, AppRoles.Palestrante))
+                await _userManager.AddToRoleAsync(user, AppRoles.Palestrante);
+
+            return Result.Success;
         }
 
         private async Task EnsureRoleExistsAsync(string roleName)
@@ -204,11 +295,59 @@ namespace ProEventos.Services.Services
                 await _roleManager.CreateAsync(new IdentityRole(roleName));
         }
 
-        private static UserDto ToDto(User user) => new UserDto
+        private async Task<UserDto> ToDtoAsync(User user)
         {
-            UserName = user.UserName,
-            Email = user.Email,
-            Nome = user.Nome
-        };
+            EnsureNameParts(user);
+            var palestrante = await _palestrantesRepository.GetPalestranteByUserIdAsync(user.Id);
+            var ministrados = palestrante != null
+                ? await _palestrantesRepository.CountEventosByPalestranteIdAsync(palestrante.Id)
+                : 0;
+
+            return new UserDto
+            {
+                UserName = user.UserName,
+                Email = user.Email,
+                Nome = user.Nome ?? BuildNome(user.PrimeiroNome, user.UltimoNome),
+                PrimeiroNome = user.PrimeiroNome,
+                UltimoNome = user.UltimoNome,
+                Titulo = user.Titulo,
+                Funcao = user.Funcao,
+                Telefone = user.Telefone,
+                Descricao = user.Descricao,
+                ImagemURL = user.ImagemURL,
+                EventosMinistrados = ministrados,
+                EventosParticipados = 0
+            };
+        }
+
+        private static void EnsureNameParts(User user)
+        {
+            if (string.IsNullOrWhiteSpace(user.PrimeiroNome) && !string.IsNullOrWhiteSpace(user.Nome))
+            {
+                var (p, u) = SplitNome(user.Nome);
+                user.PrimeiroNome = p;
+                user.UltimoNome = u;
+            }
+        }
+
+        internal static (string Primeiro, string Ultimo) SplitNome(string nome)
+        {
+            if (string.IsNullOrWhiteSpace(nome))
+                return ("", "");
+            var parts = nome.Trim().Split(' ', 2, StringSplitOptions.RemoveEmptyEntries);
+            if (parts.Length == 1)
+                return (parts[0], parts[0]);
+            return (parts[0], parts[1]);
+        }
+
+        internal static string BuildNome(string primeiro, string ultimo)
+        {
+            var p = (primeiro ?? "").Trim();
+            var u = (ultimo ?? "").Trim();
+            if (string.IsNullOrEmpty(p)) return u;
+            if (string.IsNullOrEmpty(u) || string.Equals(p, u, StringComparison.Ordinal))
+                return p;
+            return $"{p} {u}";
+        }
     }
 }

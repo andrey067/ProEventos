@@ -173,6 +173,36 @@ public class LotesServiceTests
     }
 
     [Fact]
+    public async Task DeleteLote_Maps_AppException()
+    {
+        _repo.Setup(r => r.GetLoteByIdsAsync(1, 2)).ReturnsAsync(new Lote { Id = 2, EventoId = 1 });
+        _repo.Setup(r => r.DeleteAsync(2))
+            .ThrowsAsync(new NotFoundException("BaseRepository.DeleteAsync", "Item não encontrado"));
+
+        var result = await _sut.DeleteLote(1, 2);
+
+        result.IsError.Should().BeTrue();
+        result.FirstError.Type.Should().Be(ErrorType.NotFound);
+    }
+
+    [Fact]
+    public async Task SaveLotes_Skips_Missing_Existing_Id()
+    {
+        _repo.SetupSequence(r => r.GetLotesByEventoIdAsync(2))
+            .ReturnsAsync(new List<Lote>())
+            .ReturnsAsync(new List<Lote>());
+        _repo.Setup(r => r.InsertAsync(It.IsAny<Lote>())).ReturnsAsync((Lote l) => l);
+
+        var result = await _sut.SaveLotes(2, new List<LoteDto>
+        {
+            new() { Id = 999, Nome = "Ghost", Preco = 1, Quantidade = 1, DataIncio = DateTime.UtcNow, DataFim = DateTime.UtcNow.AddDays(1) }
+        });
+
+        result.IsError.Should().BeFalse();
+        _repo.Verify(r => r.UpdateAsync(It.IsAny<Lote>()), Times.Never);
+    }
+
+    [Fact]
     public async Task AddLote_Maps_AppException()
     {
         _repo.Setup(r => r.InsertAsync(It.IsAny<Lote>()))

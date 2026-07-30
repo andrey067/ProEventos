@@ -10,3 +10,5 @@ export interface Lote {
   eventoId: number;
   evento: Evento;
 }
+
+export const loteModelKey = "Lote" as const;

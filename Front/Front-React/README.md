@@ -24,7 +24,7 @@ API URL tipada: `VITE_API_URL` em `.env` (`src/vite-env.d.ts`).
 
 ```bash
 pnpm test              # rápido, sem gate
-pnpm test:coverage     # Vitest + v8; falha se coverage < 80%
+pnpm test:coverage     # Vitest + v8; falha se coverage < 90%
 pnpm build
 ```
 

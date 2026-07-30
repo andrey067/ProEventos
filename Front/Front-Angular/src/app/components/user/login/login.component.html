@@ -1,4 +1,4 @@
-<section class="mx-auto flex max-w-md flex-col gap-6">
+<section class="mx-auto flex w-full min-w-0 max-w-md flex-col gap-6">
   <div>
     <h1 class="text-2xl font-semibold tracking-tight">Login</h1>
     <p class="mt-1 text-sm text-muted">Entre com seu usuário e senha para manter eventos e palestrantes.</p>
@@ -44,9 +44,10 @@
     }
     <button
       type="submit"
-      class="inline-flex w-full items-center justify-center rounded-[length:var(--radius-control)] bg-accent px-4 py-2 text-sm font-medium text-white hover:bg-accent-dark active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-60"
+      class="inline-flex w-full items-center justify-center gap-2 rounded-[length:var(--radius-control)] bg-accent px-4 py-2 text-sm font-medium text-white hover:bg-accent-dark active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-60"
       [disabled]="saving"
     >
+      <app-loading-spinner [active]="saving" variant="button" />
       {{ saving ? 'Entrando...' : 'Entrar' }}
     </button>
   </form>

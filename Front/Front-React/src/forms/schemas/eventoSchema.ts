@@ -24,17 +24,24 @@ export const loteSchema = z
 
 export const redeSocialSchema = z.object({
   id: z.number(),
-  nome: z.string(),
-  url: z.string(),
+  nome: z.string().trim().min(1, "Nome da rede é obrigatório"),
+  url: z.string().trim().min(1, "URL é obrigatória"),
   eventoId: z.number().nullable().optional(),
 });
 
 export const eventoSchema = z.object({
   id: z.number(),
-  tema: z.string().trim().min(3, "Tema deve ter ao menos 3 caracteres"),
+  tema: z
+    .string()
+    .trim()
+    .min(4, "Tema deve ter ao menos 4 caracteres")
+    .max(50, "Tema deve ter no máximo 50 caracteres"),
   local: z.string().trim().min(1, "Local é obrigatório"),
   dataEvento: z.string().trim().min(1, "Data do evento é obrigatória"),
-  qtdPessoas: z.coerce.number().min(1, "Quantidade mínima é 1"),
+  qtdPessoas: z.coerce
+    .number()
+    .min(1, "Quantidade mínima é 1")
+    .max(120000, "Quantidade máxima é 120000"),
   imagemURL: z.string(),
   telefone: z.string().trim().min(1, "Telefone é obrigatório"),
   email: z.string().trim().min(1, "E-mail é obrigatório").email("E-mail inválido"),

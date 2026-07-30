@@ -65,4 +65,92 @@ describe('AccountService', () => {
     service.logout();
     expect(authToken.getToken()).toBeNull();
   });
+
+  it('stores token on registerPalestrante', () => {
+    service
+      .registerPalestrante({
+        nome: 'N',
+        userName: 'u',
+        email: 'a@b.com',
+        password: 'p',
+        miniCurriculo: 'Dev',
+        telefone: '11999999999',
+      })
+      .subscribe();
+
+    const req = httpMock.expectOne(`${environment.apiUrl}/account/register-palestrante`);
+    expect(req.request.method).toBe('POST');
+    expect(req.request.body).toEqual({
+      nome: 'N',
+      userName: 'u',
+      email: 'a@b.com',
+      password: 'p',
+      miniCurriculo: 'Dev',
+      telefone: '11999999999',
+    });
+    req.flush({
+      token: 'pal',
+      userName: 'u',
+      email: 'a@b.com',
+      nome: 'N',
+      roles: ['Palestrante'],
+      palestranteId: 9,
+    });
+
+    expect(authToken.getToken()).toBe('pal');
+    expect(authToken.getRoles()).toEqual(['Palestrante']);
+  });
+
+  it('updates profile with telefone and descricao', () => {
+    service
+      .updateProfile({
+        primeiroNome: 'Nome',
+        ultimoNome: 'Sobrenome',
+        userName: 'u',
+        email: 'a@b.com',
+        titulo: 'NaoInformado',
+        funcao: 'Participante',
+        telefone: '11988887777',
+        descricao: 'Bio',
+      })
+      .subscribe((profile) => {
+        expect(profile.telefone).toBe('11988887777');
+        expect(profile.descricao).toBe('Bio');
+      });
+
+    const req = httpMock.expectOne(`${environment.apiUrl}/account/profile`);
+    expect(req.request.method).toBe('PUT');
+    expect(req.request.body).toEqual({
+      primeiroNome: 'Nome',
+      ultimoNome: 'Sobrenome',
+      userName: 'u',
+      email: 'a@b.com',
+      titulo: 'NaoInformado',
+      funcao: 'Participante',
+      telefone: '11988887777',
+      descricao: 'Bio',
+    });
+    req.flush({
+      userName: 'u',
+      email: 'a@b.com',
+      nome: 'Nome Sobrenome',
+      primeiroNome: 'Nome',
+      ultimoNome: 'Sobrenome',
+      titulo: 'NaoInformado',
+      funcao: 'Participante',
+      telefone: '11988887777',
+      descricao: 'Bio',
+      eventosMinistrados: 0,
+      eventosParticipados: 0,
+    });
+  });
+
+  it('changes password', () => {
+    service.changePassword({ currentPassword: 'old', newPassword: 'new' }).subscribe();
+
+    const req = httpMock.expectOne(`${environment.apiUrl}/account/change-password`);
+    expect(req.request.method).toBe('PUT');
+    expect(req.request.body).toEqual({ currentPassword: 'old', newPassword: 'new' });
+    req.flush(null);
+  });
 });

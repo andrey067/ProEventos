@@ -1,4 +1,4 @@
-import { render, screen } from "@testing-library/react";
+import { fireEvent, render, screen } from "@testing-library/react";
 import { MemoryRouter } from "react-router-dom";
 import { beforeEach, describe, expect, it } from "vitest";
 import { clearToken, setToken } from "@/services/authToken";
@@ -59,5 +59,38 @@ describe("Nav", () => {
 
     expect(eventosLink.className).toContain("text-muted");
     expect(palestrantesLink.className).toContain("bg-accent-soft");
+  });
+
+  it("abre e fecha menu mobile", () => {
+    render(
+      <MemoryRouter initialEntries={["/eventos"]}>
+        <Nav />
+      </MemoryRouter>,
+    );
+
+    const menuButton = screen.getByRole("button", { name: "Menu" });
+    expect(menuButton.getAttribute("aria-expanded")).toBe("false");
+    expect(document.getElementById("mobile-nav")).toBeNull();
+
+    fireEvent.click(menuButton);
+    expect(menuButton.getAttribute("aria-expanded")).toBe("true");
+    expect(document.getElementById("mobile-nav")).toBeTruthy();
+
+    fireEvent.click(menuButton);
+    expect(menuButton.getAttribute("aria-expanded")).toBe("false");
+    expect(document.getElementById("mobile-nav")).toBeNull();
+  });
+
+  it("faz logout e navega para login", () => {
+    setToken("test-token");
+
+    render(
+      <MemoryRouter initialEntries={["/eventos"]}>
+        <Nav />
+      </MemoryRouter>,
+    );
+
+    fireEvent.click(screen.getByRole("button", { name: "Sair" }));
+    expect(screen.queryByRole("link", { name: "Perfil" })).toBeNull();
   });
 });

@@ -2,32 +2,39 @@ import type {
   AuthResponse,
   ChangePasswordRequest,
   LoginRequest,
+  RegisterPalestranteRequest,
   RegisterRequest,
   UpdateProfileRequest,
   UserProfile,
 } from "@/models";
-import { clearToken, setToken } from "./authToken";
+import { clearToken, setSession } from "./authToken";
 import { http } from "./http";
+
+function persistAuth(response: AuthResponse): AuthResponse {
+  setSession(response.token, response.roles);
+  return response;
+}
 
 export const accountService = {
   register(data: RegisterRequest): Promise<AuthResponse> {
     return http<AuthResponse>("/account/register", {
       method: "POST",
       body: JSON.stringify(data),
-    }).then((response) => {
-      setToken(response.token);
-      return response;
-    });
+    }).then(persistAuth);
+  },
+
+  registerPalestrante(data: RegisterPalestranteRequest): Promise<AuthResponse> {
+    return http<AuthResponse>("/account/register-palestrante", {
+      method: "POST",
+      body: JSON.stringify(data),
+    }).then(persistAuth);
   },
 
   login(data: LoginRequest): Promise<AuthResponse> {
     return http<AuthResponse>("/account/login", {
       method: "POST",
       body: JSON.stringify(data),
-    }).then((response) => {
-      setToken(response.token);
-      return response;
-    });
+    }).then(persistAuth);
   },
 
   logout(): void {

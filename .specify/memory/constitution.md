@@ -1,19 +1,15 @@
 <!--
 Sync Impact Report
-- Version change: 1.0.0 → 2.0.0
+- Version change: 2.0.0 → 2.1.0
 - Modified principles: none (I–V unchanged)
-- Scope Boundaries:
-  - REMOVED ban on Identity / JWT as globally out of scope
-  - ADDED: Identity/auth is in scope when an active feature spec requires it;
-    Contatos and premium redesign remain out of scope
+- Architecture Constraints:
+  - Testing: optional → mandatory 90% per-unit + pyramid + CI (016-test-strategy)
+- Scope Boundaries: unchanged (Contatos / premium redesign out; Identity when spec requires)
 - Templates requiring updates:
-  - .specify/templates/spec-template.md ✅ (Out of Scope + Assumptions)
-  - .specify/templates/plan-template.md ✅ (Constitution Check gate)
-  - .specify/templates/tasks-template.md ✅ (foundation auth note)
-  - .specify/templates/commands/*.md ⚠ pending (directory does not exist)
-  - README.md / docs/quickstart.md ⚠ pending (no project-level docs to sync)
+  - .specify/templates/plan-template.md / tasks-template.md — Testing notes
+  - docs/testing.md ✅
 - Follow-up TODOs: none
-- Trigger: specs/005-eventos-domain-rules clarification Q1:A
+- Trigger: specs/016-test-strategy
 -->
 
 # ProEventos Constitution
@@ -100,9 +96,14 @@ sprint goals.
   the shared API over HTTP.
 - **Data**: persistence stays behind the API; frontends MUST NOT access the
   database directly.
-- **Testing**: tests are optional unless a feature spec requests them; when
-  requested, prefer API contract and critical user-journey coverage over
-  exhaustive UI snapshot suites.
+- **Testing**: Mandatory quality bar for the repo (see
+  `specs/016-test-strategy/`): each backend coverage unit and each frontend
+  app MUST independently reach ≥ **90%** coverage (lines/branches/methods or
+  statements as exposed by tooling), enforced locally and in CI on every PR
+  and on `main`. Prefer the test pyramid (~70% unit / ~20% integration /
+  ~10% critical E2E). No feature is complete without tests; every bug fix
+  MUST include a regression test. Do not expand coverage exclusions to game
+  the gate. Exhaustive UI snapshot farms remain out of scope.
 
 ## Governance
 
@@ -124,4 +125,4 @@ reject work that reintroduces Contatos or premium redesign without an approved
 amendment, and MUST reject Identity/auth work that is not required by an
 active feature spec.
 
-**Version**: 2.0.0 | **Ratified**: 2026-07-24 | **Last Amended**: 2026-07-26
+**Version**: 2.1.0 | **Ratified**: 2026-07-24 | **Last Amended**: 2026-07-29

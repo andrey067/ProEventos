@@ -10,6 +10,14 @@ namespace ProEventos.Persistence.Mappings
         {
             builder.ToTable("Eventos");
 
+            builder.Property(e => e.UserId).HasMaxLength(450);
+            builder.HasIndex(e => e.UserId);
+
+            builder.HasOne(e => e.User)
+                .WithMany()
+                .HasForeignKey(e => e.UserId)
+                .OnDelete(DeleteBehavior.SetNull);
+
             builder.HasMany(e => e.Lotes)
                 .WithOne(l => l.Evento)
                 .OnDelete(DeleteBehavior.Cascade);

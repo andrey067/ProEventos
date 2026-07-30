@@ -22,4 +22,41 @@ export class RedeSocialService {
       `${this.baseUrl}/evento/${eventoId}/${redeSocialId}`,
     );
   }
+
+  getByPalestranteId(palestranteId: number): Observable<RedeSocial[]> {
+    return this.http.get<RedeSocial[]>(`${this.baseUrl}/palestrante/${palestranteId}`);
+  }
+
+  saveByPalestranteId(
+    palestranteId: number,
+    redes: RedeSocial[],
+  ): Observable<RedeSocial[]> {
+    return this.http.put<RedeSocial[]>(
+      `${this.baseUrl}/palestrante/${palestranteId}`,
+      redes,
+    );
+  }
+
+  deleteByPalestranteId(
+    palestranteId: number,
+    redeSocialId: number,
+  ): Observable<{ message: string }> {
+    return this.http.delete<{ message: string }>(
+      `${this.baseUrl}/palestrante/${palestranteId}/${redeSocialId}`,
+    );
+  }
+
+  getMine(): Observable<RedeSocial[]> {
+    return this.http.get<RedeSocial[]>(`${this.baseUrl}/palestrante`);
+  }
+
+  saveMine(redes: RedeSocial[]): Observable<RedeSocial[]> {
+    return this.http.put<RedeSocial[]>(`${this.baseUrl}/palestrante`, redes);
+  }
+
+  deleteMine(redeSocialId: number): Observable<{ message: string }> {
+    return this.http.delete<{ message: string }>(
+      `${this.baseUrl}/palestrante/${redeSocialId}`,
+    );
+  }
 }

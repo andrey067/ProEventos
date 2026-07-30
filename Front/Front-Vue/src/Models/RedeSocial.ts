@@ -5,3 +5,5 @@ export interface RedeSocial {
   eventoId: number;
   palestranteId: number;
 }
+
+export const redeSocialModelKey = "RedeSocial" as const;

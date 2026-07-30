@@ -1,12 +1,26 @@
 function parseIsoDate(value: string): Date | null {
   const match = value.trim().match(/^(\d{4})-(\d{2})-(\d{2})/);
   if (!match) return null;
-  const date = new Date(value);
-  return Number.isNaN(date.getTime()) ? null : date;
+  const year = Number(match[1]);
+  const month = Number(match[2]);
+  const day = Number(match[3]);
+  // Local calendar date — avoid `new Date('yyyy-MM-dd')` UTC shift.
+  const date = new Date(year, month - 1, day);
+  if (
+    date.getFullYear() !== year ||
+    date.getMonth() !== month - 1 ||
+    date.getDate() !== day
+  ) {
+    return null;
+  }
+  return date;
 }
 
 function parseLegacyDate(value: string): Date | null {
-  const match = value.trim().match(/^(\d{2})-(\d{2})-(\d{4})$/);
+  // API may append " HH:mm:ss"
+  const match = value
+    .trim()
+    .match(/^(\d{2})-(\d{2})-(\d{4})(?:\s+\d{2}:\d{2}(?::\d{2})?)?$/);
   if (!match) return null;
   const [, dd, mm, yyyy] = match;
   const date = new Date(Number(yyyy), Number(mm) - 1, Number(dd));
@@ -21,7 +35,10 @@ function parseLegacyDate(value: string): Date | null {
 }
 
 export function parseDateBr(value: string): Date | null {
-  const match = value.trim().match(/^(\d{2})\/(\d{2})\/(\d{4})$/);
+  // API often returns "dd/MM/yyyy HH:mm:ss" — accept optional time suffix.
+  const match = value
+    .trim()
+    .match(/^(\d{2})\/(\d{2})\/(\d{4})(?:\s+\d{2}:\d{2}(?::\d{2})?)?$/);
   if (!match) return null;
   const [, dd, mm, yyyy] = match;
   const date = new Date(Number(yyyy), Number(mm) - 1, Number(dd));
