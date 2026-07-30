@@ -22,4 +22,45 @@ export const redeSocialService = {
       { method: "DELETE" },
     );
   },
+
+  getByPalestranteId(palestranteId: number): Promise<RedeSocial[]> {
+    return http<RedeSocial[]>(`/redes-sociais/palestrante/${palestranteId}`);
+  },
+
+  saveByPalestranteId(
+    palestranteId: number,
+    redes: RedeSocial[],
+  ): Promise<RedeSocial[]> {
+    return http<RedeSocial[]>(`/redes-sociais/palestrante/${palestranteId}`, {
+      method: "PUT",
+      body: JSON.stringify(redes),
+    });
+  },
+
+  deleteByPalestranteId(
+    palestranteId: number,
+    redeSocialId: number,
+  ): Promise<{ message: string }> {
+    return http<{ message: string }>(
+      `/redes-sociais/palestrante/${palestranteId}/${redeSocialId}`,
+      { method: "DELETE" },
+    );
+  },
+
+  getMine(): Promise<RedeSocial[]> {
+    return http<RedeSocial[]>(`/redes-sociais/palestrante`);
+  },
+
+  saveMine(redes: RedeSocial[]): Promise<RedeSocial[]> {
+    return http<RedeSocial[]>(`/redes-sociais/palestrante`, {
+      method: "PUT",
+      body: JSON.stringify(redes),
+    });
+  },
+
+  deleteMine(redeSocialId: number): Promise<{ message: string }> {
+    return http<{ message: string }>(`/redes-sociais/palestrante/${redeSocialId}`, {
+      method: "DELETE",
+    });
+  },
 };

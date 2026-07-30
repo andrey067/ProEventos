@@ -9,3 +9,5 @@ export interface Palestrante {
   email: string;
   redesSociais?: RedeSocial[];
 }
+
+export const palestranteModelKey = "Palestrante" as const;

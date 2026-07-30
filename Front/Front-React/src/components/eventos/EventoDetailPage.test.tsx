@@ -1,8 +1,20 @@
-import { fireEvent, render, screen, waitFor } from "@testing-library/react";
+import { fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import { MemoryRouter, Route, Routes } from "react-router-dom";
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import type { Evento, Lote, RedeSocial } from "@/models";
+import type { Evento, Lote, Palestrante, RedeSocial } from "@/models";
 import { EventoDetailPage } from "@/components/eventos/EventoDetailPage";
+import { setRoles, setToken } from "@/services/authToken";
+import { palestranteService } from "@/services/palestranteService";
+import { eventoSchema } from "@/forms/schemas/eventoSchema";
+
+vi.mock("@/services/palestranteService", () => ({
+  palestranteService: {
+    listAll: vi.fn(),
+    getByNome: vi.fn(),
+    associate: vi.fn(),
+    disassociate: vi.fn(),
+  },
+}));
 
 const mockEvento: Evento = {
   id: 1,
@@ -15,6 +27,7 @@ const mockEvento: Evento = {
   email: "contato@example.com",
   lotes: [],
   redesSociais: [],
+  palestrantes: [],
 };
 
 const mockLotes: Lote[] = [
@@ -53,9 +66,58 @@ function renderDetail(initialEntry: string) {
   );
 }
 
+describe("eventoSchema", () => {
+  it("exige tema entre 4 e 50 caracteres e qtd máxima 120000", () => {
+    const base = {
+      id: 0,
+      local: "SP",
+      dataEvento: "2026-01-01",
+      imagemURL: "",
+      telefone: "11999999999",
+      email: "ok@example.com",
+      lotes: [],
+      redesSociais: [],
+    };
+    expect(eventoSchema.safeParse({ ...base, tema: "abc", qtdPessoas: 1 }).success).toBe(
+      false,
+    );
+    expect(
+      eventoSchema.safeParse({ ...base, tema: "abcd", qtdPessoas: 1 }).success,
+    ).toBe(true);
+    expect(
+      eventoSchema.safeParse({
+        ...base,
+        tema: "a".repeat(51),
+        qtdPessoas: 1,
+      }).success,
+    ).toBe(false);
+    expect(
+      eventoSchema.safeParse({
+        ...base,
+        tema: "Evento",
+        qtdPessoas: 120001,
+      }).success,
+    ).toBe(false);
+    expect(
+      eventoSchema.safeParse({
+        ...base,
+        tema: "Evento",
+        email: "invalido",
+        qtdPessoas: 10,
+      }).success,
+    ).toBe(false);
+  });
+});
+
 describe("EventoDetailPage", () => {
   beforeEach(() => {
     vi.stubGlobal("fetch", vi.fn());
+    setToken("test-token");
+    setRoles(["User"]);
+    vi.mocked(palestranteService.listAll).mockReset();
+    vi.mocked(palestranteService.getByNome).mockReset();
+    vi.mocked(palestranteService.associate).mockReset();
+    vi.mocked(palestranteService.disassociate).mockReset();
   });
 
   it("renderiza formulário vazio para novo evento", async () => {
@@ -64,6 +126,13 @@ describe("EventoDetailPage", () => {
     expect(await screen.findByRole("heading", { name: "Novo evento" })).toBeTruthy();
     expect(screen.getByLabelText("Tema")).toHaveProperty("value", "");
     expect(screen.getByRole("button", { name: "Salvar" })).toBeTruthy();
+  });
+
+  it("trata id 0 como novo evento sem buscar na API", async () => {
+    renderDetail("/eventos/0");
+
+    expect(await screen.findByRole("heading", { name: "Novo evento" })).toBeTruthy();
+    expect(fetch).not.toHaveBeenCalled();
   });
 
   it("carrega evento existente com lotes e redes", async () => {
@@ -96,7 +165,6 @@ describe("EventoDetailPage", () => {
   });
 
   it("cria evento e navega para detalhe", async () => {
-    localStorage.setItem("proeventos_token", "test-token");
     const saved = { ...mockEvento, id: 5, tema: "Novo Evento" };
     mockFetchJson(saved);
     mockFetchJson(mockLotes);
@@ -158,7 +226,6 @@ describe("EventoDetailPage", () => {
   });
 
   it("atualiza evento existente", async () => {
-    localStorage.setItem("proeventos_token", "test-token");
     mockFetchJson(mockEvento);
     mockFetchJson(mockLotes);
     mockFetchJson(mockRedes);
@@ -184,7 +251,7 @@ describe("EventoDetailPage", () => {
     renderDetail("/eventos/new");
 
     fireEvent.change(await screen.findByLabelText("Tema"), {
-      target: { value: "Falha" },
+      target: { value: "Falha Evento" },
     });
     fireEvent.change(screen.getByLabelText("Local"), {
       target: { value: "SP" },
@@ -222,6 +289,64 @@ describe("EventoDetailPage", () => {
 
     expect(screen.getByLabelText("Local")).toHaveProperty("value", "Campinas");
     expect(screen.getByLabelText("Qtd pessoas")).toHaveProperty("value", "50");
+  });
+
+  it("espelha digitação no preview no create (two-way binding)", async () => {
+    renderDetail("/eventos/new");
+
+    fireEvent.change(await screen.findByLabelText("Local"), {
+      target: { value: "Arena Live" },
+    });
+    fireEvent.change(screen.getByLabelText("Telefone"), {
+      target: { value: "11911112222" },
+    });
+    fireEvent.change(screen.getByLabelText("E-mail"), {
+      target: { value: "live@test.com" },
+    });
+
+    const card = screen.getByTestId("evento-preview-card");
+    expect(card.textContent).toContain("Arena Live");
+    expect(card.textContent).toContain("11911112222");
+    expect(card.textContent).toContain("live@test.com");
+  });
+
+  it("espelha dataEvento no preview ao alterar o DatePicker", async () => {
+    renderDetail("/eventos/new");
+
+    await screen.findByLabelText("Local");
+    const dateInput = document.getElementById("dataEvento") as HTMLInputElement;
+    expect(dateInput).toBeTruthy();
+    fireEvent.change(dateInput, { target: { value: "2026-07-20" } });
+
+    await waitFor(() => {
+      expect(screen.getByTestId("evento-preview-card").textContent).toMatch(
+        /20\/07\/2026/,
+      );
+    });
+  });
+
+  it("preenche formulário e preview no edit e continua espelhando mudanças", async () => {
+    mockFetchJson(mockEvento);
+    mockFetchJson(mockLotes);
+    mockFetchJson(mockRedes);
+
+    renderDetail("/eventos/1");
+
+    await screen.findByDisplayValue("São Paulo");
+    const card = screen.getByTestId("evento-preview-card");
+    expect(card.textContent).toContain("São Paulo");
+    expect(card.textContent).toContain("11999999999");
+    expect(card.textContent).toContain("contato@example.com");
+
+    fireEvent.change(screen.getByLabelText("Local"), {
+      target: { value: "Campinas" },
+    });
+
+    await waitFor(() => {
+      expect(screen.getByTestId("evento-preview-card").textContent).toContain(
+        "Campinas",
+      );
+    });
   });
 
   it("atualiza preço e quantidade de lote", async () => {
@@ -289,5 +414,143 @@ describe("EventoDetailPage", () => {
         "https://cdn.example.com/ok.jpg",
       );
     });
+  });
+
+  it("exclui lote persistido após confirmação", async () => {
+    mockFetchJson(mockEvento);
+    mockFetchJson(mockLotes);
+    mockFetchJson(mockRedes);
+    mockFetchJson({ message: "Deletado" });
+
+    renderDetail("/eventos/1");
+
+    await screen.findByDisplayValue("VIP");
+    fireEvent.click(screen.getAllByRole("button", { name: "Excluir" })[0]);
+    const dialog = screen.getByRole("dialog");
+    fireEvent.click(within(dialog).getByRole("button", { name: "Excluir" }));
+
+    await waitFor(() => {
+      expect(fetch).toHaveBeenCalledWith(
+        "http://localhost:5050/lotes/1/1",
+        expect.objectContaining({ method: "DELETE" }),
+      );
+    });
+    expect(await screen.findByText("Lote excluído com sucesso.")).toBeTruthy();
+    expect(screen.queryByDisplayValue("VIP")).toBeNull();
+  });
+
+  it("remove lote local sem DELETE quando id é 0", async () => {
+    renderDetail("/eventos/new");
+
+    fireEvent.click(await screen.findByRole("button", { name: "+ Lote" }));
+    expect(screen.getByLabelText("Nome")).toBeTruthy();
+
+    fireEvent.click(screen.getByRole("button", { name: "Excluir" }));
+    const dialog = screen.getByRole("dialog");
+    fireEvent.click(within(dialog).getByRole("button", { name: "Excluir" }));
+
+    await waitFor(() => {
+      expect(screen.queryByLabelText("Nome")).toBeNull();
+    });
+    expect(fetch).not.toHaveBeenCalled();
+  });
+
+  it("exclui rede social persistida após confirmação", async () => {
+    mockFetchJson(mockEvento);
+    mockFetchJson(mockLotes);
+    mockFetchJson(mockRedes);
+    mockFetchJson({ message: "Deletado" });
+
+    renderDetail("/eventos/1");
+
+    await screen.findByDisplayValue("Instagram");
+    const excluirButtons = screen.getAllByRole("button", { name: "Excluir" });
+    fireEvent.click(excluirButtons[excluirButtons.length - 1]);
+    const dialog = screen.getByRole("dialog");
+    fireEvent.click(within(dialog).getByRole("button", { name: "Excluir" }));
+
+    await waitFor(() => {
+      expect(fetch).toHaveBeenCalledWith(
+        "http://localhost:5050/redes-sociais/evento/1/1",
+        expect.objectContaining({ method: "DELETE" }),
+      );
+    });
+    expect(
+      await screen.findByText("Rede social excluída com sucesso."),
+    ).toBeTruthy();
+  });
+
+  it("oculta ações de escrita sem role User", async () => {
+    setRoles(["Palestrante"]);
+    renderDetail("/eventos/new");
+
+    expect(await screen.findByRole("heading", { name: "Novo evento" })).toBeTruthy();
+    expect(
+      screen.getByText(/Acesso somente leitura/),
+    ).toBeTruthy();
+    expect(screen.queryByRole("button", { name: "Salvar" })).toBeNull();
+  });
+
+  it("associa palestrante ao evento", async () => {
+    const speaker: Palestrante = {
+      id: 9,
+      nome: "Carlos Speaker",
+      miniCurriculo: "",
+      imagemURL: "",
+      telefone: "11999999999",
+      email: "carlos@example.com",
+    };
+    mockFetchJson(mockEvento);
+    mockFetchJson(mockLotes);
+    mockFetchJson(mockRedes);
+    vi.mocked(palestranteService.listAll).mockResolvedValue([speaker]);
+    vi.mocked(palestranteService.associate).mockResolvedValue({
+      message: "Associado",
+    });
+
+    renderDetail("/eventos/1");
+
+    await screen.findByText("Nenhum palestrante associado.");
+    fireEvent.click(screen.getByRole("button", { name: "Buscar" }));
+
+    expect(await screen.findByText("Carlos Speaker")).toBeTruthy();
+    fireEvent.click(screen.getByRole("button", { name: "Adicionar" }));
+
+    await waitFor(() => {
+      expect(palestranteService.associate).toHaveBeenCalledWith(1, 9);
+    });
+    expect(screen.getByText("Carlos Speaker")).toBeTruthy();
+    expect(screen.getByRole("button", { name: "Desassociar" })).toBeTruthy();
+  });
+
+  it("desassocia palestrante após confirmação", async () => {
+    const linked: Palestrante = {
+      id: 3,
+      nome: "Ana Linked",
+      miniCurriculo: "",
+      imagemURL: "",
+      telefone: "11999999999",
+      email: "ana@example.com",
+    };
+    mockFetchJson({ ...mockEvento, palestrantes: [linked] });
+    mockFetchJson(mockLotes);
+    mockFetchJson(mockRedes);
+    vi.mocked(palestranteService.disassociate).mockResolvedValue({
+      message: "Removido",
+    });
+
+    renderDetail("/eventos/1");
+
+    expect(await screen.findByText("Ana Linked")).toBeTruthy();
+    fireEvent.click(screen.getByRole("button", { name: "Desassociar" }));
+    const dialog = screen.getByRole("dialog");
+    fireEvent.click(
+      within(dialog).getByRole("button", { name: "Desassociar" }),
+    );
+
+    await waitFor(() => {
+      expect(palestranteService.disassociate).toHaveBeenCalledWith(1, 3);
+    });
+    expect(await screen.findByText("Nenhum palestrante associado.")).toBeTruthy();
   });
 });

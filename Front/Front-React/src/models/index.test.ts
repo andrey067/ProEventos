@@ -1,5 +1,10 @@
 import { describe, expect, it } from "vitest";
 import type { Evento, Lote, Palestrante, RedeSocial } from "@/models";
+import { FUNCAO_OPTIONS, PAGE_SIZES, TITULO_OPTIONS } from "@/models";
+import { eventoModelKey } from "@/models/Evento";
+import { loteModelKey } from "@/models/Lote";
+import { palestranteModelKey } from "@/models/Palestrante";
+import { redeSocialModelKey } from "@/models/RedeSocial";
 
 describe("models", () => {
   it("aceita estruturas de domínio usadas nos serviços", () => {
@@ -48,5 +53,15 @@ describe("models", () => {
     expect(evento.lotes?.[0].nome).toBe("VIP");
     expect(palestrante.redesSociais?.[0].url).toContain("instagram");
     expect(rede.palestranteId).toBeNull();
+  });
+
+  it("expõe opções de título e função", () => {
+    expect(TITULO_OPTIONS.length).toBeGreaterThan(0);
+    expect(FUNCAO_OPTIONS.map((o) => o.value)).toContain("Palestrante");
+    expect(PAGE_SIZES).toEqual([10, 20, 30]);
+    expect(eventoModelKey).toBe("Evento");
+    expect(loteModelKey).toBe("Lote");
+    expect(palestranteModelKey).toBe("Palestrante");
+    expect(redeSocialModelKey).toBe("RedeSocial");
   });
 });

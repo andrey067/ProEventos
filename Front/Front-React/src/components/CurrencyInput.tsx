@@ -8,6 +8,7 @@ type CurrencyInputProps = {
   name?: string;
   className?: string;
   placeholder?: string;
+  disabled?: boolean;
 };
 
 export function CurrencyInput({
@@ -18,6 +19,7 @@ export function CurrencyInput({
   name,
   className = "",
   placeholder = "R$ 0,00",
+  disabled = false,
 }: CurrencyInputProps) {
   return (
     <CurrencyInputField
@@ -25,6 +27,7 @@ export function CurrencyInput({
       name={name}
       className={className}
       placeholder={placeholder}
+      disabled={disabled}
       intlConfig={{ locale: "pt-BR", currency: "BRL" }}
       decimalsLimit={2}
       decimalScale={2}

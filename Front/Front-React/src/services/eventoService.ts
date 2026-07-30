@@ -1,17 +1,35 @@
-import type { Evento } from "@/models";
-import { http } from "./http";
+import type { Evento, PageResult } from "@/models";
+import { http, httpPaged } from "./http";
+
+export type EventoListParams = {
+  page?: number;
+  pageSize?: number;
+  q?: string;
+};
+
+function buildQuery(params: EventoListParams): string {
+  const q = new URLSearchParams();
+  if (params.page != null) q.set("page", String(params.page));
+  if (params.pageSize != null) q.set("pageSize", String(params.pageSize));
+  if (params.q?.trim()) q.set("q", params.q.trim());
+  const s = q.toString();
+  return s ? `?${s}` : "";
+}
 
 export const eventoService = {
-  getAll(): Promise<Evento[]> {
-    return http<Evento[]>("/eventos");
+  getAll(params: EventoListParams = {}): Promise<PageResult<Evento>> {
+    return httpPaged<Evento>(`/eventos${buildQuery(params)}`);
   },
 
   getById(id: number): Promise<Evento> {
     return http<Evento>(`/eventos/${id}`);
   },
 
-  getByTema(tema: string): Promise<Evento[]> {
-    return http<Evento[]>(`/eventos/tema/${encodeURIComponent(tema)}`);
+  getByTema(
+    tema: string,
+    params: Omit<EventoListParams, "q"> = {},
+  ): Promise<PageResult<Evento>> {
+    return httpPaged<Evento>(`/eventos${buildQuery({ ...params, q: tema })}`);
   },
 
   create(evento: Omit<Evento, "id"> | Evento): Promise<Evento> {

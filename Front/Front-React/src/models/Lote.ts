@@ -7,3 +7,5 @@ export interface Lote {
   quantidade: number;
   eventoId: number;
 }
+
+export const loteModelKey = "Lote" as const;

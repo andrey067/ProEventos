@@ -4,6 +4,7 @@ import { useForm } from "react-hook-form";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import { z } from "zod";
 import { FieldError } from "@/forms/components/FieldError";
+import { LoadingSpinner } from "@/components/LoadingSpinner";
 import { accountService } from "@/services/accountService";
 import { HttpError } from "@/services/http";
 
@@ -59,7 +60,7 @@ export function LoginPage() {
   }
 
   return (
-    <div className="mx-auto flex max-w-md flex-col gap-6">
+    <div className="mx-auto flex w-full min-w-0 max-w-md flex-col gap-6">
       <div>
         <h1 className="text-2xl font-semibold tracking-tight">Login</h1>
         <p className="mt-1 text-sm text-muted">
@@ -97,7 +98,8 @@ export function LoginPage() {
           />
           <FieldError error={errors.password} />
         </label>
-        <button type="submit" disabled={submitting} className={btnPrimary}>
+        <button type="submit" disabled={submitting} className={`${btnPrimary} gap-2`}>
+          <LoadingSpinner loading={submitting} variant="button" />
           {submitting ? "Entrando..." : "Entrar"}
         </button>
       </form>

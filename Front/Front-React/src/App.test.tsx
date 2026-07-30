@@ -12,11 +12,31 @@ function mockFetchJson(data: unknown) {
   } as Response);
 }
 
+function mockFetchPaged(items: unknown[]) {
+  vi.mocked(fetch).mockResolvedValueOnce({
+    ok: true,
+    status: 200,
+    statusText: "OK",
+    headers: {
+      get: (name: string) =>
+        name.toLowerCase() === "pagination"
+          ? JSON.stringify({
+              currentPage: 1,
+              itemsPerPage: 10,
+              totalItems: items.length,
+              totalPages: items.length === 0 ? 0 : 1,
+            })
+          : null,
+    },
+    json: async () => items,
+  } as unknown as Response);
+}
+
 describe("App", () => {
   beforeEach(() => {
     clearToken();
     vi.stubGlobal("fetch", vi.fn());
-    mockFetchJson([]);
+    mockFetchPaged([]);
   });
 
   it("redireciona / para /eventos", async () => {
@@ -51,7 +71,7 @@ describe("App", () => {
 
     expect(screen.getByRole("heading", { name: "Palestrantes" })).toBeTruthy();
     expect(
-      await screen.findByText("Nenhum palestrante cadastrado."),
+      await screen.findByText("Nenhum palestrante encontrado."),
     ).toBeTruthy();
   });
 
@@ -86,6 +106,30 @@ describe("App", () => {
 
     expect(
       await screen.findByRole("heading", { name: "Novo evento" }),
+    ).toBeTruthy();
+  });
+
+  it("redireciona /palestrantes/new para login sem token", () => {
+    render(
+      <MemoryRouter initialEntries={["/palestrantes/new"]}>
+        <App />
+      </MemoryRouter>,
+    );
+
+    expect(screen.getByRole("heading", { name: "Login" })).toBeTruthy();
+  });
+
+  it("renderiza formulário de novo palestrante em /palestrantes/new com token", async () => {
+    setToken("test-token");
+
+    render(
+      <MemoryRouter initialEntries={["/palestrantes/new"]}>
+        <App />
+      </MemoryRouter>,
+    );
+
+    expect(
+      await screen.findByRole("heading", { name: "Novo palestrante" }),
     ).toBeTruthy();
   });
 });

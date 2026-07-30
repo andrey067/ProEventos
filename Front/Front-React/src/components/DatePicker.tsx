@@ -1,7 +1,7 @@
 import * as Popover from "@radix-ui/react-popover";
 import { format, parse } from "date-fns";
 import { ptBR } from "date-fns/locale";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { DayPicker } from "react-day-picker";
 import "react-day-picker/style.css";
 
@@ -13,6 +13,7 @@ type DatePickerProps = {
   name?: string;
   className?: string;
   placeholder?: string;
+  disabled?: boolean;
 };
 
 function parseIsoDate(value?: string): Date | undefined {
@@ -52,9 +53,16 @@ export function DatePicker({
   name,
   className = "",
   placeholder = "Selecione a data",
+  disabled = false,
 }: DatePickerProps) {
   const [open, setOpen] = useState(false);
   const selected = parseIsoDate(value);
+  const [month, setMonth] = useState<Date>(() => selected ?? new Date());
+
+  // Keep calendar month aligned when form reset/patch loads a date (edit path).
+  useEffect(() => {
+    if (selected) setMonth(selected);
+  }, [value]);
 
   return (
     <div className="relative">
@@ -63,15 +71,24 @@ export function DatePicker({
         name={name}
         className="sr-only"
         value={value ?? ""}
+        disabled={disabled}
         onChange={(event) => onChange(event.target.value)}
         onBlur={onBlur}
+        tabIndex={-1}
+        aria-hidden
       />
-      <Popover.Root open={open} onOpenChange={setOpen}>
+      <Popover.Root
+        open={disabled ? false : open}
+        onOpenChange={(next) => {
+          if (!disabled) setOpen(next);
+        }}
+      >
         <Popover.Trigger asChild>
           <button
             type="button"
             aria-label="Abrir calendário"
-            className={`inline-flex w-full items-center justify-between gap-2 text-left ${className}`}
+            disabled={disabled}
+            className={`inline-flex w-full items-center justify-between gap-2 text-left disabled:cursor-not-allowed disabled:opacity-60 ${className}`}
           >
             <span className={selected ? "text-ink" : "text-muted"}>
               {selected
@@ -91,10 +108,12 @@ export function DatePicker({
               mode="single"
               locale={ptBR}
               selected={selected}
-              defaultMonth={selected}
+              month={month}
+              onMonthChange={setMonth}
               onSelect={(date) => {
                 onChange(date ? format(date, "yyyy-MM-dd") : "");
                 setOpen(false);
+                onBlur?.();
               }}
             />
           </Popover.Content>

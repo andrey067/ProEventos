@@ -4,6 +4,7 @@ import { useForm } from "react-hook-form";
 import { Link } from "react-router-dom";
 import { z } from "zod";
 import { FieldError } from "@/forms/components/FieldError";
+import { LoadingSpinner } from "@/components/LoadingSpinner";
 import { accountService } from "@/services/accountService";
 import { HttpError } from "@/services/http";
 
@@ -70,7 +71,7 @@ export function ChangePasswordPage() {
   }
 
   return (
-    <div className="mx-auto flex max-w-lg flex-col gap-6">
+    <div className="mx-auto flex w-full min-w-0 max-w-lg flex-col gap-6">
       <div className="flex flex-wrap items-center justify-between gap-4">
         <div>
           <h1 className="text-2xl font-semibold tracking-tight">Alterar senha</h1>
@@ -129,7 +130,8 @@ export function ChangePasswordPage() {
           />
           <FieldError error={errors.confirmPassword} />
         </label>
-        <button type="submit" disabled={submitting} className={btnPrimary}>
+        <button type="submit" disabled={submitting} className={`${btnPrimary} gap-2`}>
+          <LoadingSpinner loading={submitting} variant="button" />
           {submitting ? "Salvando..." : "Alterar senha"}
         </button>
       </form>
