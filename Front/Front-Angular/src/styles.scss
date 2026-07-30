@@ -15,6 +15,12 @@
   --color-danger-soft: #fef2f2;
   --color-danger-border: #fecaca;
   --radius-control: 0.625rem;
+  --motion-fast: 150ms;
+  --motion-base: 220ms;
+  --motion-slow: 320ms;
+  --motion-ease: cubic-bezier(0.16, 1, 0.3, 1);
+  --motion-ease-exit: cubic-bezier(0.4, 0, 1, 1);
+  --motion-stagger: 40ms;
 }
 
 @layer base {
@@ -33,3 +39,125 @@
     font: inherit;
   }
 }
+
+@layer utilities {
+  .motion-press {
+    transition: transform var(--motion-fast) var(--motion-ease);
+  }
+  .motion-press:active:not(:disabled) {
+    transform: scale(0.98);
+  }
+
+  .motion-skeleton {
+    background: linear-gradient(
+      90deg,
+      var(--color-line) 0%,
+      var(--color-surface) 50%,
+      var(--color-line) 100%
+    );
+    background-size: 200% 100%;
+    animation: motion-shimmer var(--motion-slow) linear infinite;
+  }
+
+  @keyframes motion-shimmer {
+    0% { background-position: 200% 0; }
+    100% { background-position: -200% 0; }
+  }
+
+  .motion-fade-enter-active,
+  .motion-fade-leave-active {
+    transition: opacity var(--motion-slow) var(--motion-ease);
+  }
+  .motion-fade-enter-from,
+  .motion-fade-leave-to { opacity: 0; }
+  .motion-fade-enter-to,
+  .motion-fade-leave-from { opacity: 1; }
+
+  .motion-page-enter-active {
+    transition: transform var(--motion-base) var(--motion-ease);
+  }
+  .motion-page-enter-from { transform: translateY(8px); }
+  .motion-page-enter-to { transform: translateY(0); }
+
+  .motion-panel-enter-active,
+  .motion-panel-leave-active {
+    transition: transform var(--motion-base) var(--motion-ease),
+      opacity var(--motion-base) var(--motion-ease);
+  }
+  .motion-panel-enter-from { opacity: 0; transform: translateY(8px); }
+  .motion-panel-enter-to { opacity: 1; transform: translateY(0); }
+  .motion-panel-leave-from { opacity: 1; }
+  .motion-panel-leave-to { opacity: 0; }
+
+  .motion-alert-enter-active,
+  .motion-alert-leave-active {
+    transition: opacity var(--motion-base) var(--motion-ease),
+      transform var(--motion-base) var(--motion-ease);
+  }
+  .motion-alert-enter-from { opacity: 0; transform: translateY(-4px); }
+  .motion-alert-enter-to { opacity: 1; transform: translateY(0); }
+  .motion-alert-leave-to { opacity: 0; }
+
+  .motion-empty-enter-active {
+    transition: opacity var(--motion-base) var(--motion-ease);
+  }
+  .motion-empty-enter-from { opacity: 0; }
+  .motion-empty-enter-to { opacity: 1; }
+
+  .motion-modal-backdrop-enter-active,
+  .motion-modal-backdrop-leave-active {
+    transition: opacity var(--motion-slow) var(--motion-ease);
+  }
+  .motion-modal-backdrop-enter-from,
+  .motion-modal-backdrop-leave-to { opacity: 0; }
+
+  .motion-modal-panel-enter-active,
+  .motion-modal-panel-leave-active {
+    transition: transform var(--motion-slow) var(--motion-ease),
+      opacity var(--motion-slow) var(--motion-ease);
+  }
+  .motion-modal-panel-enter-from { opacity: 0; transform: scale(0.98); }
+  .motion-modal-panel-enter-to { opacity: 1; transform: scale(1); }
+  .motion-modal-panel-leave-to { opacity: 0; transform: scale(0.98); }
+
+  .motion-nav-drawer-enter-active,
+  .motion-nav-drawer-leave-active {
+    transition: opacity var(--motion-base) var(--motion-ease),
+      transform var(--motion-base) var(--motion-ease);
+  }
+  .motion-nav-drawer-enter-from { opacity: 0; transform: translateY(-6px); }
+  .motion-nav-drawer-enter-to { opacity: 1; transform: translateY(0); }
+  .motion-nav-drawer-leave-to { opacity: 0; transform: translateY(-6px); }
+
+  .motion-list-enter-active {
+    transition: opacity var(--motion-base) var(--motion-ease),
+      transform var(--motion-base) var(--motion-ease);
+    transition-delay: calc(var(--motion-stagger-index, 0) * var(--motion-stagger));
+  }
+  .motion-list-enter-from { opacity: 0; transform: translateY(6px); }
+  .motion-list-enter-to { opacity: 1; transform: translateY(0); }
+  .motion-list-move {
+    transition: transform var(--motion-base) var(--motion-ease);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+
+  .motion-press:active:not(:disabled) {
+    transform: none;
+  }
+
+  .motion-skeleton {
+    animation: none;
+    background: var(--color-line);
+  }
+}
+
