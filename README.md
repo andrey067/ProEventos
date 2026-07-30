@@ -37,14 +37,16 @@ dotnet run
 - Scalar (OpenAPI UI): `/scalar`
 - Documento OpenAPI: `/openapi/v1.json`
 
-Testes unitários + **coverage gate local 80%** do backend (Coverlet por camada):
+Testes unitários + **coverage gate local 90%** do backend (Coverlet por camada):
 
 ```bash
 dotnet test Back/src/ProEventos.sln --collect:"XPlat Code Coverage" --settings Back/coverlet.runsettings
 # ou: dotnet test Back/src/ProEventos.sln
 ```
 
-Detalhes: `Back/README.md` e `specs/002-coverage-gate/`.
+Detalhes: `Back/README.md` e `specs/016-test-strategy/` (supersede `002-coverage-gate`).
+Also: CI workflows (`.github/workflows/ci.yml`, `e2e.yml`), baselines in
+`quality/coverage-baselines.json`, and contributor rules in `CONTRIBUTING.md`.
 
 ## Frontends (dev)
 
@@ -58,7 +60,7 @@ Em cada app, entre na pasta e use o `package.json` local:
 
 Configure a base URL da API (`http://localhost:5000`) via env (`VITE_API_URL` no Vue/React; `environment.ts` no Angular). Copie `.env.example` onde existir.
 
-Unit tests + **coverage gate 80%** (em cada pasta):
+Unit tests + **coverage gate 90%** (em cada pasta):
 
 ```bash
 cd Front/Front-Vue && pnpm test:coverage
