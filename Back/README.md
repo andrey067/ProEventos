@@ -15,11 +15,11 @@ Configuração tipada via `.env` (`dotenv.net` em `Program.cs`): connection stri
 
 Scalar: `http://localhost:5050/scalar` (JSON OpenAPI em `/openapi/v1.json`)
 
-## Testes e coverage gate (local 80%)
+## Testes e coverage gate (local 90%)
 
 Projetos: `ProEventos.Services.Tests`, `ProEventos.Persistence.Tests`, `ProEventos.Api.Tests` (registrados em `src/ProEventos.sln`).
 
-Cada projeto usa Coverlet (`CollectCoverage=true`) com **Threshold=80** (line, branch, method) e Include por camada:
+Cada projeto usa Coverlet (`CollectCoverage=true`) com **Threshold=90** (line, branch, method) e Include por camada:
 
 | Test project | Assemblies no gate |
 |--------------|--------------------|
@@ -27,16 +27,16 @@ Cada projeto usa Coverlet (`CollectCoverage=true`) com **Threshold=80** (line, b
 | Persistence.Tests | `ProEventos.Persistence` + `ProEventos.Domain` |
 | Api.Tests | `ProEventos.Api` + `ProEventos.CrossCutting` |
 
-Exclusões permitidas: `Migrations/**`, `*.Designer.cs`. **Não** excluir Program, Persistence, DI ou endpoints.
+Exclusões permitidas: `Migrations/**`, `*.Designer.cs`. **Não** excluir Program, Persistence, DI, endpoints ou arquivos de serviço de produção.
 
 ```bash
-# A partir da raiz do repositório — falha se qualquer Include < 80%
+# A partir da raiz do repositório — falha se qualquer Include < 90%
 dotnet test Back/src/ProEventos.sln --collect:"XPlat Code Coverage" --settings Back/coverlet.runsettings
 
 # Equivalente (Coverlet MSBuild já ativo nos csproj de teste):
 dotnet test Back/src/ProEventos.sln
 ```
 
-Documentação do contrato: `specs/002-coverage-gate/contracts/local-coverage-gate.md`.
+Documentação: [`specs/016-test-strategy/`](../specs/016-test-strategy/) (supersede `002-coverage-gate`).
 
 Documentação geral: [README raiz](../README.md)

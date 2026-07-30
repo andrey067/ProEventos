@@ -1,6 +1,9 @@
+using System.Security.Claims;
 using Microsoft.AspNetCore.Mvc;
 using ProEventos.Api.Extensions;
+using ProEventos.Domain.Identity;
 using ProEventos.Services.Dtos;
+using ProEventos.Services.Helpers;
 using ProEventos.Services.Interfaces;
 
 namespace ProEventos.Api.Endpoints
@@ -11,22 +14,45 @@ namespace ProEventos.Api.Endpoints
         {
             var group = app.MapGroup("/palestrantes").WithTags("Palestrantes");
 
-            group.MapGet("/", async (IPalestranteService service) =>
+            group.MapGet("/", async (
+                IPalestranteService service,
+                int? page,
+                int? pageSize,
+                string q,
+                string nome,
+                string tema) =>
             {
-                var result = await service.GetAllAsync();
-                return result.ToHttpResult();
+                var term = SearchTermResolver.ResolvePalestranteTerm(q, nome, tema);
+                var result = await service.GetPagedAsync(page, pageSize, term);
+                return result.ToPagedHttpResult();
             });
 
-            group.MapGet("/nome/{nome}", async (string nome, IPalestranteService service) =>
+            group.MapGet("/me", async (ClaimsPrincipal user, IPalestranteService service) =>
             {
-                var result = await service.GetByNomeAsync(nome);
+                var result = await service.GetByUserIdAsync(GetUserId(user));
                 return result.ToHttpResult();
+            }).RequireAuthorization();
+
+            group.MapGet("/nome/{nome}", async (
+                string nome,
+                IPalestranteService service,
+                int? page,
+                int? pageSize) =>
+            {
+                var term = SearchTermResolver.ResolvePalestranteTerm(nome);
+                var result = await service.GetPagedAsync(page, pageSize, term);
+                return result.ToPagedHttpResult();
             });
 
-            group.MapGet("/tema/{tema}", async (string tema, IPalestranteService service) =>
+            group.MapGet("/tema/{tema}", async (
+                string tema,
+                IPalestranteService service,
+                int? page,
+                int? pageSize) =>
             {
-                var result = await service.GetByTemaAsync(tema);
-                return result.ToHttpResult();
+                var term = SearchTermResolver.ResolvePalestranteTerm(tema);
+                var result = await service.GetPagedAsync(page, pageSize, term);
+                return result.ToPagedHttpResult();
             });
 
             group.MapGet("/{id:int}", async (int id, IPalestranteService service) =>
@@ -35,23 +61,49 @@ namespace ProEventos.Api.Endpoints
                 return result.ToHttpResult();
             });
 
-            group.MapPost("/", async ([FromBody] PalestranteDto model, IPalestranteService service) =>
+            group.MapPost("/", async (
+                ClaimsPrincipal user,
+                [FromBody] PalestranteDto model,
+                IPalestranteService service) =>
             {
+                if (model != null && string.IsNullOrWhiteSpace(model.UserId))
+                {
+                    model.UserId = GetUserId(user);
+                }
+
                 var result = await service.AddAsync(model);
                 return result.ToHttpResult();
-            }).RequireAuthorization(ProEventos.Domain.Identity.AppRoles.RequireUserRolePolicy);
+            }).RequireAuthorization(AppRoles.RequireUserRolePolicy);
 
-            group.MapPut("/{id:int}", async (int id, [FromBody] PalestranteDto model, IPalestranteService service) =>
+            group.MapPut("/{id:int}", async (
+                int id,
+                ClaimsPrincipal user,
+                [FromBody] PalestranteDto model,
+                IPalestranteService service) =>
             {
-                var result = await service.UpdateAsync(id, model);
+                var result = await service.UpdateAsync(
+                    id,
+                    model,
+                    GetUserId(user),
+                    IsOrganizer(user));
                 return result.ToHttpResult();
-            }).RequireAuthorization(ProEventos.Domain.Identity.AppRoles.RequireUserRolePolicy);
+            }).RequireAuthorization();
 
-            group.MapDelete("/{id:int}", async (int id, IPalestranteService service) =>
+            group.MapDelete("/{id:int}", async (
+                int id,
+                ClaimsPrincipal user,
+                IPalestranteService service) =>
             {
-                var result = await service.DeleteAsync(id);
+                var result = await service.DeleteAsync(id, GetUserId(user), IsOrganizer(user));
                 return result.ToHttpResult(new { message = "Deletado" });
-            }).RequireAuthorization(ProEventos.Domain.Identity.AppRoles.RequireUserRolePolicy);
+            }).RequireAuthorization();
         }
+
+        private static string GetUserId(ClaimsPrincipal user) =>
+            user.FindFirstValue(ClaimTypes.NameIdentifier)
+            ?? user.FindFirstValue("sub");
+
+        private static bool IsOrganizer(ClaimsPrincipal user) =>
+            user.IsInRole(AppRoles.User);
     }
 }
