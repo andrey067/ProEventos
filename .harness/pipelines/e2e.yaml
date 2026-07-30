@@ -1,7 +1,8 @@
-# Harness Code pipeline: e2e (Playwright Vue + React + Angular)
-# Bound in UI to .harness/e2e.yaml. Keep pipelines/e2e.yaml identical.
-# Trigger: "main" only (Branch Updated + Pull Request Merged).
-# Guard below also skips PR / non-main runs if this pipeline is mis-triggered.
+# Harness Code pipeline: e2e (identifier in UI: e2e)
+# YAML path bound in UI: .harness/e2e.yaml (keep pipelines/e2e.yaml identical).
+# Trigger: only "main" (Branch Updated + Pull Request Merged) — not on PR checks.
+# Guard below also skips PR / non-main if this pipeline is mis-triggered.
+# Playwright: Vue (:5173) + React (:3000) + Angular (:4200) against API (:5050).
 version: 1
 kind: pipeline
 spec:
