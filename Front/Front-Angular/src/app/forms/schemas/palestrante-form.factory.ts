@@ -1,4 +1,4 @@
-import { FormBuilder, FormGroup } from '@angular/forms';
+import { FormArray, FormBuilder, FormGroup } from '@angular/forms';
 import { Palestrante } from '../../models';
 import { trimmedMinLength } from '../validators/trimmed-min-length.validator';
 
@@ -10,6 +10,7 @@ export function createPalestranteForm(fb: FormBuilder): FormGroup {
       telefone: [''],
       email: [''],
       imagemURL: [''],
+      redes: fb.array<FormGroup>([]),
     },
     { updateOn: 'submit' },
   );
@@ -33,4 +34,5 @@ export function resetPalestranteForm(form: FormGroup): void {
     email: '',
     imagemURL: '',
   });
+  form.setControl('redes', new FormArray<FormGroup>([]));
 }

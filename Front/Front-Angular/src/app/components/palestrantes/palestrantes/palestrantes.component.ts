@@ -1,36 +1,65 @@
-import { Component, OnInit, inject } from '@angular/core';
-import { FormBuilder, FormGroup, ReactiveFormsModule } from '@angular/forms';
-import { RouterLink } from '@angular/router';
-import { ConfirmDialogComponent } from '../../../shared/confirm-dialog/confirm-dialog.component';
+import { Component, DestroyRef, OnInit, inject } from '@angular/core';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
+import { FormControl, ReactiveFormsModule } from '@angular/forms';
+import { FormsModule } from '@angular/forms';
+import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import {
-  createPalestranteForm,
-  patchPalestranteForm,
-  resetPalestranteForm,
-} from '../../../forms';
-import { Palestrante } from '../../../models';
+  Subject,
+  Subscription,
+  catchError,
+  debounceTime,
+  distinctUntilChanged,
+  of,
+  switchMap,
+  tap,
+} from 'rxjs';
+import { ConfirmDialogComponent } from '../../../shared/confirm-dialog/confirm-dialog.component';
+import { LoadingSpinnerComponent } from '../../common/loading-spinner/loading-spinner.component';
+import { PAGE_SIZES, PageResult, PageSize, Palestrante } from '../../../models';
 import { AuthTokenService } from '../../../services/auth-token.service';
 import { PalestranteService } from '../../../services/palestrante.service';
 
 @Component({
   selector: 'app-palestrantes',
-  imports: [ReactiveFormsModule, ConfirmDialogComponent, RouterLink],
+  imports: [
+    ConfirmDialogComponent,
+    FormsModule,
+    ReactiveFormsModule,
+    RouterLink,
+    LoadingSpinnerComponent,
+  ],
   templateUrl: './palestrantes.component.html',
   styleUrl: './palestrantes.component.scss',
 })
 export class PalestrantesComponent implements OnInit {
   private readonly palestranteService = inject(PalestranteService);
   private readonly authToken = inject(AuthTokenService);
-  private readonly fb = inject(FormBuilder);
+  private readonly route = inject(ActivatedRoute);
+  private readonly router = inject(Router);
+  private readonly destroyRef = inject(DestroyRef);
+
+  readonly pageSizes = PAGE_SIZES;
+  readonly searchNome = new FormControl('', { nonNullable: true });
 
   palestrantes: Palestrante[] = [];
-  form: FormGroup = createPalestranteForm(this.fb);
-  editingId: number | null = null;
   loading = true;
-  saving = false;
   error: string | null = null;
+  success: string | null = null;
   pendingDelete: Palestrante | null = null;
 
+  page = 1;
+  pageSize: PageSize = 10;
+  totalPages = 0;
+  brokenImages = new Set<number>();
+
+  private readonly fetch$ = new Subject<{ resetPage?: boolean }>();
+  private searchDebounceSub?: Subscription;
+
   get canWrite(): boolean {
+    return this.authToken.canWrite();
+  }
+
+  get isAuthenticated(): boolean {
     return this.authToken.isAuthenticated();
   }
 
@@ -41,66 +70,61 @@ export class PalestrantesComponent implements OnInit {
   }
 
   ngOnInit(): void {
+    this.readQueryParams();
+    this.wireFetchPipeline();
+    this.wireDebouncedSearch();
+    this.destroyRef.onDestroy(() => this.searchDebounceSub?.unsubscribe());
     this.load();
   }
 
-  load(): void {
-    this.loading = true;
-    this.error = null;
-    this.palestranteService.getAll().subscribe({
-      next: (data) => {
-        this.palestrantes = data;
-        this.loading = false;
-      },
-      error: () => {
-        this.error = 'Não foi possível carregar palestrantes.';
-        this.loading = false;
-      },
-    });
+  load(opts?: { resetPage?: boolean }): void {
+    this.fetch$.next(opts ?? {});
   }
 
-  save(): void {
-    if (!this.canWrite) return;
+  search(): void {
+    this.cancelPendingDebounce();
+    this.load({ resetPage: true });
+  }
 
-    this.form.updateValueAndValidity();
-    if (this.form.invalid) {
-      this.form.markAllAsTouched();
-      return;
+  clearSearch(): void {
+    this.cancelPendingDebounce();
+    this.searchNome.reset('', { emitEvent: false });
+    this.wireDebouncedSearch();
+    this.load({ resetPage: true });
+  }
+
+  onPageSizeChange(size: number): void {
+    const numeric = Number(size);
+    const allowed = PAGE_SIZES.find((s) => s === numeric);
+    this.pageSize = allowed ?? 10;
+    this.page = 1;
+    this.load({ resetPage: false });
+  }
+
+  prevPage(): void {
+    if (this.page > 1) {
+      this.page -= 1;
+      this.load({ resetPage: false });
     }
-
-    this.saving = true;
-    this.error = null;
-
-    const payload = this.form.getRawValue();
-    const request = this.editingId
-      ? this.palestranteService.update(this.editingId, { id: this.editingId, ...payload })
-      : this.palestranteService.create(payload);
-
-    request.subscribe({
-      next: () => {
-        this.saving = false;
-        setTimeout(() => {
-          this.resetForm();
-          this.reloadPalestrantes();
-        });
-      },
-      error: () => {
-        this.error = 'Erro ao salvar palestrante.';
-        this.saving = false;
-      },
-    });
   }
 
-  edit(palestrante: Palestrante): void {
-    if (!this.canWrite) return;
+  nextPage(): void {
+    if (this.page < this.totalPages) {
+      this.page += 1;
+      this.load({ resetPage: false });
+    }
+  }
 
-    this.editingId = palestrante.id;
-    patchPalestranteForm(this.form, palestrante);
+  hasImage(palestrante: Palestrante): boolean {
+    return !!palestrante.imagemURL?.trim() && !this.brokenImages.has(palestrante.id);
+  }
+
+  onThumbError(id: number): void {
+    this.brokenImages.add(id);
   }
 
   askDelete(palestrante: Palestrante): void {
     if (!this.canWrite) return;
-
     this.pendingDelete = palestrante;
   }
 
@@ -115,26 +139,88 @@ export class PalestrantesComponent implements OnInit {
 
     this.palestranteService.delete(palestrante.id).subscribe({
       next: () => {
-        if (this.editingId === palestrante.id) this.resetForm();
-        this.reloadPalestrantes();
+        this.success = `Palestrante "${palestrante.nome}" excluído.`;
+        this.load({ resetPage: true });
       },
-      error: () => alert('Erro ao deletar palestrante.'),
+      error: () => {
+        this.error = 'Erro ao deletar palestrante.';
+      },
     });
   }
 
-  resetForm(): void {
-    resetPalestranteForm(this.form);
-    this.editingId = null;
+  private wireFetchPipeline(): void {
+    this.fetch$
+      .pipe(
+        tap((opts) => {
+          const showFullSpinner = this.palestrantes.length === 0;
+          if (showFullSpinner) this.loading = true;
+          this.error = null;
+          if (opts?.resetPage) this.page = 1;
+          this.brokenImages.clear();
+        }),
+        switchMap(() =>
+          this.palestranteService
+            .getAll({
+              page: this.page,
+              pageSize: this.pageSize,
+              q: this.searchNome.value.trim() || undefined,
+            })
+            .pipe(
+              catchError(() => {
+                this.error = 'Não foi possível carregar palestrantes.';
+                this.loading = false;
+                return of(null);
+              }),
+            ),
+        ),
+        takeUntilDestroyed(this.destroyRef),
+      )
+      .subscribe((data: PageResult<Palestrante> | null) => {
+        if (!data) return;
+        this.palestrantes = data.items;
+        this.page = data.page;
+        this.pageSize = (PAGE_SIZES.find((s) => s === Number(data.pageSize)) ??
+          this.pageSize) as PageSize;
+        this.totalPages = data.totalPages;
+        this.loading = false;
+        this.syncQueryParams();
+      });
   }
 
-  private reloadPalestrantes(): void {
-    this.palestranteService.getAll().subscribe({
-      next: (data) => {
-        this.palestrantes = data;
+  private wireDebouncedSearch(): void {
+    this.searchDebounceSub?.unsubscribe();
+    this.searchDebounceSub = this.searchNome.valueChanges
+      .pipe(debounceTime(350), distinctUntilChanged())
+      .subscribe(() => this.load({ resetPage: true }));
+  }
+
+  private cancelPendingDebounce(): void {
+    this.searchDebounceSub?.unsubscribe();
+    this.searchDebounceSub = undefined;
+    this.wireDebouncedSearch();
+  }
+
+  private readQueryParams(): void {
+    const params = this.route.snapshot.queryParamMap;
+    const page = Number(params.get('page'));
+    const pageSize = Number(params.get('pageSize'));
+    const q = params.get('q') ?? params.get('nome');
+    if (Number.isFinite(page) && page >= 1) this.page = Math.floor(page);
+    this.pageSize = (PAGE_SIZES.find((s) => s === pageSize) ?? 10) as PageSize;
+    if (q) this.searchNome.setValue(q, { emitEvent: false });
+  }
+
+  private syncQueryParams(): void {
+    void this.router.navigate([], {
+      relativeTo: this.route,
+      queryParams: {
+        page: this.page,
+        pageSize: this.pageSize,
+        q: this.searchNome.value.trim() || null,
+        nome: null,
       },
-      error: () => {
-        this.error = 'Não foi possível carregar palestrantes.';
-      },
+      queryParamsHandling: 'merge',
+      replaceUrl: true,
     });
   }
 }

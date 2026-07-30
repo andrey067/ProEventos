@@ -10,7 +10,7 @@ describe('app.config', () => {
       typeof p === 'object' && p !== null && 'ɵproviders' in p ? 'multi' : typeof p,
     );
 
-    expect(providerTypes.length).toBe(5);
+    expect(providerTypes.length).toBe(7);
     expect(routes.some((r) => r.path === 'eventos')).toBe(true);
   });
 });

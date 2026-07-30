@@ -16,8 +16,20 @@ vi.mock('./app/app', () => ({
 
 describe('main.ts', () => {
   it('bootstraps the application', async () => {
+    vi.resetModules();
+    bootstrapMock.mockResolvedValueOnce(undefined);
     await import('./main');
 
     expect(bootstrapMock).toHaveBeenCalled();
+  });
+
+  it('logs bootstrap errors', async () => {
+    vi.resetModules();
+    const errorSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
+    bootstrapMock.mockRejectedValueOnce(new Error('boot failed'));
+    await import('./main');
+    await new Promise((resolve) => setTimeout(resolve, 0));
+    expect(errorSpy).toHaveBeenCalled();
+    errorSpy.mockRestore();
   });
 });

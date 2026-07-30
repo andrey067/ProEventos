@@ -1,7 +1,52 @@
 <header class="sticky top-0 z-10 border-b border-line bg-panel">
   <div class="mx-auto flex max-w-7xl items-center justify-between gap-4 px-4 py-3">
-    <a routerLink="/eventos" class="text-xl font-semibold text-accent-dark">ProEventos Angular</a>
-    <nav class="flex flex-wrap gap-1">
+    <a routerLink="/eventos" class="text-xl font-semibold text-accent-dark" (click)="closeMenu()">
+      ProEventos Angular
+    </a>
+
+    <button
+      type="button"
+      class="inline-flex items-center justify-center rounded-[length:var(--radius-control)] p-2 text-muted transition-colors hover:bg-accent-soft hover:text-accent-dark md:hidden"
+      (click)="toggleMenu()"
+      [attr.aria-expanded]="menuOpen"
+      aria-controls="mobile-nav"
+      [attr.aria-label]="menuOpen ? 'Fechar menu' : 'Abrir menu'"
+    >
+      @if (menuOpen) {
+        <svg
+          xmlns="http://www.w3.org/2000/svg"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          stroke-width="2"
+          stroke-linecap="round"
+          stroke-linejoin="round"
+          class="size-6"
+          aria-hidden="true"
+        >
+          <path d="M18 6 6 18" />
+          <path d="m6 6 12 12" />
+        </svg>
+      } @else {
+        <svg
+          xmlns="http://www.w3.org/2000/svg"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          stroke-width="2"
+          stroke-linecap="round"
+          stroke-linejoin="round"
+          class="size-6"
+          aria-hidden="true"
+        >
+          <path d="M4 6h16" />
+          <path d="M4 12h16" />
+          <path d="M4 18h16" />
+        </svg>
+      }
+    </button>
+
+    <nav class="hidden flex-wrap gap-1 md:flex">
       <a
         routerLink="/eventos"
         routerLinkActive="bg-accent-soft text-accent-dark"
@@ -50,4 +95,63 @@
       }
     </nav>
   </div>
+
+  @if (menuOpen) {
+    <nav
+      id="mobile-nav"
+      class="flex flex-col gap-1 border-t border-line px-4 py-3 md:hidden"
+    >
+      <a
+        routerLink="/eventos"
+        routerLinkActive="bg-accent-soft text-accent-dark"
+        [routerLinkActiveOptions]="{ exact: false }"
+        class="rounded-[length:var(--radius-control)] px-3 py-2 text-sm font-medium text-muted transition-colors hover:bg-accent-soft hover:text-accent-dark"
+        (click)="closeMenu()"
+      >
+        Eventos
+      </a>
+      <a
+        routerLink="/palestrantes"
+        routerLinkActive="bg-accent-soft text-accent-dark"
+        class="rounded-[length:var(--radius-control)] px-3 py-2 text-sm font-medium text-muted transition-colors hover:bg-accent-soft hover:text-accent-dark"
+        (click)="closeMenu()"
+      >
+        Palestrantes
+      </a>
+      @if (isLoggedIn) {
+        <a
+          routerLink="/perfil"
+          routerLinkActive="bg-accent-soft text-accent-dark"
+          class="rounded-[length:var(--radius-control)] px-3 py-2 text-sm font-medium text-muted transition-colors hover:bg-accent-soft hover:text-accent-dark"
+          (click)="closeMenu()"
+        >
+          Perfil
+        </a>
+        <button
+          type="button"
+          class="rounded-[length:var(--radius-control)] px-3 py-2 text-left text-sm font-medium text-muted transition-colors hover:bg-accent-soft hover:text-accent-dark"
+          (click)="logout(); closeMenu()"
+        >
+          Sair
+        </button>
+      } @else {
+        <a
+          routerLink="/login"
+          routerLinkActive="bg-accent-soft text-accent-dark"
+          class="rounded-[length:var(--radius-control)] px-3 py-2 text-sm font-medium text-muted transition-colors hover:bg-accent-soft hover:text-accent-dark"
+          (click)="closeMenu()"
+        >
+          Login
+        </a>
+        <a
+          routerLink="/register"
+          routerLinkActive="bg-accent-soft text-accent-dark"
+          class="rounded-[length:var(--radius-control)] px-3 py-2 text-sm font-medium text-muted transition-colors hover:bg-accent-soft hover:text-accent-dark"
+          (click)="closeMenu()"
+        >
+          Cadastro
+        </a>
+      }
+    </nav>
+  }
 </header>

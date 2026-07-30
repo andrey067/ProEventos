@@ -1,9 +1,12 @@
 import {
   AfterViewInit,
+  ChangeDetectorRef,
   Component,
   ElementRef,
   forwardRef,
+  inject,
   Input,
+  NgZone,
   OnDestroy,
   ViewChild,
 } from '@angular/core';
@@ -72,6 +75,9 @@ import type { Instance } from 'flatpickr/dist/types/instance';
   ],
 })
 export class DatePickerComponent implements ControlValueAccessor, AfterViewInit, OnDestroy {
+  private readonly ngZone = inject(NgZone);
+  private readonly cdr = inject(ChangeDetectorRef);
+
   @ViewChild('input', { static: true }) inputRef!: ElementRef<HTMLInputElement>;
   @Input() placeholder = 'Selecione a data';
 
@@ -83,21 +89,29 @@ export class DatePickerComponent implements ControlValueAccessor, AfterViewInit,
   private onTouched: () => void = () => {};
 
   ngAfterViewInit(): void {
-    this.picker = flatpickr(this.inputRef.nativeElement, {
-      locale: Portuguese,
-      dateFormat: 'Y-m-d',
-      altInput: true,
-      altFormat: 'd/m/Y',
-      allowInput: false,
-      disableMobile: true,
-      onChange: (_dates, dateStr) => {
-        this.onChange(dateStr || '');
-        this.onTouched();
-      },
-      onClose: () => this.onTouched(),
+    // Flatpickr callbacks run outside NgZone — re-enter so form + preview update.
+    this.ngZone.runOutsideAngular(() => {
+      this.picker = flatpickr(this.inputRef.nativeElement, {
+        locale: Portuguese,
+        dateFormat: 'Y-m-d',
+        altInput: true,
+        altFormat: 'd/m/Y',
+        allowInput: false,
+        disableMobile: true,
+        onChange: (_dates, dateStr) => {
+          this.ngZone.run(() => {
+            this.onChange(dateStr || '');
+            this.onTouched();
+            this.cdr.markForCheck();
+          });
+        },
+        onClose: () => {
+          this.ngZone.run(() => this.onTouched());
+        },
+      });
     });
 
-    const alt = this.picker.altInput;
+    const alt = this.picker?.altInput;
     if (alt) {
       alt.classList.add(
         'w-full',
@@ -116,7 +130,7 @@ export class DatePickerComponent implements ControlValueAccessor, AfterViewInit,
       );
     }
 
-    if (this.pendingValue) {
+    if (this.pendingValue && this.picker) {
       this.picker.setDate(this.pendingValue, false);
     }
   }

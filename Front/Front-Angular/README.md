@@ -41,7 +41,7 @@ Abra [http://localhost:4200](http://localhost:4200) — a rota raiz redireciona 
 
 ```bash
 pnpm test              # rápido, sem gate
-pnpm test:coverage     # Vitest + v8; falha se coverage < 80%
+pnpm test:coverage     # Vitest + v8; falha se coverage < 90%
 ```
 
 Exclusões do denominador: `*.d.ts`, CSS, `src/test-setup.ts`. Páginas, router e App **entram** no gate.

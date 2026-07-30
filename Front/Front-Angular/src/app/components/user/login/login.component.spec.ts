@@ -1,13 +1,14 @@
 import { TestBed } from '@angular/core/testing';
 import { provideHttpClient } from '@angular/common/http';
 import { provideHttpClientTesting } from '@angular/common/http/testing';
-import { provideRouter } from '@angular/router';
+import { provideRouter, Router } from '@angular/router';
+import { ActivatedRoute } from '@angular/router';
 import { LoginComponent } from './login.component';
 import { AccountService } from '../../../services/account.service';
 import { of, throwError } from 'rxjs';
 
 describe('LoginComponent', () => {
-  beforeEach(async () => {
+  async function setup(returnUrl: string | null = null) {
     await TestBed.configureTestingModule({
       imports: [LoginComponent],
       providers: [
@@ -20,11 +21,26 @@ describe('LoginComponent', () => {
             login: vi.fn(),
           },
         },
+        {
+          provide: ActivatedRoute,
+          useValue: {
+            snapshot: {
+              queryParamMap: {
+                get: (key: string) => (key === 'returnUrl' ? returnUrl : null),
+              },
+            },
+          },
+        },
       ],
     }).compileComponents();
+  }
+
+  beforeEach(() => {
+    TestBed.resetTestingModule();
   });
 
-  it('renders login form fields', () => {
+  it('renders login form fields', async () => {
+    await setup();
     const fixture = TestBed.createComponent(LoginComponent);
     fixture.detectChanges();
     const compiled = fixture.nativeElement as HTMLElement;
@@ -35,7 +51,8 @@ describe('LoginComponent', () => {
     expect(compiled.textContent).toContain('Entrar');
   });
 
-  it('submits credentials via AccountService', () => {
+  it('submits credentials via AccountService', async () => {
+    await setup();
     const fixture = TestBed.createComponent(LoginComponent);
     const accountService = TestBed.inject(AccountService);
     vi.mocked(accountService.login).mockReturnValue(
@@ -49,7 +66,42 @@ describe('LoginComponent', () => {
     expect(accountService.login).toHaveBeenCalledWith({ userName: 'u', password: 'p' });
   });
 
-  it('shows error on failed login', () => {
+  it('navigates to returnUrl after successful login', async () => {
+    await setup('/eventos/new');
+    const fixture = TestBed.createComponent(LoginComponent);
+    const accountService = TestBed.inject(AccountService);
+    const router = TestBed.inject(Router);
+    vi.spyOn(router, 'navigateByUrl').mockResolvedValue(true);
+    vi.mocked(accountService.login).mockReturnValue(
+      of({ token: 't', userName: 'u', email: 'a@b.com', nome: 'Nome' }),
+    );
+
+    fixture.detectChanges();
+    fixture.componentInstance.form.setValue({ userName: 'u', password: 'p' });
+    fixture.componentInstance.submit();
+
+    expect(router.navigateByUrl).toHaveBeenCalledWith('/eventos/new');
+  });
+
+  it('falls back to /eventos when returnUrl is missing', async () => {
+    await setup(null);
+    const fixture = TestBed.createComponent(LoginComponent);
+    const accountService = TestBed.inject(AccountService);
+    const router = TestBed.inject(Router);
+    vi.spyOn(router, 'navigateByUrl').mockResolvedValue(true);
+    vi.mocked(accountService.login).mockReturnValue(
+      of({ token: 't', userName: 'u', email: 'a@b.com', nome: 'Nome' }),
+    );
+
+    fixture.detectChanges();
+    fixture.componentInstance.form.setValue({ userName: 'u', password: 'p' });
+    fixture.componentInstance.submit();
+
+    expect(router.navigateByUrl).toHaveBeenCalledWith('/eventos');
+  });
+
+  it('shows error on failed login', async () => {
+    await setup();
     const fixture = TestBed.createComponent(LoginComponent);
     const accountService = TestBed.inject(AccountService);
     vi.mocked(accountService.login).mockReturnValue(
@@ -66,7 +118,8 @@ describe('LoginComponent', () => {
     expect(fixture.componentInstance.error).toBe('Credenciais inválidas.');
   });
 
-  it('falls back when error body has no description', () => {
+  it('falls back when error body has no description', async () => {
+    await setup();
     const fixture = TestBed.createComponent(LoginComponent);
     const accountService = TestBed.inject(AccountService);
     vi.mocked(accountService.login).mockReturnValue(throwError(() => new Error('fail')));

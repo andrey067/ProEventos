@@ -8,6 +8,7 @@ import {
   UserLogin,
   UserProfile,
   UserRegister,
+  UserRegisterPalestrante,
   UserUpdate,
 } from '../models';
 import { AuthTokenService } from './auth-token.service';
@@ -18,15 +19,26 @@ export class AccountService {
   private readonly authToken = inject(AuthTokenService);
   private readonly baseUrl = `${environment.apiUrl}/account`;
 
+  private persistAuth(response: AuthResponse): AuthResponse {
+    this.authToken.setSession(response.token, response.roles);
+    return response;
+  }
+
   register(data: UserRegister): Observable<AuthResponse> {
     return this.http.post<AuthResponse>(`${this.baseUrl}/register`, data).pipe(
-      tap((response) => this.authToken.setToken(response.token)),
+      tap((response) => this.persistAuth(response)),
     );
+  }
+
+  registerPalestrante(data: UserRegisterPalestrante): Observable<AuthResponse> {
+    return this.http
+      .post<AuthResponse>(`${this.baseUrl}/register-palestrante`, data)
+      .pipe(tap((response) => this.persistAuth(response)));
   }
 
   login(data: UserLogin): Observable<AuthResponse> {
     return this.http.post<AuthResponse>(`${this.baseUrl}/login`, data).pipe(
-      tap((response) => this.authToken.setToken(response.token)),
+      tap((response) => this.persistAuth(response)),
     );
   }
 

@@ -2,11 +2,12 @@ import { Component, inject } from '@angular/core';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { Router, RouterLink } from '@angular/router';
 import { AccountService } from '../../../services/account.service';
+import { LoadingSpinnerComponent } from '../../common/loading-spinner/loading-spinner.component';
 import { apiErrorMessage } from '../../../shared/api-error-message';
 
 @Component({
   selector: 'app-register',
-  imports: [ReactiveFormsModule, RouterLink],
+  imports: [ReactiveFormsModule, RouterLink, LoadingSpinnerComponent],
   templateUrl: './register.component.html',
   styleUrl: './register.component.scss',
 })
@@ -20,10 +21,18 @@ export class RegisterComponent {
     userName: ['', Validators.required],
     email: ['', [Validators.required, Validators.email]],
     password: ['', Validators.required],
+    asPalestrante: [false],
+    miniCurriculo: [''],
+    telefone: [''],
+    imagemURL: [''],
   });
 
   saving = false;
   error: string | null = null;
+
+  get asPalestrante(): boolean {
+    return !!this.form.get('asPalestrante')?.value;
+  }
 
   submit(): void {
     this.form.updateValueAndValidity();
@@ -35,12 +44,24 @@ export class RegisterComponent {
     this.saving = true;
     this.error = null;
 
-    this.accountService.register(this.form.getRawValue() as {
-      nome: string;
-      userName: string;
-      email: string;
-      password: string;
-    }).subscribe({
+    const raw = this.form.getRawValue();
+    const base = {
+      nome: raw.nome!,
+      userName: raw.userName!,
+      email: raw.email!,
+      password: raw.password!,
+    };
+
+    const request = raw.asPalestrante
+      ? this.accountService.registerPalestrante({
+          ...base,
+          miniCurriculo: raw.miniCurriculo || undefined,
+          telefone: raw.telefone || undefined,
+          imagemURL: raw.imagemURL || undefined,
+        })
+      : this.accountService.register(base);
+
+    request.subscribe({
       next: () => {
         this.saving = false;
         this.router.navigate(['/eventos']);
