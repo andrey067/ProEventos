@@ -18,15 +18,18 @@ namespace ProEventos.Services.Services
     {
         private readonly IRepository<Palestrante> _repository;
         private readonly IPalestrantesRepository _palestrantesRepository;
+        private readonly IEventoRepository _eventoRepository;
         private readonly UserManager<User> _userManager;
 
         public PalestranteService(
             IRepository<Palestrante> repository,
             IPalestrantesRepository palestrantesRepository,
+            IEventoRepository eventoRepository,
             UserManager<User> userManager)
         {
             _repository = repository;
             _palestrantesRepository = palestrantesRepository;
+            _eventoRepository = eventoRepository;
             _userManager = userManager;
         }
 
@@ -192,19 +195,41 @@ namespace ProEventos.Services.Services
             return list.Adapt<List<PalestranteDto>>();
         }
 
-        public async Task<ErrorOr<Success>> AssociateAsync(int eventoId, int palestranteId)
+        public async Task<ErrorOr<Success>> AssociateAsync(int eventoId, int palestranteId, string userId)
         {
+            var ownership = await EnsureEventoOwnerAsync(eventoId, userId, "Associate");
+            if (ownership.IsError)
+                return ownership.Errors;
+
             var ok = await _palestrantesRepository.AssociateAsync(eventoId, palestranteId);
             if (!ok)
                 return Error.NotFound("Palestrante.Associate.NotFound", "Evento ou palestrante não encontrado");
             return Result.Success;
         }
 
-        public async Task<ErrorOr<Success>> DisassociateAsync(int eventoId, int palestranteId)
+        public async Task<ErrorOr<Success>> DisassociateAsync(int eventoId, int palestranteId, string userId)
         {
+            var ownership = await EnsureEventoOwnerAsync(eventoId, userId, "Disassociate");
+            if (ownership.IsError)
+                return ownership.Errors;
+
             var ok = await _palestrantesRepository.DisassociateAsync(eventoId, palestranteId);
             if (!ok)
                 return Error.NotFound("Palestrante.Disassociate.NotFound", "Associação não encontrada");
+            return Result.Success;
+        }
+
+        private async Task<ErrorOr<Success>> EnsureEventoOwnerAsync(int eventoId, string userId, string action)
+        {
+            var evento = await _eventoRepository.GetAllEventosByIdAsync(eventoId, false);
+            if (evento == null)
+                return Error.NotFound($"Palestrante.{action}.EventoNotFound", "Evento não encontrado");
+
+            if (!ResourceOwnership.IsOwner(evento.UserId, userId))
+                return Error.Forbidden(
+                    $"Palestrante.{action}.Forbidden",
+                    "Você não é o dono deste evento.");
+
             return Result.Success;
         }
 

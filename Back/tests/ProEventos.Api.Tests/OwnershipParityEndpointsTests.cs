@@ -93,6 +93,38 @@ public class OwnershipParityEndpointsTests
             .StatusCode.Should().Be(HttpStatusCode.OK);
     }
 
+    [Fact]
+    public async Task Associate_Deny_Non_Owner()
+    {
+        using var factory = new CustomWebApplicationFactory();
+        var owner = factory.CreateClient();
+        await AuthTestHelper.AuthenticateAsync(owner, "ascown");
+
+        var create = await owner.PostAsJsonAsync("/eventos", SampleEvento("Assoc Own"));
+        create.StatusCode.Should().Be(HttpStatusCode.OK);
+        var evento = await create.Content.ReadFromJsonAsync<EventoDto>(JsonOptions);
+
+        var speaker = factory.CreateClient();
+        var auth = await AuthTestHelper.RegisterPalestranteAsync(speaker, "ascsp");
+        speaker.DefaultRequestHeaders.Authorization =
+            new AuthenticationHeaderValue("Bearer", auth.Token);
+        var me = await (await speaker.GetAsync("/palestrantes/me"))
+            .Content.ReadFromJsonAsync<PalestranteDto>(JsonOptions);
+
+        var other = factory.CreateClient();
+        await AuthTestHelper.AuthenticateAsync(other, "ascoth");
+
+        (await other.PutAsync($"/eventos/{evento!.Id}/palestrantes/{me!.Id}", null))
+            .StatusCode.Should().Be(HttpStatusCode.Forbidden);
+        (await other.DeleteAsync($"/eventos/{evento.Id}/palestrantes/{me.Id}"))
+            .StatusCode.Should().Be(HttpStatusCode.Forbidden);
+
+        (await owner.PutAsync($"/eventos/{evento.Id}/palestrantes/{me.Id}", null))
+            .StatusCode.Should().Be(HttpStatusCode.OK);
+        (await owner.DeleteAsync($"/eventos/{evento.Id}/palestrantes/{me.Id}"))
+            .StatusCode.Should().Be(HttpStatusCode.OK);
+    }
+
 
     [Fact]
     public async Task RedeSocial_Palestrante_Self_Scoped_Works()

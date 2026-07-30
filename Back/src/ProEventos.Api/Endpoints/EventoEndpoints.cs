@@ -27,6 +27,7 @@ namespace ProEventos.Api.Endpoints
                 return result.ToPagedHttpResult();
             });
 
+
             group.MapGet("/{id:int}", async (int id, IEventoService service) =>
             {
                 var result = await service.GetAllEventosByIdAsync(id, true);
@@ -73,16 +74,16 @@ namespace ProEventos.Api.Endpoints
             }).RequireAuthorization(AppRoles.RequireUserRolePolicy);
 
             group.MapPut("/{eventoId:int}/palestrantes/{palestranteId:int}",
-                async (int eventoId, int palestranteId, IPalestranteService service) =>
+                async (int eventoId, int palestranteId, ClaimsPrincipal user, IPalestranteService service) =>
                 {
-                    var result = await service.AssociateAsync(eventoId, palestranteId);
+                    var result = await service.AssociateAsync(eventoId, palestranteId, GetUserId(user));
                     return result.ToHttpResult(new { message = "Associado" });
                 }).RequireAuthorization(AppRoles.RequireUserRolePolicy);
 
             group.MapDelete("/{eventoId:int}/palestrantes/{palestranteId:int}",
-                async (int eventoId, int palestranteId, IPalestranteService service) =>
+                async (int eventoId, int palestranteId, ClaimsPrincipal user, IPalestranteService service) =>
                 {
-                    var result = await service.DisassociateAsync(eventoId, palestranteId);
+                    var result = await service.DisassociateAsync(eventoId, palestranteId, GetUserId(user));
                     return result.ToHttpResult(new { message = "Desassociado" });
                 }).RequireAuthorization(AppRoles.RequireUserRolePolicy);
         }
