@@ -1,13 +1,13 @@
-# Reference only — Harness Code configures triggers in the UI (see .harness/README.md).
-# Enterprise import stub: push/merge to main → pipeline ci.
+# Reference only — configure triggers in the UI (see .harness/README.md).
+# Enterprise stub: push/merge to main → pipeline e2e.
 trigger:
   name: main
-  identifier: proeventos_ci_main
+  identifier: proeventos_e2e_main
   enabled: true
-  description: "UI: Branch Updated (main only) and/or Pull Request Merged"
+  description: "UI on pipeline e2e: Branch Updated (main) + Pull Request Merged"
   orgIdentifier: PLACEHOLDER_ORG
   projectIdentifier: PLACEHOLDER_PROJECT
-  pipelineIdentifier: ci
+  pipelineIdentifier: e2e
   stagesToExecute: []
   source:
     type: Webhook
@@ -27,7 +27,7 @@ trigger:
           headerConditions: []
   inputYaml: |
     pipeline:
-      identifier: ci
+      identifier: e2e
       properties:
         ci:
           codebase:

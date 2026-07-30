@@ -36,84 +36,38 @@ Reference: [Harness Open Source pipelines](https://developer.harness.io/docs/ope
 
 ## Canonical paths (`.yaml`)
 
-One Harness Code pipeline is configured in the UI against the **root** file
-below. Keep it native (`version: 1` / `kind: pipeline`) with real steps — never
-reintroduce Enterprise YAML or a hello-world stub.
+Two Harness Code pipelines (quality vs E2E). Keep native schema
+(`version: 1` / `kind: pipeline`).
 
 | Path | Purpose |
 |------|---------|
-| `.harness/ci.yaml` | **Configured pipeline `ci`** — Coverlet + front coverage + baselines, then Playwright E2E for **Vue + React + Angular** |
-| `.harness/pipelines/ci.yaml` | Identical mirror of `.harness/ci.yaml` |
-| `.harness/triggers/*.yaml` | Legacy Enterprise trigger stubs (optional; not used by native Code runner) |
+| `.harness/ci.yaml` | Pipeline **`ci`** — Coverlet + Vue/React/Angular coverage + baselines |
+| `.harness/e2e.yaml` | Pipeline **`e2e`** — Playwright all fronts (**main only**, trigger + script guard) |
+| `.harness/pipelines/*.yaml` | Identical mirrors |
+| `.harness/triggers/*.yaml` | Legacy Enterprise stubs (optional) |
 
-There is **no** separate `.harness/e2e.yaml`: E2E runs as the last step
-(`e2e_all_fronts`) after the quality gate in the same pipeline.
-
-Edit the root file and copy into `pipelines/` so both layouts stay in sync.
-Harness Code binds the UI pipeline to **`.harness/ci.yaml`**.
-
-Checklist curto (pipeline + triggers na UI): [`.harness/README.md`](../.harness/README.md).
+Checklist UI: [`.harness/README.md`](../.harness/README.md).
 
 ## Pipeline + triggers (Harness Code UI)
 
-### Cadastrar a pipeline
+| Pipeline | Trigger name | Events |
+|----------|--------------|--------|
+| `ci` | `pr` | PR Created / Updated / Reopened (**not** Merged) |
+| `e2e` | `main` | Branch Updated (filter `main` if possible) + PR Merged |
 
-| Campo | Valor |
-|-------|--------|
-| Name / Identifier | `ci` |
-| YAML path | `.harness/ci.yaml` |
-
-Não cadastre `e2e` separada — o step `e2e_all_fronts` já roda no fim de `ci`.
-
-### Fluxo profissional
+### Fluxo
 
 ```text
-feature/* ──PR──► main
-              │
-              └─ trigger "pr" → pipeline ci (unit/coverage + E2E 3 fronts)
-                    │
-              merge / push main
-                    │
-                    └─ trigger "main" → pipeline ci de novo
+feature ──PR──► main     → pipeline ci   (sem Playwright)
+merge / push main        → pipeline e2e  (Playwright + guard main-only)
 ```
 
-### Trigger A — `pr`
-
-Na tela **Triggers → Event Categories** (mesma UI do trigger `default`):
-
-| Event | Enabled |
-|-------|---------|
-| Branch Created | no |
-| Branch Updated | no |
-| Pull Request Created | **yes** |
-| Pull Request Updated | **yes** |
-| Pull Request Reopened | **yes** |
-| Pull Request Closed | no |
-| Pull Request Merged | no |
-| Tag Created / Updated | no |
-
-Disable trigger: **unchecked**. Prefer rename `default` → `pr`.  
-Se houver filtro: **target branch = `main`**.
-
-### Trigger B — `main`
-
-**+ New Trigger** with:
-
-| Event | Enabled |
-|-------|---------|
-| Branch Created | no |
-| Branch Updated | **yes** (somente se puder filtrar branch `main`) |
-| Pull Request Created / Updated / Reopened | no |
-| Pull Request Closed | no |
-| Pull Request Merged | **yes** (alternativa segura sem filtro de branch) |
-| Tag Created / Updated | no |
-
-Sem filtro de branch na UI: **não** ligue Branch Updated sozinho (dispara em toda
-feature). Use **Pull Request Merged** e/ou Branch Updated **só** com filtro `main`.
+No trigger `pr` da pipeline `ci`, **desmarque Pull Request Merged** (no seu print
+ele ainda aparece ligado).
 
 ### Branch protection
 
-Em `main`, exija o check **`ci`** antes do merge.
+Em `main`, exija o check **`ci`** nos PRs.
 
 ## Clone DNS failure (`Could not resolve host: harness.homelab.local`)
 
@@ -236,10 +190,9 @@ UI / PR checks — not the pipeline clone block.
 - Workspace is shared across steps in a stage (coverage files from backend/front
   steps remain available for `compare-coverage.mjs`).
 - Images are public (`dotnet/sdk:10.0`, `node:22-bookworm`, Playwright jammy).
-- E2E is the last step (`e2e_all_fronts`) in `.harness/ci.yaml`: installs .NET 10
-  via `dotnet-install.sh` inside the Playwright image, starts API `:5050` plus
-  Vue `:5173`, React `:3000`, Angular `:4200`, fails fast if any never becomes
-  ready, then runs Playwright for all three projects.
+- E2E lives in `.harness/e2e.yaml` (not inside `ci`): installs .NET 10 via
+  `dotnet-install.sh`, starts API `:5050` + Vue/React/Angular, runs Playwright
+  for all three projects. A script **guard** skips PR / non-`main` runs.
 - Stages use `clone.depth: 50` for a shallow fetch once DNS/container URL works.
   Retries are not configurable in the Open Source `clone` schema (platform logs
   “Cloning with 0 retries”).
@@ -252,8 +205,7 @@ Quality-gate commands match the GitHub `ci.yaml` workflow:
 - `pnpm test:coverage` in each Front
 - `node quality/compare-coverage.mjs ...`
 
-Harness then continues with full E2E (GitHub’s separate `e2e.yaml` still runs
-Vue-only today):
+Harness `e2e` (main only) runs all fronts; GitHub `e2e.yaml` is still Vue-only:
 
 - Playwright `--project=vue --project=react --project=angular`
 - API `:5050`, Vue `:5173`, React `:3000`, Angular `:4200`
