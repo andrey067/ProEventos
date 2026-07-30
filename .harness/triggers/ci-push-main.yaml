@@ -1,0 +1,36 @@
+# Trigger: run ProEventos CI on push to main (Harness Code).
+trigger:
+  name: CI on push main
+  identifier: proeventos_ci_push_main
+  enabled: true
+  description: Mirrors GitHub Actions on: push branches [main]
+  orgIdentifier: PLACEHOLDER_ORG
+  projectIdentifier: PLACEHOLDER_PROJECT
+  pipelineIdentifier: proeventos_ci
+  stagesToExecute: []
+  source:
+    type: Webhook
+    spec:
+      type: Harness
+      spec:
+        type: Push
+        spec:
+          connectorRef: ""
+          autoAbortPreviousExecutions: true
+          repoName: Homelab/ProEventos
+          actions: []
+          payloadConditions:
+            - key: targetBranch
+              operator: Equals
+              value: main
+          headerConditions: []
+  inputYaml: |
+    pipeline:
+      identifier: proeventos_ci
+      properties:
+        ci:
+          codebase:
+            build:
+              type: branch
+              spec:
+                branchName: <+trigger.branch>

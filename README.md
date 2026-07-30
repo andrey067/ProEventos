@@ -46,7 +46,8 @@ dotnet test Back/src/ProEventos.sln --collect:"XPlat Code Coverage" --settings B
 
 Detalhes: `Back/README.md` e `specs/016-test-strategy/` (supersede `002-coverage-gate`).
 Also: CI workflows (`.github/workflows/ci.yml`, `e2e.yml`), baselines in
-`quality/coverage-baselines.json`, and contributor rules in `CONTRIBUTING.md`.
+`quality/coverage-baselines.json`, contributor rules in `CONTRIBUTING.md`, and
+Harness CI setup in `docs/harness-ci.md` (`.harness/pipelines` + triggers).
 
 ## Frontends (dev)
 
