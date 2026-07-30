@@ -1,117 +1,158 @@
-# Harness CI — mirrors .github/workflows/ci.yml
-# Import in Harness UI (Pipelines → Create from YAML) or sync via Git Experience.
-# Replace PLACEHOLDER_* values (or leave <+input> and set at import time).
-pipeline:
-  name: ProEventos CI
-  identifier: proeventos_ci
-  projectIdentifier: PLACEHOLDER_PROJECT # e.g. Homelab
-  orgIdentifier: PLACEHOLDER_ORG # e.g. default
-  tags:
-    repo: ProEventos
-    kind: ci
-  properties:
-    ci:
-      codebase:
-        connectorRef: PLACEHOLDER_CODE_CONNECTOR # Harness Code connector for Homelab/ProEventos
-        repoName: Homelab/ProEventos
-        build: <+input>
+# Harness Code pipeline: ci (+ e2e)
+# Bound in UI to .harness/ci.yaml. Keep pipelines/ci.yaml identical.
+# Native Open Source schema only — Enterprise (pipeline:/PLACEHOLDER_*) fails to parse.
+# Quality gate first, then Playwright against Vue + React + Angular.
+# Scripts use POSIX `set -eu` (Harness runs /bin/sh even when shell: bash is set).
+version: 1
+kind: pipeline
+spec:
   stages:
-    - stage:
-        name: Quality Gate
-        identifier: quality_gate
-        description: Backend Coverlet + three front Vitest coverage + baseline compare
-        type: CI
-        spec:
-          cloneCodebase: true
-          platform:
-            os: Linux
-            arch: Amd64
-          # Homelab: prefer Kubernetes/Docker runner if Cloud is unavailable.
-          runtime:
-            type: Cloud
-            spec: {}
-          execution:
-            steps:
-              - step:
-                  type: Run
-                  name: Backend tests (Coverlet 90%)
-                  identifier: backend_tests
-                  spec:
-                    connectorRef: account.harnessImage
-                    image: mcr.microsoft.com/dotnet/sdk:10.0
-                    shell: Sh
-                    command: |-
-                      set -euo pipefail
-                      dotnet test Back/src/ProEventos.sln --configuration Release
-                  failureStrategies: []
+    - name: quality_and_e2e
+      type: ci
+      spec:
+        # depth only — clone host comes from GITNESS_URL_CONTAINER (infra), not YAML.
+        # See docs/harness-ci.md (Could not resolve host: harness.homelab.local).
+        clone:
+          depth: 50
+        steps:
+          - name: backend_tests
+            type: run
+            spec:
+              container: mcr.microsoft.com/dotnet/sdk:10.0
+              shell: bash
+              script: |-
+                set -eu
+                dotnet test Back/src/ProEventos.sln --configuration Release
 
-              - step:
-                  type: Run
-                  name: Front Vue coverage
-                  identifier: front_vue
-                  spec:
-                    connectorRef: account.harnessImage
-                    image: node:22-bookworm
-                    shell: Sh
-                    command: |-
-                      set -euo pipefail
-                      corepack enable
-                      corepack prepare pnpm@9 --activate
-                      cd Front/Front-Vue
-                      pnpm install --frozen-lockfile
-                      pnpm test:coverage
+          - name: front_vue
+            type: run
+            spec:
+              container: node:22-bookworm
+              shell: bash
+              script: |-
+                set -eu
+                corepack enable
+                corepack prepare pnpm@9 --activate
+                cd Front/Front-Vue
+                pnpm install --frozen-lockfile
+                pnpm test:coverage
 
-              - step:
-                  type: Run
-                  name: Front React coverage
-                  identifier: front_react
-                  spec:
-                    connectorRef: account.harnessImage
-                    image: node:22-bookworm
-                    shell: Sh
-                    command: |-
-                      set -euo pipefail
-                      corepack enable
-                      corepack prepare pnpm@9 --activate
-                      cd Front/Front-React
-                      pnpm install --frozen-lockfile
-                      pnpm test:coverage
+          - name: front_react
+            type: run
+            spec:
+              container: node:22-bookworm
+              shell: bash
+              script: |-
+                set -eu
+                corepack enable
+                corepack prepare pnpm@9 --activate
+                cd Front/Front-React
+                pnpm install --frozen-lockfile
+                pnpm test:coverage
 
-              - step:
-                  type: Run
-                  name: Front Angular coverage
-                  identifier: front_angular
-                  spec:
-                    connectorRef: account.harnessImage
-                    image: node:22-bookworm
-                    shell: Sh
-                    command: |-
-                      set -euo pipefail
-                      corepack enable
-                      corepack prepare pnpm@9 --activate
-                      cd Front/Front-Angular
-                      pnpm install --frozen-lockfile
-                      pnpm test:coverage
+          - name: front_angular
+            type: run
+            spec:
+              container: node:22-bookworm
+              shell: bash
+              script: |-
+                set -eu
+                corepack enable
+                corepack prepare pnpm@9 --activate
+                cd Front/Front-Angular
+                pnpm install --frozen-lockfile
+                pnpm test:coverage
 
-              - step:
-                  type: Run
-                  name: Compare coverage baselines
-                  identifier: compare_baselines
-                  spec:
-                    connectorRef: account.harnessImage
-                    image: node:22-bookworm
-                    shell: Sh
-                    command: |-
-                      set -euo pipefail
-                      SVC=$(find Back/tests -path '*Services.Tests*' -name coverage.cobertura.xml | head -1)
-                      PERS=$(find Back/tests -path '*Persistence.Tests*' -name coverage.cobertura.xml | head -1)
-                      API=$(find Back/tests -path '*Api.Tests*' -name coverage.cobertura.xml | head -1)
-                      test -n "$SVC" && test -n "$PERS" && test -n "$API"
-                      node quality/compare-coverage.mjs \
-                        --baselines quality/coverage-baselines.json \
-                        --services "$SVC" \
-                        --persistence "$PERS" \
-                        --api "$API" \
-                        --front-vue Front/Front-Vue/coverage/coverage-summary.json \
-                        --front-react Front/Front-React/coverage/coverage-summary.json \
-                        --front-angular Front/Front-Angular/coverage/coverage-summary.json
+          - name: compare_baselines
+            type: run
+            spec:
+              container: node:22-bookworm
+              shell: bash
+              script: |-
+                set -eu
+                SVC=$(find Back/tests -path '*Services.Tests*' -name coverage.cobertura.xml | head -1)
+                PERS=$(find Back/tests -path '*Persistence.Tests*' -name coverage.cobertura.xml | head -1)
+                API=$(find Back/tests -path '*Api.Tests*' -name coverage.cobertura.xml | head -1)
+                test -n "$SVC" && test -n "$PERS" && test -n "$API"
+                node quality/compare-coverage.mjs \
+                  --baselines quality/coverage-baselines.json \
+                  --services "$SVC" \
+                  --persistence "$PERS" \
+                  --api "$API" \
+                  --front-vue Front/Front-Vue/coverage/coverage-summary.json \
+                  --front-react Front/Front-React/coverage/coverage-summary.json \
+                  --front-angular Front/Front-Angular/coverage/coverage-summary.json
+
+          - name: e2e_all_fronts
+            type: run
+            timeout: 45m
+            spec:
+              container: mcr.microsoft.com/playwright:v1.49.1-jammy
+              shell: bash
+              script: |-
+                set -eu
+                curl -fsSL https://dot.net/v1/dotnet-install.sh -o /tmp/dotnet-install.sh
+                bash /tmp/dotnet-install.sh --channel 10.0 --install-dir "$HOME/.dotnet"
+                export DOTNET_ROOT="$HOME/.dotnet"
+                export PATH="$DOTNET_ROOT:$PATH"
+
+                corepack enable
+                corepack prepare pnpm@9 --activate
+
+                cd e2e && pnpm install
+                cd ../Front/Front-Vue && pnpm install --frozen-lockfile
+                cd ../Front-React && pnpm install --frozen-lockfile
+                cd ../Front-Angular && pnpm install --frozen-lockfile
+                cd ../../e2e && pnpm exec playwright install chromium
+
+                wait_http() {
+                  url="$1"
+                  label="$2"
+                  ok=0
+                  i=1
+                  while [ "$i" -le 90 ]; do
+                    if curl -sf "$url" >/dev/null; then ok=1; break; fi
+                    sleep 2
+                    i=$((i + 1))
+                  done
+                  test "$ok" = 1 || { echo "$label failed to become ready at $url" >&2; return 1; }
+                }
+
+                cd ../Back/src/ProEventos.Api
+                if [ -f .env.example ] && [ ! -f .env ]; then cp .env.example .env; fi
+                dotnet run --urls http://127.0.0.1:5050 &
+                API_PID=$!
+                wait_http http://127.0.0.1:5050/openapi/v1.json API || {
+                  kill $API_PID 2>/dev/null || true
+                  exit 1
+                }
+
+                cd ../../../Front/Front-Vue
+                pnpm dev --host 127.0.0.1 --port 5173 &
+                VUE_PID=$!
+
+                cd ../Front-React
+                pnpm dev --host 127.0.0.1 --port 3000 &
+                REACT_PID=$!
+
+                cd ../Front-Angular
+                pnpm exec ng serve --host 127.0.0.1 --port 4200 &
+                ANGULAR_PID=$!
+
+                cleanup() {
+                  kill $VUE_PID $REACT_PID $ANGULAR_PID $API_PID 2>/dev/null || true
+                }
+
+                wait_http http://127.0.0.1:5173 Vue || { cleanup; exit 1; }
+                wait_http http://127.0.0.1:3000 React || { cleanup; exit 1; }
+                wait_http http://127.0.0.1:4200 Angular || { cleanup; exit 1; }
+
+                cd ../../e2e
+                export CI=true
+                export API_URL=http://127.0.0.1:5050
+                set +e
+                pnpm exec playwright test --project=vue --project=react --project=angular
+                STATUS=$?
+                set -e
+                cleanup
+                exit $STATUS

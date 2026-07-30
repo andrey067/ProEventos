@@ -1,3 +1,4 @@
+using Microsoft.AspNetCore.DataProtection;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Mvc.Testing;
 using Microsoft.EntityFrameworkCore;
@@ -50,6 +51,14 @@ public class CustomWebApplicationFactory : WebApplicationFactory<Program>
 
             services.AddDbContext<DataContext>(options =>
                 options.UseInMemoryDatabase(_databaseName));
+
+            // Parallel WebApplicationFactory hosts must not share ~/.aspnet/DataProtection-Keys:
+            // NetDevPack JWKS signing keys live there, and key rotation across hosts causes flaky 401s.
+            var keyDir = new DirectoryInfo(Path.Combine(Path.GetTempPath(), "proeventos-test-dp", _databaseName));
+            keyDir.Create();
+            services.AddDataProtection()
+                .PersistKeysToFileSystem(keyDir)
+                .SetApplicationName($"ProEventosTests-{_databaseName}");
 
             _configureTestServices?.Invoke(services);
         });

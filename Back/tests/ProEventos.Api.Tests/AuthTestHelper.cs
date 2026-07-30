@@ -36,7 +36,9 @@ public static class AuthTestHelper
         });
         response.EnsureSuccessStatusCode();
         var auth = await response.Content.ReadFromJsonAsync<AuthResponseDto>(JsonOptions);
-        client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", auth!.Token);
+        if (string.IsNullOrWhiteSpace(auth?.Token))
+            throw new InvalidOperationException("Admin login succeeded but returned an empty access token.");
+        client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", auth.Token);
         return auth;
     }
 
