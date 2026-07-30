@@ -1,30 +1,32 @@
 <template>
+  <PageEnter>
   <div class="mx-auto flex w-full min-w-0 max-w-5xl flex-col gap-6">
     <div>
       <h1 class="text-2xl font-semibold tracking-tight">Perfil</h1>
       <p class="mt-1 text-sm text-muted">Atualize seus dados de conta.</p>
     </div>
 
-    <p
-      v-if="success"
+    <AlertMotion
+      :show="success"
       class="rounded-[length:var(--radius-control)] border border-line bg-accent-soft px-4 py-3 text-sm text-accent-dark"
     >
       Perfil atualizado com sucesso.
-    </p>
+    </AlertMotion>
 
-    <p
-      v-if="error"
+    <AlertMotion
+      :show="!!error"
       class="rounded-[length:var(--radius-control)] border border-danger-border bg-danger-soft px-4 py-3 text-sm text-danger"
     >
       {{ error }}
-    </p>
+    </AlertMotion>
 
     <LoadingSpinner :active="loading" variant="page" />
 
     <div v-if="!loading" class="grid gap-6 lg:grid-cols-[280px_1fr]">
-      <aside
-        class="flex flex-col overflow-hidden rounded-[length:var(--radius-control)] border border-line bg-panel"
+      <PanelEnter
+        class-name="flex flex-col overflow-hidden rounded-[length:var(--radius-control)] border border-line bg-panel"
       >
+      <aside class="contents">
         <div class="flex flex-col items-center gap-3 px-4 pt-6">
           <img
             :src="photoSrc"
@@ -52,9 +54,13 @@
           </li>
         </ul>
       </aside>
+      </PanelEnter>
 
+      <PanelEnter
+        class-name="flex flex-col gap-4 rounded-[length:var(--radius-control)] border border-line bg-panel p-6"
+      >
       <form
-        class="flex flex-col gap-4 rounded-[length:var(--radius-control)] border border-line bg-panel p-6"
+        class="contents"
         @submit.prevent="submitForm"
       >
         <h2 class="border-b border-line pb-2 text-lg font-semibold">Detalhe Perfil</h2>
@@ -157,18 +163,18 @@
             </button>
           </div>
 
-          <p
-            v-if="redesError"
+          <AlertMotion
+            :show="!!redesError"
             class="mb-3 rounded-[length:var(--radius-control)] border border-danger-border bg-danger-soft px-3 py-2 text-sm text-danger"
           >
             {{ redesError }}
-          </p>
-          <p
-            v-if="redesSuccess"
+          </AlertMotion>
+          <AlertMotion
+            :show="!!redesSuccess"
             class="mb-3 rounded-[length:var(--radius-control)] border border-line bg-surface px-3 py-2 text-sm text-accent-dark"
           >
             {{ redesSuccess }}
-          </p>
+          </AlertMotion>
 
           <LoadingSpinner :active="redesLoading" variant="inline" label="Carregando redes..." />
 
@@ -254,13 +260,14 @@
           <button
             type="submit"
             :disabled="submitting"
-            class="ml-auto inline-flex items-center justify-center gap-2 rounded-[length:var(--radius-control)] bg-accent px-4 py-2 text-sm font-medium text-white disabled:cursor-not-allowed disabled:opacity-60"
+            class="motion-press ml-auto inline-flex items-center justify-center gap-2 rounded-[length:var(--radius-control)] bg-accent px-4 py-2 text-sm font-medium text-white disabled:cursor-not-allowed disabled:opacity-60"
           >
             <LoadingSpinner :active="submitting" variant="button" />
             {{ submitting ? "Salvando..." : "Salvar Alteração" }}
           </button>
         </div>
       </form>
+      </PanelEnter>
     </div>
 
     <ConfirmDialog
@@ -272,6 +279,7 @@
       @cancel="pendingRedeDelete = null"
     />
   </div>
+  </PageEnter>
 </template>
 
 <script setup lang="ts">
@@ -285,6 +293,9 @@ import redeSocialService, {
 } from "../../../services/redeSocialService";
 import LoadingSpinner from "../../common/LoadingSpinner.vue";
 import ConfirmDialog from "../../../shared/ConfirmDialog.vue";
+import PageEnter from "../../../shared/motion/PageEnter.vue";
+import AlertMotion from "../../../shared/motion/AlertMotion.vue";
+import PanelEnter from "../../../shared/motion/PanelEnter.vue";
 import { redeSocialFormSchema } from "../../../forms/schemas/eventoSchema";
 import { isAxiosError } from "axios";
 import { apiErrorMessage } from "../../../utils/apiErrorMessage";

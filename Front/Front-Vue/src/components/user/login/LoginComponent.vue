@@ -1,61 +1,63 @@
 <template>
-  <div class="mx-auto flex w-full min-w-0 max-w-md flex-col gap-6">
-    <div>
-      <h1 class="text-2xl font-semibold tracking-tight">Login</h1>
-      <p class="mt-1 text-sm text-muted">
-        Entre com seu usuário para editar eventos e gerenciar seu perfil.
+  <PageEnter>
+    <div class="mx-auto flex w-full min-w-0 max-w-md flex-col gap-6">
+      <div>
+        <h1 class="text-2xl font-semibold tracking-tight">Login</h1>
+        <p class="mt-1 text-sm text-muted">
+          Entre com seu usuário para editar eventos e gerenciar seu perfil.
+        </p>
+      </div>
+
+      <AlertMotion
+        :show="!!error"
+        class="rounded-[length:var(--radius-control)] border border-danger-border bg-danger-soft px-4 py-3 text-sm text-danger"
+      >
+        {{ error }}
+      </AlertMotion>
+
+      <form
+        class="flex flex-col gap-4 rounded-[length:var(--radius-control)] border border-line bg-panel p-6"
+        @submit.prevent="submitForm"
+      >
+        <label class="flex flex-col gap-2 text-sm">
+          <span class="font-medium">Usuário</span>
+          <input
+            v-model="userName"
+            v-bind="userNameAttrs"
+            autocomplete="username"
+            class="w-full rounded-[length:var(--radius-control)] border border-line bg-panel px-3 py-2 text-sm outline-none focus:border-accent focus:ring-2 focus:ring-accent/20"
+          />
+          <span v-if="errors.userName" class="text-xs text-danger">{{ errors.userName }}</span>
+        </label>
+        <label class="flex flex-col gap-2 text-sm">
+          <span class="font-medium">Senha</span>
+          <input
+            v-model="password"
+            v-bind="passwordAttrs"
+            type="password"
+            autocomplete="current-password"
+            class="w-full rounded-[length:var(--radius-control)] border border-line bg-panel px-3 py-2 text-sm outline-none focus:border-accent focus:ring-2 focus:ring-accent/20"
+          />
+          <span v-if="errors.password" class="text-xs text-danger">{{ errors.password }}</span>
+        </label>
+        <button
+          type="submit"
+          :disabled="submitting"
+          class="motion-press inline-flex w-full items-center justify-center gap-2 rounded-[length:var(--radius-control)] bg-accent px-4 py-2 text-sm font-medium text-white disabled:cursor-not-allowed disabled:opacity-60"
+        >
+          <LoadingSpinner :active="submitting" variant="button" />
+          {{ submitting ? "Entrando..." : "Entrar" }}
+        </button>
+      </form>
+
+      <p class="text-center text-sm text-muted">
+        Não tem conta?
+        <router-link to="/user/registro" class="font-medium text-accent-dark hover:underline">
+          Cadastre-se
+        </router-link>
       </p>
     </div>
-
-    <p
-      v-if="error"
-      class="rounded-[length:var(--radius-control)] border border-danger-border bg-danger-soft px-4 py-3 text-sm text-danger"
-    >
-      {{ error }}
-    </p>
-
-    <form
-      class="flex flex-col gap-4 rounded-[length:var(--radius-control)] border border-line bg-panel p-6"
-      @submit.prevent="submitForm"
-    >
-      <label class="flex flex-col gap-2 text-sm">
-        <span class="font-medium">Usuário</span>
-        <input
-          v-model="userName"
-          v-bind="userNameAttrs"
-          autocomplete="username"
-          class="w-full rounded-[length:var(--radius-control)] border border-line bg-panel px-3 py-2 text-sm outline-none focus:border-accent focus:ring-2 focus:ring-accent/20"
-        />
-        <span v-if="errors.userName" class="text-xs text-danger">{{ errors.userName }}</span>
-      </label>
-      <label class="flex flex-col gap-2 text-sm">
-        <span class="font-medium">Senha</span>
-        <input
-          v-model="password"
-          v-bind="passwordAttrs"
-          type="password"
-          autocomplete="current-password"
-          class="w-full rounded-[length:var(--radius-control)] border border-line bg-panel px-3 py-2 text-sm outline-none focus:border-accent focus:ring-2 focus:ring-accent/20"
-        />
-        <span v-if="errors.password" class="text-xs text-danger">{{ errors.password }}</span>
-      </label>
-      <button
-        type="submit"
-        :disabled="submitting"
-        class="inline-flex w-full items-center justify-center gap-2 rounded-[length:var(--radius-control)] bg-accent px-4 py-2 text-sm font-medium text-white disabled:cursor-not-allowed disabled:opacity-60"
-      >
-        <LoadingSpinner :active="submitting" variant="button" />
-        {{ submitting ? "Entrando..." : "Entrar" }}
-      </button>
-    </form>
-
-    <p class="text-center text-sm text-muted">
-      Não tem conta?
-      <router-link to="/user/registro" class="font-medium text-accent-dark hover:underline">
-        Cadastre-se
-      </router-link>
-    </p>
-  </div>
+  </PageEnter>
 </template>
 
 <script setup lang="ts">
@@ -68,6 +70,8 @@ import accountService from "../../../services/accountService";
 import LoadingSpinner from "../../common/LoadingSpinner.vue";
 import { isAxiosError } from "axios";
 import { apiErrorMessage } from "../../../utils/apiErrorMessage";
+import PageEnter from "../../../shared/motion/PageEnter.vue";
+import AlertMotion from "../../../shared/motion/AlertMotion.vue";
 
 const loginSchema = z.object({
   userName: z.string().trim().min(1, "Usuário é obrigatório"),

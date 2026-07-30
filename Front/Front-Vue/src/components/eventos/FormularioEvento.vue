@@ -31,24 +31,23 @@
       Perfil somente leitura — você pode consultar, mas não criar ou editar.
     </p>
 
-    <p
-      v-if="success"
+    <AlertMotion
+      :show="!!success"
       class="rounded-[length:var(--radius-control)] border border-line bg-accent-soft px-4 py-3 text-sm text-accent-dark"
     >
       {{ success }}
-    </p>
+    </AlertMotion>
 
-    <p
-      v-if="error"
+    <AlertMotion
+      :show="!!error"
       class="rounded-[length:var(--radius-control)] border border-danger-border bg-danger-soft px-4 py-3 text-sm text-danger"
     >
       {{ error }}
-    </p>
+    </AlertMotion>
 
     <div class="grid gap-6 md:grid-cols-[1fr_minmax(260px,320px)] md:items-start">
-      <section
-        class="rounded-[length:var(--radius-control)] border border-line bg-panel p-6"
-        :class="{ 'pointer-events-none opacity-60': !writeAllowed }"
+      <PanelEnter
+        :class-name="`rounded-[length:var(--radius-control)] border border-line bg-panel p-6${!writeAllowed ? ' pointer-events-none opacity-60' : ''}`"
       >
         <h2 class="mb-4 text-lg font-medium text-accent-dark">Dados do evento</h2>
         <div class="grid gap-4 md:grid-cols-2">
@@ -130,10 +129,10 @@
             >{{ errors.email }}</span>
           </label>
         </div>
-      </section>
+      </PanelEnter>
 
-      <aside
-        class="self-start rounded-[length:var(--radius-control)] border border-line bg-panel p-4 md:sticky md:top-4"
+      <PanelEnter
+        class-name="self-start rounded-[length:var(--radius-control)] border border-line bg-panel p-4 md:sticky md:top-4"
         data-testid="evento-preview-card"
       >
         <button
@@ -197,11 +196,11 @@
             <dd>{{ email || "—" }}</dd>
           </div>
         </dl>
-      </aside>
+      </PanelEnter>
     </div>
 
-    <section
-      class="rounded-[length:var(--radius-control)] border border-line bg-panel p-6"
+    <PanelEnter
+      class-name="rounded-[length:var(--radius-control)] border border-line bg-panel p-6"
       data-testid="lotes-section"
     >
       <div class="mb-4 flex items-center justify-between">
@@ -295,10 +294,10 @@
           </div>
         </div>
       </div>
-    </section>
+    </PanelEnter>
 
-    <section
-      class="rounded-[length:var(--radius-control)] border border-line bg-panel p-6"
+    <PanelEnter
+      class-name="rounded-[length:var(--radius-control)] border border-line bg-panel p-6"
       data-testid="redes-section"
     >
       <div class="mb-4 flex items-center justify-between">
@@ -346,11 +345,11 @@
           Nenhuma rede social.
         </p>
       </div>
-    </section>
+    </PanelEnter>
 
-    <section
+    <PanelEnter
       v-if="!isNew"
-      class="rounded-[length:var(--radius-control)] border border-line bg-panel p-6"
+      class-name="rounded-[length:var(--radius-control)] border border-line bg-panel p-6"
       data-testid="palestrantes-section"
     >
       <h2 class="mb-4 text-lg font-medium text-accent-dark">Palestrantes</h2>
@@ -417,12 +416,12 @@
           </button>
         </li>
       </ul>
-    </section>
+    </PanelEnter>
 
     <button
       v-if="writeAllowed"
       type="submit"
-      class="inline-flex items-center justify-center rounded-[length:var(--radius-control)] bg-accent px-4 py-2 text-sm font-medium text-white transition-transform hover:bg-accent-dark active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-60"
+      class="motion-press inline-flex items-center justify-center rounded-[length:var(--radius-control)] bg-accent px-4 py-2 text-sm font-medium text-white transition-transform hover:bg-accent-dark active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-60"
       :disabled="saving"
     >
       {{ saving ? "Salvando..." : "Salvar" }}
@@ -457,6 +456,8 @@ import redeSocialService, {
 import DatePickerField from "../../shared/DatePickerField.vue";
 import CurrencyInputField from "../../shared/CurrencyInputField.vue";
 import LoadingSpinner from "../common/LoadingSpinner.vue";
+import AlertMotion from "../../shared/motion/AlertMotion.vue";
+import PanelEnter from "../../shared/motion/PanelEnter.vue";
 import { formatDateBr, toApiDate, toDateInputValue } from "../../utils/date";
 import { isRemoteImageUrl } from "../../utils/imageUrl";
 

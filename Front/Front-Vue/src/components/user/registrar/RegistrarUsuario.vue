@@ -1,142 +1,144 @@
 <template>
-  <section
-    class="-mx-4 -my-8 grid min-h-[calc(100dvh-4.5rem)] grid-cols-1 overflow-hidden md:grid-cols-[minmax(0,0.4fr)_minmax(0,0.6fr)]"
-  >
-    <aside
-      class="hidden min-h-full items-center justify-center bg-surface px-3 py-8 sm:px-6 sm:py-10 md:flex lg:px-10 lg:py-12"
-      aria-hidden="true"
+  <PageEnter>
+    <section
+      class="-mx-4 -my-8 grid min-h-[calc(100dvh-4.5rem)] grid-cols-1 overflow-hidden md:grid-cols-[minmax(0,0.4fr)_minmax(0,0.6fr)]"
     >
-      <img
-        src="/images/signup-illustration.png"
-        alt=""
-        class="h-auto w-full max-w-[10rem] object-contain sm:max-w-[18rem] md:max-w-[22rem] lg:max-w-[26rem]"
-        width="450"
-        height="450"
-      />
-    </aside>
+      <aside
+        class="hidden min-h-full items-center justify-center bg-surface px-3 py-8 sm:px-6 sm:py-10 md:flex lg:px-10 lg:py-12"
+        aria-hidden="true"
+      >
+        <img
+          src="/images/signup-illustration.png"
+          alt=""
+          class="h-auto w-full max-w-[10rem] object-contain sm:max-w-[18rem] md:max-w-[22rem] lg:max-w-[26rem]"
+          width="450"
+          height="450"
+        />
+      </aside>
 
-    <div
-      class="flex items-center justify-center bg-surface px-3 py-8 sm:px-8 lg:px-12 lg:py-12"
-    >
-      <div class="flex w-full max-w-md flex-col gap-6">
-        <header class="flex flex-col gap-2">
-          <h1 class="text-3xl font-semibold tracking-tight text-ink">
-            Cadastro de Usuário
-          </h1>
-          <p class="text-sm leading-relaxed text-muted">
-            Crie sua conta para editar eventos e gerenciar seu perfil.
-          </p>
-        </header>
+      <div
+        class="flex items-center justify-center bg-surface px-3 py-8 sm:px-8 lg:px-12 lg:py-12"
+      >
+        <div class="flex w-full max-w-md flex-col gap-6">
+          <header class="flex flex-col gap-2">
+            <h1 class="text-3xl font-semibold tracking-tight text-ink">
+              Cadastro de Usuário
+            </h1>
+            <p class="text-sm leading-relaxed text-muted">
+              Crie sua conta para editar eventos e gerenciar seu perfil.
+            </p>
+          </header>
 
-        <p
-          v-if="error"
-          class="rounded-[length:var(--radius-control)] border border-danger-border bg-danger-soft px-4 py-3 text-sm text-danger"
-        >
-          {{ error }}
-        </p>
-
-        <form class="flex flex-col gap-5" @submit.prevent="submitForm">
-          <label class="flex flex-col gap-2 text-sm">
-            <span class="font-medium text-ink">Nome</span>
-            <input
-              v-model="nome"
-              v-bind="nomeAttrs"
-              class="w-full rounded-[length:var(--radius-control)] border border-line bg-panel px-3 py-2.5 text-sm outline-none transition-colors focus:border-accent focus:ring-2 focus:ring-accent/20"
-            />
-            <span v-if="errors.nome" class="text-xs text-danger">{{ errors.nome }}</span>
-          </label>
-          <label class="flex flex-col gap-2 text-sm">
-            <span class="font-medium text-ink">Usuário</span>
-            <input
-              v-model="userName"
-              v-bind="userNameAttrs"
-              autocomplete="username"
-              class="w-full rounded-[length:var(--radius-control)] border border-line bg-panel px-3 py-2.5 text-sm outline-none transition-colors focus:border-accent focus:ring-2 focus:ring-accent/20"
-            />
-            <span v-if="errors.userName" class="text-xs text-danger">{{
-              errors.userName
-            }}</span>
-          </label>
-          <label class="flex flex-col gap-2 text-sm">
-            <span class="font-medium text-ink">E-mail</span>
-            <input
-              v-model="email"
-              v-bind="emailAttrs"
-              type="email"
-              autocomplete="email"
-              class="w-full rounded-[length:var(--radius-control)] border border-line bg-panel px-3 py-2.5 text-sm outline-none transition-colors focus:border-accent focus:ring-2 focus:ring-accent/20"
-            />
-            <span v-if="errors.email" class="text-xs text-danger">{{ errors.email }}</span>
-          </label>
-          <label class="flex flex-col gap-2 text-sm">
-            <span class="font-medium text-ink">Senha</span>
-            <input
-              v-model="password"
-              v-bind="passwordAttrs"
-              type="password"
-              autocomplete="new-password"
-              class="w-full rounded-[length:var(--radius-control)] border border-line bg-panel px-3 py-2.5 text-sm outline-none transition-colors focus:border-accent focus:ring-2 focus:ring-accent/20"
-            />
-            <span v-if="errors.password" class="text-xs text-danger">{{
-              errors.password
-            }}</span>
-          </label>
-
-          <label class="flex items-center gap-2.5 text-sm">
-            <input
-              v-model="asPalestrante"
-              type="checkbox"
-              class="size-4 rounded border-line text-accent focus:ring-accent/20"
-            />
-            <span class="font-medium text-ink">Registrar como palestrante</span>
-          </label>
-
-          <template v-if="asPalestrante">
-            <label class="flex flex-col gap-2 text-sm">
-              <span class="font-medium text-ink">Mini currículo (opcional)</span>
-              <textarea
-                v-model="miniCurriculo"
-                rows="3"
-                class="w-full rounded-[length:var(--radius-control)] border border-line bg-panel px-3 py-2.5 text-sm outline-none transition-colors focus:border-accent focus:ring-2 focus:ring-accent/20"
-              />
-            </label>
-            <label class="flex flex-col gap-2 text-sm">
-              <span class="font-medium text-ink">Telefone (opcional)</span>
-              <input
-                v-model="telefone"
-                class="w-full rounded-[length:var(--radius-control)] border border-line bg-panel px-3 py-2.5 text-sm outline-none transition-colors focus:border-accent focus:ring-2 focus:ring-accent/20"
-              />
-            </label>
-            <label class="flex flex-col gap-2 text-sm">
-              <span class="font-medium text-ink">URL da imagem (opcional)</span>
-              <input
-                v-model="imagemURL"
-                type="url"
-                placeholder="https://..."
-                class="w-full rounded-[length:var(--radius-control)] border border-line bg-panel px-3 py-2.5 text-sm outline-none transition-colors focus:border-accent focus:ring-2 focus:ring-accent/20"
-              />
-            </label>
-          </template>
-
-          <button
-            type="submit"
-            :disabled="submitting"
-            class="mt-1 inline-flex w-full items-center justify-center gap-2 rounded-[length:var(--radius-control)] bg-accent px-4 py-2.5 text-sm font-medium text-white transition-[transform,background-color] hover:bg-accent-dark active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-60"
+          <AlertMotion
+            :show="!!error"
+            class="rounded-[length:var(--radius-control)] border border-danger-border bg-danger-soft px-4 py-3 text-sm text-danger"
           >
-            <LoadingSpinner :active="submitting" variant="button" />
-            {{ submitting ? "Cadastrando..." : "Cadastrar" }}
-          </button>
-        </form>
+            {{ error }}
+          </AlertMotion>
 
-        <router-link
-          to="/user/login"
-          class="text-center text-sm font-medium text-accent-dark hover:underline"
-        >
-          Já sou cadastrado
-        </router-link>
+          <form class="flex flex-col gap-5" @submit.prevent="submitForm">
+            <label class="flex flex-col gap-2 text-sm">
+              <span class="font-medium text-ink">Nome</span>
+              <input
+                v-model="nome"
+                v-bind="nomeAttrs"
+                class="w-full rounded-[length:var(--radius-control)] border border-line bg-panel px-3 py-2.5 text-sm outline-none transition-colors focus:border-accent focus:ring-2 focus:ring-accent/20"
+              />
+              <span v-if="errors.nome" class="text-xs text-danger">{{ errors.nome }}</span>
+            </label>
+            <label class="flex flex-col gap-2 text-sm">
+              <span class="font-medium text-ink">Usuário</span>
+              <input
+                v-model="userName"
+                v-bind="userNameAttrs"
+                autocomplete="username"
+                class="w-full rounded-[length:var(--radius-control)] border border-line bg-panel px-3 py-2.5 text-sm outline-none transition-colors focus:border-accent focus:ring-2 focus:ring-accent/20"
+              />
+              <span v-if="errors.userName" class="text-xs text-danger">{{
+                errors.userName
+              }}</span>
+            </label>
+            <label class="flex flex-col gap-2 text-sm">
+              <span class="font-medium text-ink">E-mail</span>
+              <input
+                v-model="email"
+                v-bind="emailAttrs"
+                type="email"
+                autocomplete="email"
+                class="w-full rounded-[length:var(--radius-control)] border border-line bg-panel px-3 py-2.5 text-sm outline-none transition-colors focus:border-accent focus:ring-2 focus:ring-accent/20"
+              />
+              <span v-if="errors.email" class="text-xs text-danger">{{ errors.email }}</span>
+            </label>
+            <label class="flex flex-col gap-2 text-sm">
+              <span class="font-medium text-ink">Senha</span>
+              <input
+                v-model="password"
+                v-bind="passwordAttrs"
+                type="password"
+                autocomplete="new-password"
+                class="w-full rounded-[length:var(--radius-control)] border border-line bg-panel px-3 py-2.5 text-sm outline-none transition-colors focus:border-accent focus:ring-2 focus:ring-accent/20"
+              />
+              <span v-if="errors.password" class="text-xs text-danger">{{
+                errors.password
+              }}</span>
+            </label>
+
+            <label class="flex items-center gap-2.5 text-sm">
+              <input
+                v-model="asPalestrante"
+                type="checkbox"
+                class="size-4 rounded border-line text-accent focus:ring-accent/20"
+              />
+              <span class="font-medium text-ink">Registrar como palestrante</span>
+            </label>
+
+            <template v-if="asPalestrante">
+              <label class="flex flex-col gap-2 text-sm">
+                <span class="font-medium text-ink">Mini currículo (opcional)</span>
+                <textarea
+                  v-model="miniCurriculo"
+                  rows="3"
+                  class="w-full rounded-[length:var(--radius-control)] border border-line bg-panel px-3 py-2.5 text-sm outline-none transition-colors focus:border-accent focus:ring-2 focus:ring-accent/20"
+                />
+              </label>
+              <label class="flex flex-col gap-2 text-sm">
+                <span class="font-medium text-ink">Telefone (opcional)</span>
+                <input
+                  v-model="telefone"
+                  class="w-full rounded-[length:var(--radius-control)] border border-line bg-panel px-3 py-2.5 text-sm outline-none transition-colors focus:border-accent focus:ring-2 focus:ring-accent/20"
+                />
+              </label>
+              <label class="flex flex-col gap-2 text-sm">
+                <span class="font-medium text-ink">URL da imagem (opcional)</span>
+                <input
+                  v-model="imagemURL"
+                  type="url"
+                  placeholder="https://..."
+                  class="w-full rounded-[length:var(--radius-control)] border border-line bg-panel px-3 py-2.5 text-sm outline-none transition-colors focus:border-accent focus:ring-2 focus:ring-accent/20"
+                />
+              </label>
+            </template>
+
+            <button
+              type="submit"
+              :disabled="submitting"
+              class="motion-press mt-1 inline-flex w-full items-center justify-center gap-2 rounded-[length:var(--radius-control)] bg-accent px-4 py-2.5 text-sm font-medium text-white transition-[transform,background-color] hover:bg-accent-dark active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-60"
+            >
+              <LoadingSpinner :active="submitting" variant="button" />
+              {{ submitting ? "Cadastrando..." : "Cadastrar" }}
+            </button>
+          </form>
+
+          <router-link
+            to="/user/login"
+            class="text-center text-sm font-medium text-accent-dark hover:underline"
+          >
+            Já sou cadastrado
+          </router-link>
+        </div>
       </div>
-    </div>
-  </section>
+    </section>
+  </PageEnter>
 </template>
 
 <script setup lang="ts">
@@ -149,6 +151,8 @@ import accountService from "../../../services/accountService";
 import LoadingSpinner from "../../common/LoadingSpinner.vue";
 import { isAxiosError } from "axios";
 import { apiErrorMessage } from "../../../utils/apiErrorMessage";
+import PageEnter from "../../../shared/motion/PageEnter.vue";
+import AlertMotion from "../../../shared/motion/AlertMotion.vue";
 
 const registerSchema = z.object({
   nome: z.string().trim().min(1, "Nome é obrigatório"),
