@@ -1,17 +1,23 @@
-import { describe, it, expect, vi, beforeEach } from "vitest";
+import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import { mount, flushPromises } from "@vue/test-utils";
+import { createRouter, createMemoryHistory } from "vue-router";
 import PalestrantesPage from "./PalestrantesPage.vue";
 import palestranteService from "../../services/palestranteService";
 import type { Palestrante } from "../../Models/Palestrante";
 
+vi.mock("../../services/authToken", () => ({
+  canWrite: vi.fn(() => true),
+  isAuthenticated: vi.fn(() => true),
+}));
+
 vi.mock("../../services/palestranteService", () => ({
   default: {
     list: vi.fn(),
-    create: vi.fn(),
-    update: vi.fn(),
     remove: vi.fn(),
   },
 }));
+
+import { canWrite } from "../../services/authToken";
 
 const sample: Palestrante = {
   id: 1,
@@ -19,26 +25,85 @@ const sample: Palestrante = {
   email: "maria@test.com",
   telefone: "11999999999",
   miniCurriculo: "Bio",
-  imagemURL: "",
+  imagemURL: "https://example.com/maria.jpg",
   redesSociais: [],
   palestrantesEventos: [],
 };
 
-type PalestrantesPageVm = {
-  save: () => Promise<void>;
-  nome: string;
-  edit: (row: Palestrante) => void;
-  resetFormValues: () => void;
-};
+function pageResult<T>(
+  items: T[],
+  opts: {
+    page?: number;
+    pageSize?: number;
+    totalCount?: number;
+    totalPages?: number;
+  } = {},
+) {
+  const pageSize = opts.pageSize ?? 10;
+  const totalCount = opts.totalCount ?? items.length;
+  const totalPages =
+    opts.totalPages ??
+    (totalCount === 0 ? 0 : Math.max(1, Math.ceil(totalCount / pageSize)));
+  return {
+    items,
+    page: opts.page ?? 1,
+    pageSize,
+    totalCount,
+    totalPages,
+  };
+}
+
+function mockList(
+  items: Palestrante[],
+  opts?: Parameters<typeof pageResult>[1],
+) {
+  (palestranteService.list as any).mockResolvedValue({
+    data: pageResult(items, opts),
+  });
+}
+
+function createTestRouter() {
+  return createRouter({
+    history: createMemoryHistory(),
+    routes: [
+      {
+        path: "/palestrantes/lista",
+        name: "palestrantes-lista",
+        component: { template: "<div />" },
+      },
+      {
+        path: "/palestrantes/detalhes/:id?",
+        name: "palestrante-detalhe",
+        component: { template: "<div />" },
+      },
+    ],
+  });
+}
+
+const searchInput = 'input[placeholder="Digite para buscar"]';
+
+async function mountPage() {
+  const router = createTestRouter();
+  await router.push("/palestrantes/lista");
+  await router.isReady();
+  return mount(PalestrantesPage, {
+    global: { plugins: [router] },
+  });
+}
 
 describe("PalestrantesPage", () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    (canWrite as unknown as ReturnType<typeof vi.fn>).mockReturnValue(true);
+  });
+
+  afterEach(() => {
+    vi.useRealTimers();
   });
 
   it("loads palestrantes on mount", async () => {
-    (palestranteService.list as any).mockResolvedValue({ data: [sample] });
-    const wrapper = mount(PalestrantesPage);
+    mockList([sample]);
+    const wrapper = await mountPage();
     await flushPromises();
 
     expect(palestranteService.list).toHaveBeenCalled();
@@ -46,8 +111,8 @@ describe("PalestrantesPage", () => {
   });
 
   it("shows empty state", async () => {
-    (palestranteService.list as any).mockResolvedValue({ data: [] });
-    const wrapper = mount(PalestrantesPage);
+    mockList([]);
+    const wrapper = await mountPage();
     await flushPromises();
 
     expect(wrapper.text()).toContain("Nenhum palestrante cadastrado");
@@ -55,88 +120,117 @@ describe("PalestrantesPage", () => {
 
   it("shows load error", async () => {
     (palestranteService.list as any).mockRejectedValue(new Error("fail"));
-    const wrapper = mount(PalestrantesPage);
+    const wrapper = await mountPage();
     await flushPromises();
 
     expect(wrapper.text()).toContain("Não foi possível carregar palestrantes");
   });
 
-  it("creates palestrante on save", async () => {
-    (palestranteService.list as any).mockResolvedValue({ data: [] });
-    (palestranteService.create as any).mockResolvedValue({ data: sample });
-    const wrapper = mount(PalestrantesPage);
+  it("navigates to create form on Novo palestrante", async () => {
+    mockList([]);
+    const wrapper = await mountPage();
     await flushPromises();
 
-    const vm = wrapper.vm as unknown as PalestrantesPageVm;
-    vm.nome = "João";
-    await vm.save();
+    const router = wrapper.vm.$.appContext.config.globalProperties.$router;
+    await wrapper.findAll("button").find((b) => b.text() === "Novo palestrante")!.trigger("click");
     await flushPromises();
 
-    expect(palestranteService.create).toHaveBeenCalledWith(
-      expect.objectContaining({ nome: "João" }),
+    expect(router.currentRoute.value.name).toBe("palestrante-detalhe");
+  });
+
+  it("links Editar to form route", async () => {
+    mockList([sample]);
+    const wrapper = await mountPage();
+    await flushPromises();
+
+    const editLink = wrapper.find('a[href="/palestrantes/detalhes/1"]');
+    expect(editLink.exists()).toBe(true);
+    expect(editLink.text()).toBe("Editar");
+  });
+
+  it("filters by q on submit", async () => {
+    mockList([sample]);
+    const wrapper = await mountPage();
+    await flushPromises();
+
+    await wrapper.find(searchInput).setValue("Maria");
+    await wrapper.find("form").trigger("submit.prevent");
+    await flushPromises();
+
+    expect(palestranteService.list).toHaveBeenCalledWith(
+      expect.objectContaining({ q: "Maria" }),
     );
   });
 
-  it("requires nome before save", async () => {
-    (palestranteService.list as any).mockResolvedValue({ data: [] });
-    const wrapper = mount(PalestrantesPage);
+  it("debounces typing before searching with q", async () => {
+    vi.useFakeTimers();
+    mockList([sample]);
+    const wrapper = await mountPage();
     await flushPromises();
+    expect(palestranteService.list).toHaveBeenCalledTimes(1);
 
-    const vm = wrapper.vm as unknown as PalestrantesPageVm;
-    vm.nome = "";
-    await vm.save();
+    await wrapper.find(searchInput).setValue("M");
+    await wrapper.find(searchInput).setValue("Ma");
+    await wrapper.find(searchInput).setValue("Maria");
+    vi.advanceTimersByTime(349);
     await flushPromises();
+    expect(palestranteService.list).toHaveBeenCalledTimes(1);
 
-    expect(palestranteService.create).not.toHaveBeenCalled();
-  });
-
-  it("validates empty nome via save handler", async () => {
-    (palestranteService.list as any).mockResolvedValue({ data: [] });
-    const wrapper = mount(PalestrantesPage);
+    vi.advanceTimersByTime(1);
     await flushPromises();
-
-    const vm = wrapper.vm as unknown as PalestrantesPageVm;
-    vm.nome = "";
-    await vm.save();
-    await flushPromises();
-
-    expect(wrapper.text()).toContain("Nome é obrigatório");
-  });
-
-  it("updates palestrante when editing", async () => {
-    (palestranteService.list as any).mockResolvedValue({ data: [sample] });
-    (palestranteService.update as any).mockResolvedValue({ data: sample });
-    const wrapper = mount(PalestrantesPage);
-    await flushPromises();
-
-    const vm = wrapper.vm as unknown as PalestrantesPageVm;
-    vm.edit(sample);
-    vm.nome = "Maria Atualizada";
-    await vm.save();
-    await flushPromises();
-
-    expect(palestranteService.update).toHaveBeenCalledWith(
-      1,
-      expect.objectContaining({ nome: "Maria Atualizada" }),
+    expect(palestranteService.list).toHaveBeenCalledTimes(2);
+    expect(palestranteService.list).toHaveBeenLastCalledWith(
+      expect.objectContaining({ q: "Maria" }),
     );
   });
 
-  it("resets form when canceling edit", async () => {
-    (palestranteService.list as any).mockResolvedValue({ data: [sample] });
-    const wrapper = mount(PalestrantesPage);
+  it("submit cancels pending debounce and searches immediately", async () => {
+    vi.useFakeTimers();
+    mockList([sample]);
+    const wrapper = await mountPage();
     await flushPromises();
 
-    const vm = wrapper.vm as unknown as PalestrantesPageVm;
-    vm.edit(sample);
-    vm.resetFormValues();
+    await wrapper.find(searchInput).setValue("Maria");
+    await wrapper.find("form").trigger("submit.prevent");
+    await flushPromises();
 
-    expect(wrapper.text()).toContain("Novo palestrante");
+    expect(palestranteService.list).toHaveBeenCalledTimes(2);
+    expect(palestranteService.list).toHaveBeenLastCalledWith(
+      expect.objectContaining({ q: "Maria" }),
+    );
+
+    vi.advanceTimersByTime(350);
+    await flushPromises();
+    expect(palestranteService.list).toHaveBeenCalledTimes(2);
+  });
+
+  it("clears search and reloads immediately", async () => {
+    vi.useFakeTimers();
+    mockList([sample]);
+    const wrapper = await mountPage();
+    await flushPromises();
+
+    await wrapper.find(searchInput).setValue("Maria");
+    await wrapper.find("form").trigger("submit.prevent");
+    await flushPromises();
+
+    await wrapper.findAll("button").find((b) => b.text() === "Limpar")!.trigger("click");
+    await flushPromises();
+
+    expect(palestranteService.list).toHaveBeenCalledTimes(3);
+    expect(
+      (palestranteService.list as any).mock.calls.at(-1)[0].q,
+    ).toBeUndefined();
+
+    vi.advanceTimersByTime(350);
+    await flushPromises();
+    expect(palestranteService.list).toHaveBeenCalledTimes(3);
   });
 
   it("removes palestrante after confirm", async () => {
-    (palestranteService.list as any).mockResolvedValue({ data: [sample] });
+    mockList([sample]);
     (palestranteService.remove as any).mockResolvedValue({ status: 200 });
-    const wrapper = mount(PalestrantesPage);
+    const wrapper = await mountPage();
     await flushPromises();
 
     const excluirBtn = wrapper.findAll("button").find((b) => b.text() === "Excluir");
@@ -154,8 +248,8 @@ describe("PalestrantesPage", () => {
   });
 
   it("skips remove when confirm cancelled", async () => {
-    (palestranteService.list as any).mockResolvedValue({ data: [sample] });
-    const wrapper = mount(PalestrantesPage);
+    mockList([sample]);
+    const wrapper = await mountPage();
     await flushPromises();
 
     await wrapper.findAll("button").find((b) => b.text() === "Excluir")!.trigger("click");
@@ -171,17 +265,64 @@ describe("PalestrantesPage", () => {
     expect(palestranteService.remove).not.toHaveBeenCalled();
   });
 
-  it("shows save error", async () => {
-    (palestranteService.list as any).mockResolvedValue({ data: [] });
-    (palestranteService.create as any).mockRejectedValue(new Error("fail"));
-    const wrapper = mount(PalestrantesPage);
+  it("hides write actions when canWrite is false", async () => {
+    (canWrite as unknown as ReturnType<typeof vi.fn>).mockReturnValue(false);
+    mockList([sample]);
+    const wrapper = await mountPage();
     await flushPromises();
 
-    const vm = wrapper.vm as unknown as PalestrantesPageVm;
-    vm.nome = "Teste";
-    await vm.save();
+    expect(wrapper.find('[data-testid="readonly-message"]').exists()).toBe(true);
+    expect(wrapper.text()).not.toContain("Novo palestrante");
+    expect(wrapper.findAll("button").some((b) => b.text() === "Excluir")).toBe(false);
+    expect(wrapper.findAll("a").some((a) => a.text() === "Editar")).toBe(false);
+  });
+
+  it("shows list thumbnail for remote imagemURL", async () => {
+    mockList([sample]);
+    const wrapper = await mountPage();
     await flushPromises();
 
-    expect(wrapper.text()).toContain("Erro ao salvar palestrante");
+    const img = wrapper.find('img[src="https://example.com/maria.jpg"]');
+    expect(img.exists()).toBe(true);
+  });
+
+  it("paginates list when many items exist", async () => {
+    const page1 = Array.from({ length: 10 }, (_, i) => ({
+      ...sample,
+      id: i + 1,
+      nome: `Speaker ${i + 1}`,
+    }));
+    const page2Item = { ...sample, id: 11, nome: "Speaker 11" };
+    (palestranteService.list as any)
+      .mockResolvedValueOnce({
+        data: pageResult(page1, { totalCount: 11, totalPages: 2 }),
+      })
+      .mockResolvedValueOnce({
+        data: pageResult([page2Item], { page: 2, totalCount: 11, totalPages: 2 }),
+      });
+    const wrapper = await mountPage();
+    await flushPromises();
+
+    expect(wrapper.text()).toContain("Página 1 de 2");
+    expect(wrapper.text()).toContain("Speaker 1");
+    expect(wrapper.text()).not.toContain("Speaker 11");
+
+    await wrapper.findAll("button").find((b) => b.text() === "Próxima")!.trigger("click");
+    await flushPromises();
+
+    expect(palestranteService.list).toHaveBeenCalledWith(
+      expect.objectContaining({ page: 2 }),
+    );
+    expect(wrapper.text()).toContain("Página 2 de 2");
+    expect(wrapper.text()).toContain("Speaker 11");
+  });
+
+  it("does not render inline form fields", async () => {
+    mockList([]);
+    const wrapper = await mountPage();
+    await flushPromises();
+
+    expect(wrapper.text()).not.toContain("Mini currículo");
+    expect(wrapper.find('[data-testid="speaker-redes-section"]').exists()).toBe(false);
   });
 });

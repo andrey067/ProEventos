@@ -1,5 +1,5 @@
 <template>
-  <div class="mx-auto flex max-w-lg flex-col gap-6">
+  <div class="mx-auto flex w-full min-w-0 max-w-lg flex-col gap-6">
     <div>
       <h1 class="text-2xl font-semibold tracking-tight">Alterar senha</h1>
       <p class="mt-1 text-sm text-muted">
@@ -47,11 +47,23 @@
         />
         <span v-if="errors.newPassword" class="text-xs text-danger">{{ errors.newPassword }}</span>
       </label>
+      <label class="flex flex-col gap-2 text-sm">
+        <span class="font-medium">Confirmar nova senha</span>
+        <input
+          v-model="confirmPassword"
+          v-bind="confirmPasswordAttrs"
+          type="password"
+          autocomplete="new-password"
+          class="w-full rounded-[length:var(--radius-control)] border border-line bg-panel px-3 py-2 text-sm outline-none focus:border-accent focus:ring-2 focus:ring-accent/20"
+        />
+        <span v-if="errors.confirmPassword" class="text-xs text-danger">{{ errors.confirmPassword }}</span>
+      </label>
       <button
         type="submit"
         :disabled="submitting"
-        class="inline-flex w-full items-center justify-center rounded-[length:var(--radius-control)] bg-accent px-4 py-2 text-sm font-medium text-white disabled:cursor-not-allowed disabled:opacity-60"
+        class="inline-flex w-full items-center justify-center gap-2 rounded-[length:var(--radius-control)] bg-accent px-4 py-2 text-sm font-medium text-white disabled:cursor-not-allowed disabled:opacity-60"
       >
+        <LoadingSpinner :active="submitting" variant="button" />
         {{ submitting ? "Salvando..." : "Alterar senha" }}
       </button>
     </form>
@@ -71,13 +83,20 @@ import { useForm } from "vee-validate";
 import { toTypedSchema } from "@vee-validate/zod";
 import { z } from "zod";
 import accountService from "../../../services/accountService";
+import LoadingSpinner from "../../common/LoadingSpinner.vue";
 import { isAxiosError } from "axios";
 import { apiErrorMessage } from "../../../utils/apiErrorMessage";
 
-const changePasswordSchema = z.object({
-  currentPassword: z.string().min(1, "Senha atual é obrigatória"),
-  newPassword: z.string().min(1, "Nova senha é obrigatória"),
-});
+const changePasswordSchema = z
+  .object({
+    currentPassword: z.string().min(1, "Senha atual é obrigatória"),
+    newPassword: z.string().min(1, "Nova senha é obrigatória"),
+    confirmPassword: z.string().min(1, "Confirmação é obrigatória"),
+  })
+  .refine((data) => data.newPassword === data.confirmPassword, {
+    message: "As senhas não coincidem",
+    path: ["confirmPassword"],
+  });
 
 const submitting = ref(false);
 const error = ref<string | null>(null);
@@ -85,11 +104,12 @@ const success = ref(false);
 
 const { defineField, handleSubmit, errors, resetForm } = useForm({
   validationSchema: toTypedSchema(changePasswordSchema),
-  initialValues: { currentPassword: "", newPassword: "" },
+  initialValues: { currentPassword: "", newPassword: "", confirmPassword: "" },
 });
 
 const [currentPassword, currentPasswordAttrs] = defineField("currentPassword");
 const [newPassword, newPasswordAttrs] = defineField("newPassword");
+const [confirmPassword, confirmPasswordAttrs] = defineField("confirmPassword");
 
 const submitForm = handleSubmit(async (values) => {
   submitting.value = true;
@@ -97,7 +117,10 @@ const submitForm = handleSubmit(async (values) => {
   success.value = false;
 
   try {
-    await accountService.changePassword(values);
+    await accountService.changePassword({
+      currentPassword: values.currentPassword,
+      newPassword: values.newPassword,
+    });
     resetForm();
     success.value = true;
   } catch (err) {

@@ -10,6 +10,7 @@ export default defineConfig({
     globals: true,
     coverage: {
       provider: "v8",
+      reporter: ["text", "json-summary", "html"],
       include: ["src/**/*.{ts,vue}"],
       exclude: [
         "src/**/*.d.ts",
@@ -18,10 +19,10 @@ export default defineConfig({
         "src/**/*.css",
       ],
       thresholds: {
-        lines: 80,
-        functions: 80,
-        branches: 80,
-        statements: 80,
+        lines: 90,
+        functions: 90,
+        branches: 90,
+        statements: 90,
       },
     },
   },

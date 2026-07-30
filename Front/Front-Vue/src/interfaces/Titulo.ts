@@ -6,3 +6,5 @@ export interface Titulo {
     mostrarTitulo: boolean
     botaolistar: boolean
 }
+
+export const tituloInterfaceKey = "Titulo" as const;

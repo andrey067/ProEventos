@@ -1,27 +1,37 @@
 import http from "./HttpClient";
-import { clearToken, setToken } from "./authToken";
+import { clearToken, setSession } from "./authToken";
 import type {
   AuthResponse,
   ChangePasswordRequest,
+  RegisterPalestranteRequest,
   RegisterRequest,
   UpdateProfileRequest,
   UserProfile,
 } from "../Models/identity/User";
 import type { UserLogin } from "../Models/identity/UserLogin";
 
+function persistAuth(response: AuthResponse): AuthResponse {
+  setSession(response.token, response.roles);
+  return response;
+}
+
 export const accountService = {
   register(data: RegisterRequest): Promise<AuthResponse> {
-    return http.post<AuthResponse>("/account/register", data).then((response) => {
-      setToken(response.data.token);
-      return response.data;
-    });
+    return http.post<AuthResponse>("/account/register", data).then((response) =>
+      persistAuth(response.data),
+    );
+  },
+
+  registerPalestrante(data: RegisterPalestranteRequest): Promise<AuthResponse> {
+    return http
+      .post<AuthResponse>("/account/register-palestrante", data)
+      .then((response) => persistAuth(response.data));
   },
 
   login(data: UserLogin): Promise<AuthResponse> {
-    return http.post<AuthResponse>("/account/login", data).then((response) => {
-      setToken(response.data.token);
-      return response.data;
-    });
+    return http.post<AuthResponse>("/account/login", data).then((response) =>
+      persistAuth(response.data),
+    );
   },
 
   logout(): void {

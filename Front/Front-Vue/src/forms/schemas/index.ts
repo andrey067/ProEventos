@@ -4,6 +4,7 @@ export {
   redeSocialFormSchema,
   defaultEventoFormValues,
   emptyLote,
+  emptyRede,
   type EventoFormValues,
   type LoteFormValues,
   type RedeSocialFormValues,

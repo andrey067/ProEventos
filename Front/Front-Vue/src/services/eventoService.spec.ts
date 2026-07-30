@@ -1,4 +1,4 @@
-import { describe, it, expect, vi, beforeEach } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 import eventoService from "./eventoService";
 import http from "./HttpClient";
 
@@ -11,15 +11,32 @@ vi.mock("./HttpClient", () => ({
   },
 }));
 
+const paginationHeader = JSON.stringify({
+  currentPage: 1,
+  itemsPerPage: 10,
+  totalItems: 0,
+  totalPages: 0,
+});
+
 describe("eventoService", () => {
   beforeEach(() => {
     vi.clearAllMocks();
   });
 
-  it("list calls GET /eventos", async () => {
-    (http.get as any).mockResolvedValue({ data: [] });
-    await eventoService.list();
-    expect(http.get).toHaveBeenCalledWith("/eventos");
+  it("list calls GET /eventos with query and parses Pagination header", async () => {
+    (http.get as any).mockResolvedValue({
+      data: [],
+      headers: { pagination: paginationHeader },
+    });
+    const result = await eventoService.list({ page: 1, pageSize: 10 });
+    expect(http.get).toHaveBeenCalledWith("/eventos?page=1&pageSize=10");
+    expect(result.data).toEqual({
+      items: [],
+      page: 1,
+      pageSize: 10,
+      totalCount: 0,
+      totalPages: 0,
+    });
   });
 
   it("create calls POST /eventos", async () => {
@@ -46,9 +63,21 @@ describe("eventoService", () => {
     expect(http.get).toHaveBeenCalledWith("/eventos/4");
   });
 
-  it("getByTema calls GET /eventos/tema/:tema", async () => {
-    (http.get as any).mockResolvedValue({ data: [] });
+  it("getByTema calls GET /eventos with q query", async () => {
+    (http.get as any).mockResolvedValue({
+      data: [],
+      headers: { pagination: paginationHeader },
+    });
     await eventoService.getByTema("Vue");
-    expect(http.get).toHaveBeenCalledWith("/eventos/tema/Vue");
+    expect(http.get).toHaveBeenCalledWith("/eventos?q=Vue");
+  });
+
+  it("list with q calls GET /eventos with q query", async () => {
+    (http.get as any).mockResolvedValue({
+      data: [],
+      headers: { pagination: paginationHeader },
+    });
+    await eventoService.list({ page: 1, pageSize: 10, q: "conf" });
+    expect(http.get).toHaveBeenCalledWith("/eventos?page=1&pageSize=10&q=conf");
   });
 });

@@ -1,5 +1,5 @@
 <template>
-  <div class="mx-auto flex max-w-md flex-col gap-6">
+  <div class="mx-auto flex w-full min-w-0 max-w-md flex-col gap-6">
     <div>
       <h1 class="text-2xl font-semibold tracking-tight">Login</h1>
       <p class="mt-1 text-sm text-muted">
@@ -42,8 +42,9 @@
       <button
         type="submit"
         :disabled="submitting"
-        class="inline-flex w-full items-center justify-center rounded-[length:var(--radius-control)] bg-accent px-4 py-2 text-sm font-medium text-white disabled:cursor-not-allowed disabled:opacity-60"
+        class="inline-flex w-full items-center justify-center gap-2 rounded-[length:var(--radius-control)] bg-accent px-4 py-2 text-sm font-medium text-white disabled:cursor-not-allowed disabled:opacity-60"
       >
+        <LoadingSpinner :active="submitting" variant="button" />
         {{ submitting ? "Entrando..." : "Entrar" }}
       </button>
     </form>
@@ -64,6 +65,7 @@ import { useForm } from "vee-validate";
 import { toTypedSchema } from "@vee-validate/zod";
 import { z } from "zod";
 import accountService from "../../../services/accountService";
+import LoadingSpinner from "../../common/LoadingSpinner.vue";
 import { isAxiosError } from "axios";
 import { apiErrorMessage } from "../../../utils/apiErrorMessage";
 

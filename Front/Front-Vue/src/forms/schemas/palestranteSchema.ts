@@ -5,6 +5,7 @@ export const palestranteSchema = z.object({
   email: z.string().optional(),
   telefone: z.string().optional(),
   miniCurriculo: z.string().optional(),
+  imagemURL: z.string().optional(),
 });
 
 export type PalestranteFormValues = z.infer<typeof palestranteSchema>;
@@ -15,5 +16,6 @@ export function defaultPalestranteFormValues(): PalestranteFormValues {
     email: "",
     telefone: "",
     miniCurriculo: "",
+    imagemURL: "",
   };
 }

@@ -27,9 +27,9 @@ export const loteFormSchema = z
 
 export const redeSocialFormSchema = z.object({
   id: z.number().optional(),
-  nome: z.string().optional(),
+  nome: z.string().trim().min(1, "Nome da rede é obrigatório"),
   URL: z.string().optional(),
-  url: z.string().optional(),
+  url: z.string().trim().min(1, "URL é obrigatória"),
   eventoId: z.number().optional(),
   palestranteId: z.number().optional(),
 });
@@ -39,7 +39,8 @@ export const eventoSchema = z.object({
   tema: z
     .string()
     .trim()
-    .min(3, "Tema deve ter ao menos 3 caracteres"),
+    .min(4, "Tema deve ter ao menos 4 caracteres")
+    .max(50, "Tema deve ter no máximo 50 caracteres"),
   local: z.string().trim().min(3, "Local deve ter ao menos 3 caracteres"),
   dataEvento: z
     .string()
@@ -54,9 +55,12 @@ export const eventoSchema = z.object({
       },
       { message: "Data inválida" },
     ),
-  qtdPessoas: z.coerce.number().min(1, "Quantidade mínima é 1"),
+  qtdPessoas: z.coerce
+    .number()
+    .min(1, "Quantidade mínima é 1")
+    .max(120000, "Quantidade máxima é 120000"),
   telefone: z.string().trim().min(1, "Telefone é obrigatório"),
-  email: z.string().trim().min(1, "E-mail obrigatório"),
+  email: z.string().trim().min(1, "E-mail obrigatório").email("E-mail inválido"),
   imagemURL: z.string().optional(),
   lotes: z.array(loteFormSchema),
   redesSociais: z.array(redeSocialFormSchema),
@@ -76,6 +80,15 @@ export function emptyLote(eventoId = 0): LoteFormValues {
     quantidade: 1,
     dataInicio: today,
     dataFim: today,
+    eventoId,
+  };
+}
+
+export function emptyRede(eventoId = 0): RedeSocialFormValues {
+  return {
+    id: 0,
+    nome: "",
+    url: "",
     eventoId,
   };
 }

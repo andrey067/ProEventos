@@ -4,10 +4,11 @@
       <div>
         <h1 class="text-2xl font-semibold tracking-tight">Eventos</h1>
         <p class="mt-1 text-sm text-muted">
-          Lista, busca por tema e gerenciamento básico.
+          Lista, busca e gerenciamento básico.
         </p>
       </div>
       <button
+        v-if="writeAllowed"
         type="button"
         class="inline-flex items-center justify-center rounded-[length:var(--radius-control)] bg-accent px-4 py-2 text-sm font-medium text-white transition-transform hover:bg-accent-dark active:scale-[0.98]"
         @click="router.push('/eventos/detalhes')"
@@ -16,17 +17,25 @@
       </button>
     </div>
 
+    <p
+      v-if="!writeAllowed && isLoggedIn"
+      class="rounded-[length:var(--radius-control)] border border-line bg-surface px-4 py-3 text-sm text-muted"
+      data-testid="readonly-message"
+    >
+      Perfil somente leitura — você pode consultar, mas não criar ou editar.
+    </p>
+
     <form
       class="flex flex-wrap items-end gap-3 rounded-[length:var(--radius-control)] border border-line bg-panel p-4"
       @submit.prevent="buscar"
     >
-      <label class="flex min-w-60 flex-1 flex-col gap-2 text-sm">
-        <span class="font-medium text-ink">Buscar por tema</span>
+      <label class="flex w-full min-w-0 flex-1 flex-col gap-2 text-sm">
+        <span class="font-medium text-ink">Buscar</span>
         <input
-          v-model="tema"
-          v-bind="temaAttrs"
+          v-model="q"
+          v-bind="qAttrs"
           class="w-full rounded-[length:var(--radius-control)] border border-line bg-panel px-3 py-2 text-sm outline-none focus:border-accent focus:ring-2 focus:ring-accent/20"
-          placeholder="Digite parte do tema"
+          placeholder="Digite para buscar"
         />
       </label>
       <button
@@ -45,63 +54,78 @@
     </form>
 
     <p
+      v-if="success"
+      class="rounded-[length:var(--radius-control)] border border-line bg-accent-soft px-4 py-3 text-sm text-accent-dark"
+    >
+      {{ success }}
+    </p>
+
+    <p
       v-if="error"
       class="rounded-[length:var(--radius-control)] border border-danger-border bg-danger-soft px-4 py-3 text-sm text-danger"
     >
       {{ error }}
     </p>
 
-    <div
-      v-if="loading"
-      class="space-y-2"
-      aria-busy="true"
-    >
-      <div class="h-10 animate-pulse rounded bg-line/60" />
-      <div class="h-10 animate-pulse rounded bg-line/40" />
-      <div class="h-10 animate-pulse rounded bg-line/60" />
-    </div>
+    <LoadingSpinner :active="loading" variant="page" />
 
-    <template v-else>
-      <div class="flex flex-wrap items-center justify-between gap-3">
-        <button
-          type="button"
-          class="inline-flex items-center justify-center rounded-[length:var(--radius-control)] border border-line bg-panel px-4 py-2 text-sm font-medium text-ink transition-colors hover:bg-surface"
-          @click="showImages = !showImages"
-        >
-          {{ showImages ? "Ocultar imagens" : "Mostrar imagens" }}
-        </button>
-        <label class="flex items-center gap-2 text-sm">
-          <span class="font-medium text-muted">Itens por página</span>
-          <select
-            v-model="pageSize"
-            class="rounded-[length:var(--radius-control)] border border-line bg-panel px-3 py-2 text-sm outline-none focus:border-accent focus:ring-2 focus:ring-accent/20"
-            @change="onPageSizeChange"
-          >
-            <option
-              v-for="size in PAGE_SIZES"
-              :key="size"
-              :value="size"
-            >
-              {{ size }}
-            </option>
-          </select>
-        </label>
-      </div>
-
-      <div class="overflow-hidden rounded-[length:var(--radius-control)] border border-line bg-panel">
+    <template v-if="!loading">
+      <div class="overflow-x-auto rounded-[length:var(--radius-control)] border border-line bg-panel">
         <table class="w-full text-sm">
           <thead>
             <tr class="border-b border-line bg-surface text-left text-muted">
-              <th
-                v-if="showImages"
-                class="px-4 py-3 font-medium"
-              >
-                Imagem
+              <th class="px-4 py-3 font-medium">
+                <button
+                  type="button"
+                  class="inline-flex items-center justify-center rounded p-1 text-muted hover:bg-surface hover:text-ink"
+                  :title="showImages ? 'Ocultar' : 'Mostrar'"
+                  :aria-label="showImages ? 'Ocultar' : 'Mostrar'"
+                  @click="showImages = !showImages"
+                >
+                  <svg
+                    v-if="showImages"
+                    xmlns="http://www.w3.org/2000/svg"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="2"
+                    class="h-5 w-5"
+                    aria-hidden="true"
+                  >
+                    <path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7-10-7-10-7Z" />
+                    <circle
+                      cx="12"
+                      cy="12"
+                      r="3"
+                    />
+                  </svg>
+                  <svg
+                    v-else
+                    xmlns="http://www.w3.org/2000/svg"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="2"
+                    class="h-5 w-5"
+                    aria-hidden="true"
+                  >
+                    <path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-6.5 0-10-8-10-8a18.45 18.45 0 0 1 5.06-5.94" />
+                    <path d="M9.9 4.24A9.12 9.12 0 0 1 12 4c6.5 0 10 8 10 8a18.5 18.5 0 0 1-2.16 3.19" />
+                    <path d="M14.12 14.12a3 3 0 1 1-4.24-4.24" />
+                    <line
+                      x1="1"
+                      y1="1"
+                      x2="23"
+                      y2="23"
+                    />
+                  </svg>
+                </button>
               </th>
               <th class="px-4 py-3 font-medium">Tema</th>
               <th class="px-4 py-3 font-medium">Local</th>
               <th class="px-4 py-3 font-medium">Data</th>
               <th class="px-4 py-3 font-medium">Qtd</th>
+              <th class="px-4 py-3 font-medium">1º lote</th>
               <th class="px-4 py-3 font-medium">Ações</th>
             </tr>
           </thead>
@@ -119,19 +143,16 @@
               :key="evento.id"
               class="hover:bg-surface"
             >
-              <td
-                v-if="showImages"
-                class="px-4 py-3"
-              >
+              <td class="px-4 py-3">
                 <img
-                  v-if="evento.imagemURL"
+                  v-if="showImages && evento.imagemURL"
                   :src="evento.imagemURL"
                   alt=""
                   class="h-10 w-10 rounded object-cover"
                   @error="onImageError"
                 />
               </td>
-              <td class="px-4 py-3">
+              <td class="px-4 py-3 break-words">
                 <router-link
                   :to="`/eventos/detalhes/${evento.id}`"
                   class="font-medium text-accent-dark hover:underline"
@@ -142,8 +163,12 @@
               <td class="px-4 py-3">{{ evento.local }}</td>
               <td class="px-4 py-3">{{ formatDateBr(evento.dataEvento) }}</td>
               <td class="px-4 py-3">{{ evento.qtdPessoas }}</td>
+              <td class="px-4 py-3">{{ primeiroLoteNome(evento) }}</td>
               <td class="px-4 py-3">
-                <div class="flex flex-wrap gap-2">
+                <div
+                  v-if="writeAllowed"
+                  class="flex flex-wrap gap-2"
+                >
                   <router-link
                     :to="`/eventos/detalhes/${evento.id}`"
                     class="inline-flex items-center justify-center rounded-[length:var(--radius-control)] border border-accent/30 bg-panel px-2 py-1 text-xs font-medium text-accent-dark hover:bg-accent-soft"
@@ -158,6 +183,10 @@
                     Excluir
                   </button>
                 </div>
+                <span
+                  v-else
+                  class="text-xs text-muted"
+                >—</span>
               </td>
             </tr>
           </tbody>
@@ -168,25 +197,43 @@
         v-if="paged.totalPages > 0"
         class="flex flex-wrap items-center justify-between gap-3"
       >
-        <button
-          type="button"
-          class="inline-flex items-center justify-center rounded-[length:var(--radius-control)] border border-line bg-panel px-4 py-2 text-sm font-medium text-ink transition-colors hover:bg-surface disabled:cursor-not-allowed disabled:opacity-60"
-          :disabled="paged.page <= 1"
-          @click="page = paged.page - 1"
-        >
-          Anterior
-        </button>
-        <span class="text-sm text-muted">
-          Página {{ paged.page }} de {{ paged.totalPages }}
-        </span>
-        <button
-          type="button"
-          class="inline-flex items-center justify-center rounded-[length:var(--radius-control)] border border-line bg-panel px-4 py-2 text-sm font-medium text-ink transition-colors hover:bg-surface disabled:cursor-not-allowed disabled:opacity-60"
-          :disabled="paged.page >= paged.totalPages"
-          @click="page = paged.page + 1"
-        >
-          Próxima
-        </button>
+        <label class="flex items-center gap-2 text-sm">
+          <span class="font-medium text-muted">Itens por página</span>
+          <select
+            v-model.number="pageSize"
+            class="rounded-[length:var(--radius-control)] border border-line bg-panel px-3 py-2 text-sm outline-none focus:border-accent focus:ring-2 focus:ring-accent/20"
+            @change="onPageSizeChange"
+          >
+            <option
+              v-for="size in PAGE_SIZES"
+              :key="size"
+              :value="size"
+            >
+              {{ size }}
+            </option>
+          </select>
+        </label>
+        <div class="flex flex-wrap items-center gap-3">
+          <button
+            type="button"
+            class="inline-flex items-center justify-center rounded-[length:var(--radius-control)] border border-line bg-panel px-4 py-2 text-sm font-medium text-ink transition-colors hover:bg-surface disabled:cursor-not-allowed disabled:opacity-60"
+            :disabled="paged.page <= 1"
+            @click="goToPage(paged.page - 1)"
+          >
+            Anterior
+          </button>
+          <span class="text-sm text-muted">
+            Página {{ paged.page }} de {{ paged.totalPages }}
+          </span>
+          <button
+            type="button"
+            class="inline-flex items-center justify-center rounded-[length:var(--radius-control)] border border-line bg-panel px-4 py-2 text-sm font-medium text-ink transition-colors hover:bg-surface disabled:cursor-not-allowed disabled:opacity-60"
+            :disabled="paged.page >= paged.totalPages"
+            @click="goToPage(paged.page + 1)"
+          >
+            Próxima
+          </button>
+        </div>
       </div>
     </template>
 
@@ -203,43 +250,75 @@
 
 <script setup lang="ts">
 import { Evento } from "../../Models/Evento";
-import { computed, onMounted, ref } from "vue";
+import { computed, onMounted, onUnmounted, ref, watch } from "vue";
 import { useForm } from "vee-validate";
 import {
   defaultEventoSearchValues,
   eventoSearchSchema,
 } from "../../forms/schemas";
 import { toTypedSchema } from "../../forms/toTyped";
+import { canWrite, isAuthenticated } from "../../services/authToken";
 import eventoService from "../../services/eventoService";
 import { useRouter } from "vue-router";
 import ConfirmDialog from "../../shared/ConfirmDialog.vue";
+import LoadingSpinner from "../common/LoadingSpinner.vue";
 import { formatDateBr } from "../../utils/date";
-import { PAGE_SIZES, paginate, type PageSize } from "../../utils/pagination";
+import { debounce } from "../../utils/debounce";
+import { PAGE_SIZES, type PageSize } from "../../Models/pagination";
+
+const SEARCH_DEBOUNCE_MS = 350;
 
 const eventos = ref<Evento[]>([]);
 const page = ref(1);
 const pageSize = ref<PageSize>(10);
+const totalPages = ref(0);
 const showImages = ref(true);
 const loading = ref(false);
 const error = ref<string | null>(null);
+const success = ref<string | null>(null);
 const pendingDelete = ref<Evento | null>(null);
 const router = useRouter();
+const writeAllowed = computed(() => canWrite());
+const isLoggedIn = computed(() => isAuthenticated());
+let listRequestId = 0;
 
 const { defineField, resetForm } = useForm({
   validationSchema: toTypedSchema(eventoSearchSchema),
   initialValues: defaultEventoSearchValues(),
 });
 
-const [tema, temaAttrs] = defineField("tema");
+const [q, qAttrs] = defineField("q");
 
-const paged = computed(() => paginate(eventos.value, page.value, pageSize.value));
-const colSpan = computed(() => (showImages.value ? 6 : 5));
+const debouncedSearch = debounce(() => {
+  getEventos({ resetPage: true });
+}, SEARCH_DEBOUNCE_MS);
+
+watch(
+  q,
+  () => {
+    debouncedSearch();
+  },
+  { flush: "sync" },
+);
+
+const paged = computed(() => ({
+  items: eventos.value,
+  page: page.value,
+  pageSize: pageSize.value,
+  totalPages: totalPages.value,
+}));
+const colSpan = 7;
 
 const deleteMessage = computed(() =>
   pendingDelete.value
     ? `Deseja deletar o evento "${pendingDelete.value.tema}"?`
     : "",
 );
+
+function primeiroLoteNome(evento: Evento): string {
+  const nome = evento.lotes?.[0]?.nome?.trim();
+  return nome || "—";
+}
 
 function onImageError(event: Event) {
   const img = event.target as HTMLImageElement;
@@ -248,9 +327,11 @@ function onImageError(event: Event) {
 
 function onPageSizeChange() {
   page.value = 1;
+  getEventos({ keepPage: true });
 }
 
 function pedirDeletarEvento(event: Event, evento: Evento) {
+  if (!writeAllowed.value) return;
   event.stopPropagation();
   pendingDelete.value = evento;
 }
@@ -259,44 +340,62 @@ async function confirmDelete() {
   const evento = pendingDelete.value;
   pendingDelete.value = null;
   if (!evento) return;
+  success.value = null;
   const response = await deletar(evento);
-  page.value = 1;
-  getEventos(tema.value ?? "");
+  getEventos({ resetPage: true });
   if (response?.status === 200) {
+    success.value = "Evento deletado com sucesso.";
     alert("Evento deletado com sucesso");
   } else {
     alert("Erro ao deletar o evento");
   }
 }
 
-function getEventos(searchTema?: string): void {
+function getEventos(options?: { keepPage?: boolean; resetPage?: boolean }): void {
+  debouncedSearch.cancel();
   loading.value = true;
   error.value = null;
-  page.value = 1;
-  const request =
-    searchTema?.trim()
-      ? eventoService.getByTema(searchTema.trim())
-      : eventoService.list();
+  if (options?.resetPage || !options?.keepPage) page.value = 1;
 
-  request
+  const requestId = ++listRequestId;
+  const searchTerm = (q.value ?? "").trim();
+  eventoService
+    .list({
+      page: page.value,
+      pageSize: pageSize.value,
+      q: searchTerm || undefined,
+    })
     .then((response) => {
-      eventos.value = response.data;
+      if (requestId !== listRequestId) return;
+      const data = response.data;
+      eventos.value = data.items;
+      page.value = data.page;
+      totalPages.value = data.totalPages;
     })
     .catch(() => {
+      if (requestId !== listRequestId) return;
       error.value = "Erro ao carregar os eventos";
     })
     .finally(() => {
+      if (requestId !== listRequestId) return;
       loading.value = false;
     });
 }
 
+function goToPage(next: number) {
+  page.value = next;
+  getEventos({ keepPage: true });
+}
+
 function buscar() {
-  getEventos(tema.value ?? "");
+  debouncedSearch.cancel();
+  getEventos({ resetPage: true });
 }
 
 function limpar() {
   resetForm({ values: defaultEventoSearchValues() });
-  getEventos();
+  debouncedSearch.cancel();
+  getEventos({ resetPage: true });
 }
 
 async function deletar(evento: Evento): Promise<{ status: number } | undefined> {
@@ -310,5 +409,9 @@ async function deletar(evento: Evento): Promise<{ status: number } | undefined> 
 
 onMounted(() => {
   getEventos();
+});
+
+onUnmounted(() => {
+  debouncedSearch.cancel();
 });
 </script>

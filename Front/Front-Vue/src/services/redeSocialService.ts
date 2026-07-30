@@ -17,6 +17,12 @@ export const redeSocialService = {
     http.get<RedeSocialPayload[]>(`/redes-sociais/palestrante/${palestranteId}`),
   saveByPalestrante: (palestranteId: number, items: RedeSocialPayload[]) =>
     http.put(`/redes-sociais/palestrante/${palestranteId}`, items),
+  removeByPalestrante: (palestranteId: number, id: number) =>
+    http.delete(`/redes-sociais/palestrante/${palestranteId}/${id}`),
+  listMine: () => http.get<RedeSocialPayload[]>(`/redes-sociais/palestrante`),
+  saveMine: (items: RedeSocialPayload[]) =>
+    http.put(`/redes-sociais/palestrante`, items),
+  removeMine: (id: number) => http.delete(`/redes-sociais/palestrante/${id}`),
 };
 
 export default redeSocialService;

@@ -4,10 +4,21 @@ import type { Lote } from "./Models/Lote";
 import type { Palestrante } from "./Models/Palestrante";
 import type { RedeSocial } from "./Models/RedeSocial";
 import type { CadastrarEventoFrom } from "./Models/Eventos/CadastroEventoForm";
+import "./Models/Evento";
+import "./Models/Lote";
+import "./Models/Palestrante";
+import "./Models/RedeSocial";
+import "./Models/Eventos/CadastroEventoForm";
 import { User } from "./Models/identity/User";
 import { UserLogin } from "./Models/identity/UserLogin";
 import type { Titulo } from "./interfaces/Titulo";
 import { Constantes } from "./utils/constants";
+import { eventoModelKey } from "./Models/Evento";
+import { loteModelKey } from "./Models/Lote";
+import { palestranteModelKey } from "./Models/Palestrante";
+import { redeSocialModelKey } from "./Models/RedeSocial";
+import { cadastroEventoFormKey } from "./Models/Eventos/CadastroEventoForm";
+import { tituloInterfaceKey } from "./interfaces/Titulo";
 
 describe("models and utils", () => {
   it("builds Evento graph with related models", () => {
@@ -105,5 +116,11 @@ describe("models and utils", () => {
   it("exposes date format constants", () => {
     expect(Constantes.DATE_FMT).toBe("DD/MM/YYYY");
     expect(Constantes.DATE_TIME_FMT).toBe("DD/MM/YYYY hh:mm");
+    expect(eventoModelKey).toBe("Evento");
+    expect(loteModelKey).toBe("Lote");
+    expect(palestranteModelKey).toBe("Palestrante");
+    expect(redeSocialModelKey).toBe("RedeSocial");
+    expect(cadastroEventoFormKey).toBe("CadastrarEventoFrom");
+    expect(tituloInterfaceKey).toBe("Titulo");
   });
 });

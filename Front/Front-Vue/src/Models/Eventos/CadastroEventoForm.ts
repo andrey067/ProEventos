@@ -11,3 +11,5 @@ export interface CadastrarEventoFrom {
     email: String,
     urlImagem: any
 }
+
+export const cadastroEventoFormKey = "CadastrarEventoFrom" as const;
