@@ -171,4 +171,22 @@ public class EventoRepositoryTests
         result.TotalCount.Should().Be(1);
         result.Items.Single().PalestrantesEventos.Should().ContainSingle(pe => pe.PalestranteId == palestrante.Id);
     }
+
+    [Fact]
+    public async Task GetPagedEventosAsync_Filters_By_UserId()
+    {
+        await using var ctx = DataContextFactory.Create();
+        var userA = await DataContextFactory.SeedUserAsync(ctx, "owner-a");
+        var userB = await DataContextFactory.SeedUserAsync(ctx, "owner-b");
+        ctx.Eventos.AddRange(
+            new Evento { Tema = "A", Telefone = "11", Email = "a@b.com", QtdPessoas = 1, ImagemURL = "i.jpg", UserId = userA.Id },
+            new Evento { Tema = "B", Telefone = "11", Email = "b@b.com", QtdPessoas = 1, ImagemURL = "i.jpg", UserId = userB.Id });
+        await ctx.SaveChangesAsync();
+
+        var repo = new EventoRepository(ctx);
+        var result = await repo.GetPagedEventosAsync(1, 10, null, false, userA.Id);
+
+        result.TotalCount.Should().Be(1);
+        result.Items.Should().ContainSingle(e => e.Tema == "A" && e.UserId == userA.Id);
+    }
 }

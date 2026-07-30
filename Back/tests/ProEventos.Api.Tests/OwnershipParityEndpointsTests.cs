@@ -125,6 +125,32 @@ public class OwnershipParityEndpointsTests
             .StatusCode.Should().Be(HttpStatusCode.OK);
     }
 
+    [Fact]
+    public async Task Eventos_Meus_Returns_Only_Caller_Events()
+    {
+        using var factory = new CustomWebApplicationFactory();
+        var ownerA = factory.CreateClient();
+        await AuthTestHelper.AuthenticateAsync(ownerA, "meusa");
+        var createA = await ownerA.PostAsJsonAsync("/eventos", SampleEvento("Meus A"));
+        createA.StatusCode.Should().Be(HttpStatusCode.OK);
+        var eventoA = await createA.Content.ReadFromJsonAsync<EventoDto>(JsonOptions);
+
+        var ownerB = factory.CreateClient();
+        await AuthTestHelper.AuthenticateAsync(ownerB, "meusb");
+        var createB = await ownerB.PostAsJsonAsync("/eventos", SampleEvento("Meus B"));
+        createB.StatusCode.Should().Be(HttpStatusCode.OK);
+
+        var meus = await ownerA.GetAsync("/eventos/meus?page=1&pageSize=10");
+        meus.StatusCode.Should().Be(HttpStatusCode.OK);
+        var items = await meus.Content.ReadFromJsonAsync<List<EventoDto>>(JsonOptions);
+        items.Should().NotBeNull();
+        items!.Should().Contain(e => e.Id == eventoA!.Id);
+        items.Should().OnlyContain(e => e.Tema == "Meus A" || e.UserId == eventoA.UserId);
+        items.Should().NotContain(e => e.Tema == "Meus B");
+
+        var anon = factory.CreateClient();
+        (await anon.GetAsync("/eventos/meus")).StatusCode.Should().Be(HttpStatusCode.Unauthorized);
+    }
 
     [Fact]
     public async Task RedeSocial_Palestrante_Self_Scoped_Works()

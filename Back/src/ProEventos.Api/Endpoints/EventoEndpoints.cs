@@ -27,6 +27,21 @@ namespace ProEventos.Api.Endpoints
                 return result.ToPagedHttpResult();
             });
 
+            group.MapGet("/meus", async (
+                ClaimsPrincipal user,
+                IEventoService service,
+                int? page,
+                int? pageSize,
+                string q) =>
+            {
+                var result = await service.GetPagedEventosAsync(
+                    page,
+                    pageSize,
+                    q,
+                    includePalestrante: true,
+                    userId: GetUserId(user));
+                return result.ToPagedHttpResult();
+            }).RequireAuthorization(AppRoles.RequireUserRolePolicy);
 
             group.MapGet("/{id:int}", async (int id, IEventoService service) =>
             {
