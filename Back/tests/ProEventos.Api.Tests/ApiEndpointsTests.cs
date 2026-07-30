@@ -1,4 +1,3 @@
-using System.Linq;
 using System.Net;
 using System.Net.Http.Json;
 using System.Text.Json;
@@ -226,14 +225,17 @@ public class ApiEndpointsTests
         (await client.GetAsync("/openapi/v1.json")).StatusCode.Should().Be(HttpStatusCode.OK);
         (await client.GetAsync("/docs/v1")).StatusCode.Should().Be(HttpStatusCode.OK);
 
-        var preflight = new HttpRequestMessage(HttpMethod.Options, "/eventos");
-        preflight.Headers.Add("Origin", "http://localhost:5173");
-        preflight.Headers.Add("Access-Control-Request-Method", "GET");
-        var cors = await client.SendAsync(preflight);
-        var allowOrigin = cors.Headers.TryGetValues("Access-Control-Allow-Origin", out var values)
-            ? values.FirstOrDefault()
-            : null;
-        allowOrigin.Should().Be("http://localhost:5173");
+        // Prefer an actual GET with Origin over OPTIONS preflight: TestServer can omit
+        // CORS headers on unmatched OPTIONS even when the policy is correctly configured.
+        var request = new HttpRequestMessage(HttpMethod.Get, "/eventos");
+        request.Headers.Add("Origin", "http://localhost:5173");
+        var cors = await client.SendAsync(request);
+        cors.StatusCode.Should().Be(HttpStatusCode.OK);
+        cors.Headers.GetValues("Access-Control-Allow-Origin")
+            .Should()
+            .ContainSingle()
+            .Which.Should()
+            .Be("http://localhost:5173");
     }
 
     [Fact]

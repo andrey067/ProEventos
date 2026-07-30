@@ -47,25 +47,21 @@ builder.Services.AddExceptionHandler<ProEventos.Api.Exceptions.AppExceptionHandl
 ConfigureRepository.ConfigureDependenciesRepository(builder.Services, builder.Configuration);
 ConfigureService.ConfigureDependenciesServices(builder.Services, builder.Configuration);
 
-var corsOrigins = builder.Configuration
-    .GetSection(CorsOptions.SectionName)
-    .Get<CorsOptions>()
-    ?.GetOrigins()
-    ?? Array.Empty<string>();
-
-builder.Services.AddCors(options =>
-{
-    options.AddPolicy("Frontends", policy =>
-        policy.WithOrigins(corsOrigins)
-            .AllowAnyHeader()
-            .AllowAnyMethod()
-            .WithExposedHeaders(ProEventos.Api.Extensions.PaginationHeaderExtensions.HeaderName));
-});
+builder.Services.AddCors();
 
 var app = builder.Build();
 
+var corsOrigins = app.Services
+    .GetRequiredService<Microsoft.Extensions.Options.IOptions<CorsOptions>>()
+    .Value
+    .GetOrigins();
+
 app.UseExceptionHandler();
-app.UseCors("Frontends");
+app.UseCors(policy =>
+    policy.WithOrigins(corsOrigins)
+        .AllowAnyHeader()
+        .AllowAnyMethod()
+        .WithExposedHeaders(ProEventos.Api.Extensions.PaginationHeaderExtensions.HeaderName));
 app.UseAuthConfiguration();
 
 app.MapOpenApi();
