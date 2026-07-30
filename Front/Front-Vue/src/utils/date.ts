@@ -14,7 +14,8 @@ function parseIsoDate(value: string): Date | null {
 }
 
 function parseLegacyDate(value: string): Date | null {
-  const match = value.trim().match(/^(\d{2})-(\d{2})-(\d{4})$/);
+  // API may append " HH:mm:ss"
+  const match = value.trim().match(/^(\d{2})-(\d{2})-(\d{4})(?:\s+\d{2}:\d{2}(?::\d{2})?)?$/);
   if (!match) return null;
   const [, dd, mm, yyyy] = match;
   const date = new Date(Number(yyyy), Number(mm) - 1, Number(dd));
@@ -29,7 +30,10 @@ function parseLegacyDate(value: string): Date | null {
 }
 
 export function parseDateBr(value: string): Date | null {
-  const match = value.trim().match(/^(\d{2})\/(\d{2})\/(\d{4})$/);
+  // API often returns "dd/MM/yyyy HH:mm:ss" — accept optional time suffix.
+  const match = value
+    .trim()
+    .match(/^(\d{2})\/(\d{2})\/(\d{4})(?:\s+\d{2}:\d{2}(?::\d{2})?)?$/);
   if (!match) return null;
   const [, dd, mm, yyyy] = match;
   const date = new Date(Number(yyyy), Number(mm) - 1, Number(dd));

@@ -34,7 +34,8 @@ export function parseDateBr(value: string): Date | null {
   const trimmed = value.trim();
   if (!trimmed) return null;
 
-  const brMatch = trimmed.match(/^(\d{2})\/(\d{2})\/(\d{4})$/);
+  // API often returns "dd/MM/yyyy HH:mm:ss" — accept optional time suffix.
+  const brMatch = trimmed.match(/^(\d{2})\/(\d{2})\/(\d{4})(?:\s+\d{2}:\d{2}(?::\d{2})?)?$/);
   if (brMatch) {
     const day = Number(brMatch[1]);
     const month = Number(brMatch[2]);
@@ -43,7 +44,7 @@ export function parseDateBr(value: string): Date | null {
     return new Date(year, month - 1, day);
   }
 
-  const legacyMatch = trimmed.match(/^(\d{2})-(\d{2})-(\d{4})$/);
+  const legacyMatch = trimmed.match(/^(\d{2})-(\d{2})-(\d{4})(?:\s+\d{2}:\d{2}(?::\d{2})?)?$/);
   if (legacyMatch) {
     const day = Number(legacyMatch[1]);
     const month = Number(legacyMatch[2]);
