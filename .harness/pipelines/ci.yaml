@@ -9,6 +9,10 @@ spec:
     - name: quality_gate
       type: ci
       spec:
+        # depth only — clone host comes from GITNESS_URL_CONTAINER (infra), not YAML.
+        # See docs/harness-ci.md (Could not resolve host: harness.homelab.local).
+        clone:
+          depth: 50
         steps:
           - name: backend_tests
             type: run
