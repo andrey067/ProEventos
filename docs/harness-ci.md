@@ -168,7 +168,8 @@ UI / PR checks — not the pipeline clone block.
 
 ## Runtime notes
 
-- Steps use `shell: bash` (scripts need `pipefail`; Debian/Ubuntu `sh` is dash).
+- Scripts use POSIX `set -eu` (no `pipefail`). Harness Code still runs steps
+  with `/bin/sh` (dash) even when `shell: bash` is set, so avoid bashisms.
 - Workspace is shared across steps in a stage (coverage files from backend/front
   steps remain available for `compare-coverage.mjs`).
 - Images are public (`dotnet/sdk:10.0`, `node:22-bookworm`, Playwright jammy).

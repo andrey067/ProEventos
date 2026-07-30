@@ -20,7 +20,7 @@ spec:
               container: mcr.microsoft.com/dotnet/sdk:10.0
               shell: bash
               script: |-
-                set -euo pipefail
+                set -eu
                 dotnet test Back/src/ProEventos.sln --configuration Release
 
           - name: front_vue
@@ -29,7 +29,7 @@ spec:
               container: node:22-bookworm
               shell: bash
               script: |-
-                set -euo pipefail
+                set -eu
                 corepack enable
                 corepack prepare pnpm@9 --activate
                 cd Front/Front-Vue
@@ -42,7 +42,7 @@ spec:
               container: node:22-bookworm
               shell: bash
               script: |-
-                set -euo pipefail
+                set -eu
                 corepack enable
                 corepack prepare pnpm@9 --activate
                 cd Front/Front-React
@@ -55,7 +55,7 @@ spec:
               container: node:22-bookworm
               shell: bash
               script: |-
-                set -euo pipefail
+                set -eu
                 corepack enable
                 corepack prepare pnpm@9 --activate
                 cd Front/Front-Angular
@@ -68,7 +68,7 @@ spec:
               container: node:22-bookworm
               shell: bash
               script: |-
-                set -euo pipefail
+                set -eu
                 SVC=$(find Back/tests -path '*Services.Tests*' -name coverage.cobertura.xml | head -1)
                 PERS=$(find Back/tests -path '*Persistence.Tests*' -name coverage.cobertura.xml | head -1)
                 API=$(find Back/tests -path '*Api.Tests*' -name coverage.cobertura.xml | head -1)
