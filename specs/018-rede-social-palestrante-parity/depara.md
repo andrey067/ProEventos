@@ -78,15 +78,19 @@ Legenda de status:
 
 | # | Regra (curso) | Local hoje | Status | O que falta |
 |---|---------------|------------|--------|-------------|
-| EV-01 | `Evento.UserId` + filtro “meus eventos” | `Evento.UserId` + ownership em mutações; lista permanece pública | ✅ | — |
+| EV-01 | `Evento.UserId` + filtro “meus eventos” | `Evento.UserId` + ownership em mutações; `GET /eventos/meus`; lista pública permanece | ✅ | — |
+| EV-02 | Lotes só pelo dono do evento | PUT/DELETE lotes com `EnsureEventoOwner` | ✅ | — |
+| EV-03 | Associate/disassociate só pelo dono | Gate em `PalestranteService` + JWT | ✅ | — |
 
 Sem `Evento.UserId`, ownership de redes/eventos do curso **não dá** para espelhar de forma correta.
 
 ---
 
-## Gaps priorizados (ainda implementar)
+## Gaps priorizados
 
-### GAP-01 — Ownership de Evento (UserId)
+> Itens GAP-01..04, 06, 07 foram implementados (ver `tasks.md`). Novos fechamentos (2026-07-30): EV-02, EV-03, `GET /eventos/meus` — design em `docs/superpowers/specs/2026-07-30-evento-ownership-meus-design.md`.
+
+### GAP-01 — Ownership de Evento (UserId) — ✅ feito
 
 **Prioridade:** P0 (bloqueia parity de segurança)  
 **Camadas:** Domain → Persistence (migration) → Services/Endpoints Evento + RedeSocial → Fronts (só “meus” eventos se desejado)
@@ -96,7 +100,7 @@ Sem `Evento.UserId`, ownership de redes/eventos do curso **não dá** para espel
 - Filtrar update/delete/redes: só dono (ou role admin, se houver)
 - Testes API: user A não altera redes/evento de user B
 
-### GAP-02 — Redes do palestrante autenticado
+### GAP-02 — Redes do palestrante autenticado — ✅ feito
 
 **Prioridade:** P0  
 **Camadas:** `RedeSocialEndpoints` (+ opcional service)
@@ -106,7 +110,7 @@ Sem `Evento.UserId`, ownership de redes/eventos do curso **não dá** para espel
 - Sem perfil → 401/403
 - Manter rotas com `{palestranteId}` **ou** restringi-las a dono/User role
 
-### GAP-03 — Endpoint “meu palestrante”
+### GAP-03 — Endpoint “meu palestrante” — ✅ feito
 
 **Prioridade:** P1  
 **Camadas:** `PalestranteEndpoints` + services front
@@ -114,7 +118,7 @@ Sem `Evento.UserId`, ownership de redes/eventos do curso **não dá** para espel
 - `GET /palestrantes/me` (ou `GET /palestrantes` sem page params = me — evitar conflito com lista)
 - Preferência local: **`GET /palestrantes/me`** para não quebrar lista paginada em `/`
 
-### GAP-04 — Update somente do próprio perfil
+### GAP-04 — Update somente do próprio perfil — ✅ feito
 
 **Prioridade:** P1  
 **Camadas:** `PalestranteEndpoints` / `PalestranteService`
@@ -154,12 +158,13 @@ Sem `Evento.UserId`, ownership de redes/eventos do curso **não dá** para espel
 
 | Item | Ação |
 |------|------|
-| Ownership Evento + redes (GAP-01, RS-06) | **Implementar** |
-| Redes scoped ao JWT do palestrante (GAP-02, RS-07) | **Implementar** |
-| GET/me palestrante (GAP-03) | **Implementar** |
-| Autorização PUT próprio vs organizador (GAP-04) | **Implementar** (política híbrida) |
-| Validação FE redes (GAP-06) | **Implementar** |
-| Redes no perfil (GAP-07) | **Implementar** (UX curso) |
+| Ownership Evento + redes (GAP-01, RS-06) | **Feito** |
+| Redes scoped ao JWT do palestrante (GAP-02, RS-07) | **Feito** |
+| GET/me palestrante (GAP-03) | **Feito** |
+| Autorização PUT próprio vs organizador (GAP-04) | **Feito** (política híbrida) |
+| Validação FE redes (GAP-06) | **Feito** |
+| Redes no perfil (GAP-07) | **Feito** |
+| Lotes + associate ownership + `/eventos/meus` | **Feito** (2026-07-30) |
 | Filtro Funcao na lista (GAP-05) | Opcional / baixo |
 | Auto-save minicurrículo | **Não** (manter Save explícito) |
 | DELETE palestrante, modelo expandido, busca 017 | **Não reverter** |

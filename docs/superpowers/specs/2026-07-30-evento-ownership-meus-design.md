@@ -1,7 +1,7 @@
 # Design: Fechamento de ownership de Evento + GET /eventos/meus
 
 **Date:** 2026-07-30  
-**Status:** Approved for planning  
+**Status:** Implemented (TDD)  
 **Approach:** Spec de fechamento (ownership em Lotes/Associate + híbrido browse/`meus`), backend only
 
 ## Context
@@ -120,12 +120,12 @@ Preferir `ProEventos.Api.Tests` no padrão de `OwnershipParityEndpointsTests`.
 
 ### Acceptance criteria
 
-- [ ] Organizador não altera lotes/associações de evento alheio  
-- [ ] Organizador autenticado lista só os seus via `/eventos/meus`  
-- [ ] Browse público intacto  
-- [ ] Imagem continua URL  
-- [ ] Sem mudanças de front nesta leva  
-- [ ] Depara 018 atualizado com os gaps fechados  
+- [x] Organizador não altera lotes/associações de evento alheio  
+- [x] Organizador autenticado lista só os seus via `/eventos/meus`  
+- [x] Browse público intacto  
+- [x] Imagem continua URL  
+- [x] Sem mudanças de front nesta leva  
+- [x] Depara 018 atualizado com os gaps fechados  
 
 ## Implementation notes
 
