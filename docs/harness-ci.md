@@ -173,18 +173,24 @@ UI / PR checks — not the pipeline clone block.
 - Workspace is shared across steps in a stage (coverage files from backend/front
   steps remain available for `compare-coverage.mjs`).
 - Images are public (`dotnet/sdk:10.0`, `node:22-bookworm`, Playwright jammy).
-- E2E installs .NET 10 via `dotnet-install.sh` inside the Playwright image, starts
-  API `:5050` and Vue `:5173`, fails fast if either never becomes ready, then runs
-  `playwright test --project=vue`.
+- E2E is the last step (`e2e_all_fronts`) in `.harness/ci.yaml`: installs .NET 10
+  via `dotnet-install.sh` inside the Playwright image, starts API `:5050` plus
+  Vue `:5173`, React `:3000`, Angular `:4200`, fails fast if any never becomes
+  ready, then runs Playwright for all three projects.
 - Stages use `clone.depth: 50` for a shallow fetch once DNS/container URL works.
   Retries are not configurable in the Open Source `clone` schema (platform logs
   “Cloning with 0 retries”).
 
 ## Parity with GitHub
 
-Commands match the GitHub workflows as closely as possible:
+Quality-gate commands match the GitHub `ci.yaml` workflow:
 
 - `dotnet test Back/src/ProEventos.sln --configuration Release`
 - `pnpm test:coverage` in each Front
 - `node quality/compare-coverage.mjs ...`
-- Playwright `--project=vue` with API on `:5050` and Vue on `:5173`
+
+Harness then continues with full E2E (GitHub’s separate `e2e.yaml` still runs
+Vue-only today):
+
+- Playwright `--project=vue --project=react --project=angular`
+- API `:5050`, Vue `:5173`, React `:3000`, Angular `:4200`
