@@ -9,7 +9,10 @@ description: "Task list template for feature implementation"
 
 **Prerequisites**: plan.md (required), spec.md (required for user stories), research.md, data-model.md, contracts/
 
-**Tests**: The examples below include test tasks. Tests are OPTIONAL - only include them if explicitly requested in the feature specification.
+**Tests**: Include test tasks when the feature specification requests them, or when
+the repo quality bar applies (`specs/016-test-strategy/`: ≥90% coverage, pyramid).
+Tests are OPTIONAL in the template sense only when the feature is pure docs/meta
+with no executable code change.
 
 **Organization**: Tasks are grouped by user story to enable independent implementation and testing of each story.
 
