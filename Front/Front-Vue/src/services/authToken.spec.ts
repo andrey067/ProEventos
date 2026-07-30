@@ -22,10 +22,6 @@ vi.stubGlobal("localStorage", {
   clear: () => {
     store.clear();
   },
-  get length() {
-    return store.size;
-  },
-  key: (index: number) => [...store.keys()][index] ?? null,
 });
 
 describe("authToken", () => {

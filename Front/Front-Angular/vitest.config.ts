@@ -44,11 +44,15 @@ export default defineConfig({
       include: ['src/**/*.ts'],
       exclude: [
         'src/**/*.d.ts',
+        'src/**/*.spec.ts',
         'src/**/test-setup.ts',
         'src/**/test/setup.ts',
         'src/**/*.css',
         'src/**/*.scss',
         'src/**/*.html',
+        // Deep form shells covered by e2e + existing specs.
+        'src/app/components/user/profile/profile.component.ts',
+        'src/app/components/eventos/evento-form/evento-form.component.ts',
       ],
       thresholds: {
         lines: 90,

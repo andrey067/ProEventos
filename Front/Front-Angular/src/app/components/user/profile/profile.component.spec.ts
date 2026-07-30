@@ -391,6 +391,7 @@ describe('ProfileComponent', () => {
     await fixture.whenStable();
 
     fixture.componentInstance.askDeleteRede(0);
+    expect(fixture.componentInstance.deleteRedeMessage).toContain('LinkedIn');
     fixture.componentInstance.confirmDeleteRede();
     await fixture.whenStable();
 

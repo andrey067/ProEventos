@@ -31,8 +31,7 @@ describe("DatePickerField", () => {
       props: { modelValue: null },
     });
 
-    const input = wrapper.get('[data-testid="dp"]');
-    await input.setValue("");
+    await wrapper.findComponent({ name: "VueDatePicker" }).vm.$emit("update:modelValue", null);
     expect(wrapper.emitted("update:modelValue")?.[0]).toEqual([""]);
   });
 });

@@ -47,25 +47,22 @@ builder.Services.AddExceptionHandler<ProEventos.Api.Exceptions.AppExceptionHandl
 ConfigureRepository.ConfigureDependenciesRepository(builder.Services, builder.Configuration);
 ConfigureService.ConfigureDependenciesServices(builder.Services, builder.Configuration);
 
-var corsOrigins = builder.Configuration
-    .GetSection(CorsOptions.SectionName)
-    .Get<CorsOptions>()
-    ?.GetOrigins()
-    ?? Array.Empty<string>();
-
-builder.Services.AddCors(options =>
-{
-    options.AddPolicy("Frontends", policy =>
-        policy.WithOrigins(corsOrigins)
-            .AllowAnyHeader()
-            .AllowAnyMethod()
-            .WithExposedHeaders(ProEventos.Api.Extensions.PaginationHeaderExtensions.HeaderName));
-});
+builder.Services.AddCors();
 
 var app = builder.Build();
 
-app.UseExceptionHandler();
+var corsOrigins = app.Services
+    .GetRequiredService<Microsoft.Extensions.Options.IOptions<CorsOptions>>()
+    .Value
+    .GetOrigins();
 
+app.UseExceptionHandler();
+app.UseCors(policy =>
+    policy.WithOrigins(corsOrigins)
+        .AllowAnyHeader()
+        .AllowAnyMethod()
+        .WithExposedHeaders(ProEventos.Api.Extensions.PaginationHeaderExtensions.HeaderName));
+app.UseAuthConfiguration();
 
 app.MapOpenApi();
 app.MapScalarApiReference("/docs", options =>
@@ -78,16 +75,12 @@ app.MapScalarApiReference("/docs", options =>
             scheme.Description =
                 "JWT Authorization header using the Bearer scheme. Example: \"Authorization: Bearer {token}\"";
         })
-        .HideSearch()        
+        .HideSearch()
         .HideTestRequestButton()
         .HideDocumentDownload()
         .HideDeveloperTools()
         .WithTheme(ScalarTheme.Kepler);
 });
-
-
-app.UseCors("Frontends");
-app.UseAuthConfiguration();
 
 app.MapAccountEndpoints();
 app.MapEventoEndpoints();
