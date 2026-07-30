@@ -5,15 +5,13 @@ import {
   transition,
   trigger,
 } from '@angular/animations';
-import { prefersReducedMotion } from './prefers-reduced-motion';
-
-const ms = () => (prefersReducedMotion() ? '0ms' : '320ms cubic-bezier(0.16, 1, 0.3, 1)');
+import { motionDuration } from './motion-timing';
 
 export const routeFadeAnimation = trigger('routeFade', [
   transition('* <=> *', [
     query(
       ':enter',
-      [style({ opacity: 0 }), animate(ms(), style({ opacity: 1 }))],
+      [style({ opacity: 0 }), animate(motionDuration(320), style({ opacity: 1 }))],
       { optional: true },
     ),
   ]),

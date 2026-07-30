@@ -5,18 +5,15 @@ import { NavigationEnd, Router, RouterLink, RouterLinkActive } from '@angular/ro
 import { filter } from 'rxjs';
 import { AccountService } from '../../services/account.service';
 import { AuthTokenService } from '../../services/auth-token.service';
-import { prefersReducedMotion } from '../motion/prefers-reduced-motion';
-
-const navD = () =>
-  prefersReducedMotion() ? '0ms' : '220ms cubic-bezier(0.16, 1, 0.3, 1)';
+import { motionDuration } from '../motion/motion-timing';
 
 const navDrawerAnimation = trigger('navDrawer', [
   transition(':enter', [
     style({ opacity: 0, transform: 'translateY(-6px)' }),
-    animate(navD(), style({ opacity: 1, transform: 'translateY(0)' })),
+    animate(motionDuration(220), style({ opacity: 1, transform: 'translateY(0)' })),
   ]),
   transition(':leave', [
-    animate(navD(), style({ opacity: 0, transform: 'translateY(-6px)' })),
+    animate(motionDuration(220), style({ opacity: 0, transform: 'translateY(-6px)' })),
   ]),
 ]);
 

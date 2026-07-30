@@ -1,4 +1,5 @@
 export { prefersReducedMotion } from './prefers-reduced-motion';
+export { motionDuration, motionEnterY, motionStagger } from './motion-timing';
 export { pageEnterAnimation } from './page-enter.animation';
 export { routeFadeAnimation } from './route-fade.animation';
 export { listStaggerAnimation } from './list-stagger.animation';
