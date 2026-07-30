@@ -1,0 +1,42 @@
+# Trigger: run ProEventos CI on Harness Code pull requests targeting main.
+# After importing the CI pipeline, import this trigger (or recreate in UI)
+# and set org/project/pipeline identifiers to match.
+trigger:
+  name: CI on PR
+  identifier: proeventos_ci_pr
+  enabled: true
+  description: Mirrors GitHub Actions on: pull_request
+  orgIdentifier: PLACEHOLDER_ORG
+  projectIdentifier: PLACEHOLDER_PROJECT
+  pipelineIdentifier: proeventos_ci
+  stagesToExecute: []
+  source:
+    type: Webhook
+    spec:
+      type: Harness
+      spec:
+        type: PullRequest
+        spec:
+          connectorRef: ""
+          autoAbortPreviousExecutions: true
+          repoName: Homelab/ProEventos
+          actions:
+            - Open
+            - Reopen
+            - Edit
+            - Sync
+          payloadConditions:
+            - key: targetBranch
+              operator: Equals
+              value: main
+          headerConditions: []
+  inputYaml: |
+    pipeline:
+      identifier: proeventos_ci
+      properties:
+        ci:
+          codebase:
+            build:
+              type: PR
+              spec:
+                number: <+trigger.prNumber>
