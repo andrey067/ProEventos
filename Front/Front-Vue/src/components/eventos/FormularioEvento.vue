@@ -793,7 +793,7 @@ function getEvento(id: string | string[]): void {
     .getById(numericId)
     .then(async (response) => {
       const data = response.data;
-      let redes: ApiRede[] = (data.redesSociais ?? []) as ApiRede[];
+      let redes: ApiRede[] = (data.redesSociais ?? []) as unknown as ApiRede[];
       try {
         const redesRes = await redeSocialService.listByEvento(numericId);
         redes = redesRes.data as ApiRede[];

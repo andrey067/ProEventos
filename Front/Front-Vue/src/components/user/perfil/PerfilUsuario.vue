@@ -464,7 +464,7 @@ async function saveRedes() {
 
   try {
     const { data } = await redeSocialService.saveMine(redes.value);
-    redes.value = data.map((rede) => ({
+    redes.value = data.map((rede: RedeSocialPayload) => ({
       id: rede.id ?? 0,
       nome: rede.nome,
       url: rede.url,
