@@ -1,12 +1,13 @@
-# Harness Code pipeline: ci
-# Bound in UI to this path (.harness/ci.yaml). Keep pipelines/ci.yaml identical.
+# Harness Code pipeline: ci (+ e2e)
+# Bound in UI to .harness/ci.yaml. Keep pipelines/ci.yaml identical.
 # Native Open Source schema only — Enterprise (pipeline:/PLACEHOLDER_*) fails to parse.
-# Mirrors .github/workflows/ci.yaml (dotnet test + three fronts + coverage baselines).
+# Quality gate first, then Playwright against Vue + React + Angular.
+# Scripts use POSIX `set -eu` (Harness runs /bin/sh even when shell: bash is set).
 version: 1
 kind: pipeline
 spec:
   stages:
-    - name: quality_gate
+    - name: quality_and_e2e
       type: ci
       spec:
         # depth only — clone host comes from GITNESS_URL_CONTAINER (infra), not YAML.
@@ -81,3 +82,77 @@ spec:
                   --front-vue Front/Front-Vue/coverage/coverage-summary.json \
                   --front-react Front/Front-React/coverage/coverage-summary.json \
                   --front-angular Front/Front-Angular/coverage/coverage-summary.json
+
+          - name: e2e_all_fronts
+            type: run
+            timeout: 45m
+            spec:
+              container: mcr.microsoft.com/playwright:v1.49.1-jammy
+              shell: bash
+              script: |-
+                set -eu
+                curl -fsSL https://dot.net/v1/dotnet-install.sh -o /tmp/dotnet-install.sh
+                bash /tmp/dotnet-install.sh --channel 10.0 --install-dir "$HOME/.dotnet"
+                export DOTNET_ROOT="$HOME/.dotnet"
+                export PATH="$DOTNET_ROOT:$PATH"
+
+                corepack enable
+                corepack prepare pnpm@9 --activate
+
+                cd e2e && pnpm install
+                cd ../Front/Front-Vue && pnpm install --frozen-lockfile
+                cd ../Front-React && pnpm install --frozen-lockfile
+                cd ../Front-Angular && pnpm install --frozen-lockfile
+                cd ../../e2e && pnpm exec playwright install chromium
+
+                wait_http() {
+                  url="$1"
+                  label="$2"
+                  ok=0
+                  i=1
+                  while [ "$i" -le 90 ]; do
+                    if curl -sf "$url" >/dev/null; then ok=1; break; fi
+                    sleep 2
+                    i=$((i + 1))
+                  done
+                  test "$ok" = 1 || { echo "$label failed to become ready at $url" >&2; return 1; }
+                }
+
+                cd ../Back/src/ProEventos.Api
+                if [ -f .env.example ] && [ ! -f .env ]; then cp .env.example .env; fi
+                dotnet run --urls http://127.0.0.1:5050 &
+                API_PID=$!
+                wait_http http://127.0.0.1:5050/openapi/v1.json API || {
+                  kill $API_PID 2>/dev/null || true
+                  exit 1
+                }
+
+                cd ../../../Front/Front-Vue
+                pnpm dev --host 127.0.0.1 --port 5173 &
+                VUE_PID=$!
+
+                cd ../Front-React
+                pnpm dev --host 127.0.0.1 --port 3000 &
+                REACT_PID=$!
+
+                cd ../Front-Angular
+                pnpm exec ng serve --host 127.0.0.1 --port 4200 &
+                ANGULAR_PID=$!
+
+                cleanup() {
+                  kill $VUE_PID $REACT_PID $ANGULAR_PID $API_PID 2>/dev/null || true
+                }
+
+                wait_http http://127.0.0.1:5173 Vue || { cleanup; exit 1; }
+                wait_http http://127.0.0.1:3000 React || { cleanup; exit 1; }
+                wait_http http://127.0.0.1:4200 Angular || { cleanup; exit 1; }
+
+                cd ../../e2e
+                export CI=true
+                export API_URL=http://127.0.0.1:5050
+                set +e
+                pnpm exec playwright test --project=vue --project=react --project=angular
+                STATUS=$?
+                set -e
+                cleanup
+                exit $STATUS

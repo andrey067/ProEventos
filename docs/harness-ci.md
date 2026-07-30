@@ -36,21 +36,21 @@ Reference: [Harness Open Source pipelines](https://developer.harness.io/docs/ope
 
 ## Canonical paths (`.yaml`)
 
-Two Harness Code pipelines are already configured in the UI against the **root**
-files below. Keep those definitions native (`version: 1` / `kind: pipeline`) with
-real steps — never reintroduce Enterprise YAML or the hello-world stub.
+One Harness Code pipeline is configured in the UI against the **root** file
+below. Keep it native (`version: 1` / `kind: pipeline`) with real steps — never
+reintroduce Enterprise YAML or a hello-world stub.
 
 | Path | Purpose |
 |------|---------|
-| `.harness/ci.yaml` | **Configured pipeline `ci`** — backend Coverlet + Vue/React/Angular coverage + baseline compare |
-| `.harness/e2e.yaml` | **Configured pipeline `e2e`** — Playwright Vue smoke (API + Vue) |
+| `.harness/ci.yaml` | **Configured pipeline `ci`** — Coverlet + front coverage + baselines, then Playwright E2E for **Vue + React + Angular** |
 | `.harness/pipelines/ci.yaml` | Identical mirror of `.harness/ci.yaml` |
-| `.harness/pipelines/e2e.yaml` | Identical mirror of `.harness/e2e.yaml` |
 | `.harness/triggers/*.yaml` | Legacy Enterprise trigger stubs (optional; not used by native Code runner) |
 
-Edit the root files and copy into `pipelines/` so both layouts stay in sync.
-Harness Code binds the two UI pipelines to **`.harness/ci.yaml`** and
-**`.harness/e2e.yaml`**.
+There is **no** separate `.harness/e2e.yaml`: E2E runs as the last step
+(`e2e_all_fronts`) after the quality gate in the same pipeline.
+
+Edit the root file and copy into `pipelines/` so both layouts stay in sync.
+Harness Code binds the UI pipeline to **`.harness/ci.yaml`**.
 
 ## Clone DNS failure (`Could not resolve host: harness.homelab.local`)
 
