@@ -4,6 +4,8 @@ using System.Threading.Tasks;
 using Microsoft.EntityFrameworkCore;
 using ProEventos.Domain.Entities;
 using ProEventos.Domain.Interfaces.Repositories;
+using ProEventos.Domain.Specifications;
+using ProEventos.Persistence.Extensions;
 
 namespace ProEventos.Persistence.Repository
 {
@@ -26,6 +28,32 @@ namespace ProEventos.Persistence.Repository
             return await query.AsNoTracking().OrderBy(p => p.Id).ToListAsync();
         }
 
+        public async Task<(List<Palestrante> Items, int TotalCount)> GetPagedPalestrantesAsync(
+            int page,
+            int pageSize,
+            string q = null,
+            bool includeRedes = true)
+        {
+            IQueryable<Palestrante> query = _set.AsQueryable();
+
+            if (!string.IsNullOrWhiteSpace(q))
+                query = query.Where(new PalestranteGlobalSearchSpecification(q));
+
+            var totalCount = await query.CountAsync();
+
+            if (includeRedes)
+                query = query.Include(p => p.RedeSociais);
+
+            var items = await query
+                .AsNoTracking()
+                .OrderBy(p => p.Id)
+                .Skip((page - 1) * pageSize)
+                .Take(pageSize)
+                .ToListAsync();
+
+            return (items, totalCount);
+        }
+
         public async Task<Palestrante> GetPalestranteByIdAsync(int id, bool includeRedes = true)
         {
             IQueryable<Palestrante> query = _set.Where(p => p.Id == id);
@@ -41,9 +69,16 @@ namespace ProEventos.Persistence.Repository
             return await _set.AsNoTracking().FirstOrDefaultAsync(p => p.UserId == userId);
         }
 
+        public async Task<int> CountEventosByPalestranteIdAsync(int palestranteId)
+        {
+            return await _db.PalestranteEvento.CountAsync(pe => pe.PalestranteId == palestranteId);
+        }
+
         public async Task<Palestrante[]> GetAllPalestrantesByNameAsync(string nome, bool includeEventos)
         {
-            IQueryable<Palestrante> query = _set.Where(p => p.Nome.ToLower().Contains(nome.ToLower()));
+            IQueryable<Palestrante> query = _set.AsQueryable();
+            if (!string.IsNullOrWhiteSpace(nome))
+                query = query.Where(new PalestranteGlobalSearchSpecification(nome));
             if (includeEventos)
                 query = query.Include(p => p.PalestrantesEventos).ThenInclude(pe => pe.Evento);
             return await query.AsNoTracking().ToArrayAsync();
@@ -51,13 +86,13 @@ namespace ProEventos.Persistence.Repository
 
         public async Task<List<Palestrante>> GetAllPalestrantesByTemaAsync(string tema)
         {
-            var temaLower = tema.ToLower();
-            return await _set
-                .Where(p => p.PalestrantesEventos.Any(pe => pe.Evento.Tema.ToLower().Contains(temaLower)))
+            IQueryable<Palestrante> query = _set.AsQueryable();
+            if (!string.IsNullOrWhiteSpace(tema))
+                query = query.Where(new PalestranteGlobalSearchSpecification(tema));
+            return await query
                 .Include(p => p.RedeSociais)
                 .Include(p => p.PalestrantesEventos).ThenInclude(pe => pe.Evento)
                 .AsNoTracking()
-                .OrderBy(p => p.Id)
                 .ToListAsync();
         }
 
@@ -84,7 +119,9 @@ namespace ProEventos.Persistence.Repository
         {
             var link = await _db.PalestranteEvento
                 .FirstOrDefaultAsync(pe => pe.EventoId == eventoId && pe.PalestranteId == palestranteId);
-            if (link == null) return false;
+            if (link == null)
+                return false;
+
             _db.PalestranteEvento.Remove(link);
             await _db.SaveChangesAsync();
             return true;

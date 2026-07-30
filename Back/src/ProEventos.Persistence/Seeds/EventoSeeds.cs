@@ -1,7 +1,11 @@
 using Bogus;
+using Microsoft.AspNetCore.Identity;
+using Microsoft.EntityFrameworkCore;
 using ProEventos.Domain.Entities;
 using System;
 using System.Collections.Generic;
+using System.Linq;
+using System.Threading.Tasks;
 
 namespace ProEventos.Persistence.Seeds
 {
@@ -87,6 +91,27 @@ namespace ProEventos.Persistence.Seeds
 
             context.AddRange(lotes);
             context.SaveChanges();
+        }
+
+        /// <summary>
+        /// Backfill UserId on seeded eventos after Identity admin exists.
+        /// </summary>
+        public static async Task AssignOwnerToOrphans(DataContext context, UserManager<User> userManager)
+        {
+            var admin = await userManager.FindByNameAsync(IdentitySeeds.AdminUserName);
+            if (admin == null)
+                return;
+
+            var orphans = await context.Eventos
+                .Where(e => e.UserId == null || e.UserId == "")
+                .ToListAsync();
+            if (orphans.Count == 0)
+                return;
+
+            foreach (var evento in orphans)
+                evento.UserId = admin.Id;
+
+            await context.SaveChangesAsync();
         }
     }
 }
