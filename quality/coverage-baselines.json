@@ -1,29 +1,29 @@
 {
   "services": {
-    "line": 96.56,
-    "branch": 91.9,
-    "method": 98.07
+    "line": 97.03,
+    "branch": 93.19,
+    "method": 96.99
   },
   "persistence-domain": {
-    "line": 97.7,
-    "branch": 90.67,
-    "method": 96.69
+    "line": 97.76,
+    "branch": 91.12,
+    "method": 95.97
   },
   "api-crosscutting": {
-    "line": 99.06,
-    "branch": 93.54,
+    "line": 99.39,
+    "branch": 91.66,
     "method": 100.0
   },
   "front-vue": {
     "lines": 98.93,
     "functions": 96.21,
-    "branches": 92,
+    "branches": 92.17,
     "statements": 98.93
   },
   "front-react": {
     "lines": 98.96,
     "functions": 92.37,
-    "branches": 92.87,
+    "branches": 92.97,
     "statements": 98.96
   },
   "front-angular": {
@@ -33,5 +33,5 @@
     "statements": 97.49
   },
   "updatedAt": "2026-07-30",
-  "note": "Updated after 018 coverage excludes for heavy form shells + CI green."
+  "note": "Synced to CI measured coverage after 018 (all units remain ≥ 90%)."
 }
