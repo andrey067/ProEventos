@@ -1,5 +1,4 @@
 using System.Net;
-using System.Net.Http.Json;
 using FluentAssertions;
 using Xunit;
 
@@ -12,19 +11,7 @@ public class LoteEndpointsExtraTests
     {
         using var factory = new CustomWebApplicationFactory();
         var client = factory.CreateClient();
-        await AuthTestHelper.AuthenticateAsync(client);
-
-        var eventoResponse = await client.PostAsJsonAsync("/eventos", new
-        {
-            tema = "LoteDelete",
-            local = "SP",
-            dataEvento = DateTime.UtcNow.AddDays(10).ToString("O"),
-            telefone = "11999999999",
-            email = "l@t.com",
-            qtdPessoas = 10,
-            imagemURL = "evento.jpg"
-        });
-        eventoResponse.EnsureSuccessStatusCode();
+        await AuthTestHelper.LoginAsAdminAsync(client);
 
         (await client.DeleteAsync("/lotes/999999/999999")).StatusCode.Should().Be(HttpStatusCode.NotFound);
     }
