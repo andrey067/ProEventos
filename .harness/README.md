@@ -1,74 +1,60 @@
-# Harness Code — pipeline e triggers (checklist)
+# Harness Code — pipelines e triggers
 
-Uma única pipeline no repositório. E2E (Vue + React + Angular) é o **último step**
-de `.harness/ci.yaml`. Não cadastre pipeline `e2e` separada.
+Duas pipelines. Playwright só na **main** (trigger + guard no YAML).
 
-## 1) Cadastrar a pipeline
+## 1) Cadastrar pipelines
 
-No repo **Homelab/ProEventos** → **Pipelines** (ou Settings → Pipelines):
+| Name | YAML path | O quê roda |
+|------|-----------|------------|
+| `ci` | `.harness/ci.yaml` | Coverlet + 3 fronts + baselines |
+| `e2e` | `.harness/e2e.yaml` | Playwright Vue + React + Angular |
 
-| Campo | Valor |
-|-------|--------|
-| Name / Identifier | `ci` |
-| YAML path | `.harness/ci.yaml` |
-| Mirror (opcional) | `.harness/pipelines/ci.yaml` (mesmo conteúdo) |
+Espelhos: `.harness/pipelines/ci.yaml` e `.harness/pipelines/e2e.yaml` (mesmo conteúdo).
 
-Remova qualquer pipeline apontando para `.harness/e2e.yaml` (arquivo removido).
+## 2) Triggers (UI)
 
-## 2) Triggers (UI Code — tela Event Categories)
+Triggers são **por pipeline**. Não misture.
 
-Crie **dois** triggers na pipeline `ci` (ou no repo checks). Renomeie o `default`
-se quiser.
+### Pipeline `ci` → trigger `pr`
 
-### Trigger A — `pr` (obrigatório)
+| Event | |
+|-------|--|
+| Branch Created / Updated | off |
+| **PR Created / Updated / Reopened** | **on** |
+| PR Closed | off |
+| **PR Merged** | **off** (deixar só no `e2e`) |
+| Tags | off |
 
-| Setting | Value |
-|---------|--------|
-| Name | `pr` |
-| Disable trigger | **off** |
+### Pipeline `e2e` → trigger `main`
+
+| Event | |
+|-------|--|
 | Branch Created | off |
-| Branch Updated | off |
-| **Pull Request Created** | **on** |
-| **Pull Request Updated** | **on** |
-| **Pull Request Reopened** | **on** |
-| Pull Request Closed | off |
-| Pull Request Merged | off |
-| Tag Created / Updated | off |
+| **Branch Updated** | **on** (ideal: filtrar branch `main` se a UI permitir) |
+| PR Created / Updated / Reopened / Closed | off |
+| **PR Merged** | **on** |
+| Tags | off |
 
-Se a UI tiver filtro de branch: **target branch = `main`**.
+No seu print, o trigger `pr` ainda tem **Pull Request Merged** ligado — **desmarque**
+nessa pipeline `ci`. Merged fica só no trigger `main` da pipeline `e2e`.
 
-### Trigger B — `main` (pós-merge / push em main)
+## 3) Guard no YAML
 
-| Setting | Value |
-|---------|--------|
-| Name | `main` |
-| Disable trigger | **off** |
-| Branch Created | off |
-| **Branch Updated** | **on** |
-| Pull Request Created / Updated / Reopened | off |
-| Pull Request Closed | off |
-| Pull Request Merged | **on** (opcional; redundante se Branch Updated em `main` já dispara) |
-| Tag Created / Updated | off |
+`.harness/e2e.yaml` pula a execução se detectar PR (`DRONE_PULL_REQUEST` /
+`DRONE_BUILD_EVENT=pull_request`) ou branch ≠ `main`. É rede de segurança se o
+trigger estiver errado.
 
-Se a UI tiver filtro de branch: **branch = `main` apenas**.  
-Sem filtro: **não** ligue Branch Updated em todas as branches (vira CI em todo push
-de feature). Nesse caso use só **Pull Request Merged** no trigger B, ou aceite
-Branch Updated só depois de existir filtro.
-
-## 3) Proteção de merge
-
-Em branch rules / required checks para `main`:
-
-- Require check **`ci`** (inclui coverage + E2E dos 3 fronts)
-
-## 4) Fluxo resultante
+## 4) Fluxo
 
 ```text
-feature → PR (target main)  → trigger pr  → pipeline ci (quality + e2e)
-         merge / push main  → trigger main → pipeline ci de novo
+PR aberto/atualizado  → pipeline ci   (sem Playwright)
+merge / push em main  → pipeline e2e  (Playwright 3 fronts)
+                      → (opcional) também rode ci em main se quiser
 ```
 
-Detalhes de schema, DNS (`GITNESS_URL_CONTAINER`) e steps: [`docs/harness-ci.md`](../docs/harness-ci.md).
+## 5) Branch protection
 
-Stubs Enterprise (não usados pelo Code nativo): `triggers/ci-pr.yaml`,
-`triggers/ci-push-main.yaml`.
+Em `main`: require check **`ci`** nos PRs. Exija **`e2e`** só se quiser bloquear
+merge até E2E passar (aí E2E teria que rodar no PR — hoje E2E é pós-main).
+
+Detalhes: [`docs/harness-ci.md`](../docs/harness-ci.md).

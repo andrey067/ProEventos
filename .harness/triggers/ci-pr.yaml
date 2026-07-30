@@ -1,10 +1,10 @@
-# Reference only — Harness Code configures triggers in the UI (see .harness/README.md).
-# Enterprise import stub: PR → main → pipeline ci (quality + e2e_all_fronts).
+# Reference only — configure triggers in the UI (see .harness/README.md).
+# Enterprise stub: PR → pipeline ci (quality only).
 trigger:
   name: pr
   identifier: proeventos_ci_pr
   enabled: true
-  description: "UI: PR Created + Updated + Reopened; target main"
+  description: "UI on pipeline ci: PR Created + Updated + Reopened (not Merged)"
   orgIdentifier: PLACEHOLDER_ORG
   projectIdentifier: PLACEHOLDER_PROJECT
   pipelineIdentifier: ci
