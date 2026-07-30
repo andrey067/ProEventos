@@ -1,4 +1,6 @@
+using System;
 using System.IdentityModel.Tokens.Jwt;
+using System.IO;
 using System.Linq;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
@@ -66,7 +68,9 @@ namespace ProEventos.CrossCutting.DependencyInjection
             //   • protege writes com RequireRole("User"), não CustomAuthorize do sample;
             //   • combina AddCustomIdentity (cookies) com autenticação Bearer.
 
-            // Cache e DataProtection: persistência das chaves RSA gerenciadas pelo NetDevPack.Security.Jwt.
+            // Cache e DataProtection: NetDevPack JWKS fica em pasta própria (não no IXmlRepository do DP).
+            // Antes compartilhavam ~/.aspnet/DataProtection-Keys e o XmlKeyManager avisava
+            // "Unknown element with name 'NetDevPackSecurityJwt'".
             serviceCollection.AddMemoryCache();
             serviceCollection.AddDataProtection();
 
@@ -75,9 +79,17 @@ namespace ProEventos.CrossCutting.DependencyInjection
             serviceCollection.AddJwtConfiguration(configuration);
 
             // Registra IJwtBuilder (AccountService) e AddJwksManager (par de chaves RSA para assinar/validar).
+            // PersistKeysToFileSystem: JWKS fora do keyring ASP.NET DataProtection.
             // UseJwtValidation: JwtBearer passa a validar tokens com as mesmas chaves JWKS (handler customizado).
             // Obrigatório aqui para access token + refresh token funcionarem no mesmo key store.
-            serviceCollection.AddNetDevPackIdentity<User>().UseJwtValidation();
+            var jwksKeys = new DirectoryInfo(Path.Combine(
+                Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
+                "ProEventos",
+                "jwks-keys"));
+            jwksKeys.Create();
+            serviceCollection.AddNetDevPackIdentity<User>()
+                .PersistKeysToFileSystem(jwksKeys)
+                .UseJwtValidation();
 
             // AddIdentity registra esquema de cookie como padrão; esta API é stateless (Bearer).
             // Sem isso, RequireAuthorization() pode autenticar via cookie em vez de JWT.
