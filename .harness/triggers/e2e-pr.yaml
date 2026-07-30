@@ -3,7 +3,7 @@ trigger:
   name: E2E on PR
   identifier: proeventos_e2e_pr
   enabled: true
-  description: Mirrors GitHub Actions e2e.yml on pull_request
+  description: Mirrors GitHub Actions e2e.yaml on pull_request
   orgIdentifier: PLACEHOLDER_ORG
   projectIdentifier: PLACEHOLDER_PROJECT
   pipelineIdentifier: proeventos_e2e

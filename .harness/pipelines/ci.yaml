@@ -1,4 +1,4 @@
-# Harness CI — mirrors .github/workflows/ci.yml
+# Harness CI — mirrors .github/workflows/ci.yaml
 # Import in Harness UI (Pipelines → Create from YAML) or sync via Git Experience.
 # Replace PLACEHOLDER_* values (or leave <+input> and set at import time).
 pipeline:

@@ -18,7 +18,8 @@ Local commands are documented in `Back/README.md` and each `Front/Front-*/README
 
 Exact ratio is **not** a CI fail condition.
 
-CI: `.github/workflows/ci.yml` (coverage + baselines) and `.github/workflows/e2e.yml` (Playwright, Vue project on CI).
+CI: `.github/workflows/ci.yaml` (coverage + baselines) and `.github/workflows/e2e.yaml` (Playwright, Vue project on CI).
+Harness: see `docs/harness-ci.md` (`.harness/ci.yaml`, `.harness/e2e.yaml`).
 
 ## Definition of Done
 

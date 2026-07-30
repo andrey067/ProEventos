@@ -1,18 +1,23 @@
 # Harness CI for ProEventos
 
-GitHub already runs checks via `.github/workflows/ci.yml` and `e2e.yml`.
-Harness Code does **not** execute those files. Use the YAML under `.harness/` with
+GitHub already runs checks via `.github/workflows/ci.yaml` and `e2e.yaml`
+(extension **`.yaml`**, not `.yml`). Harness Code does **not** execute those
+GitHub Actions files. Use the Harness pipeline YAML under `.harness/` with
 Harness CI + triggers so PRs on `harness.homelab.local` get the same gates.
 
-## What was added
+## Canonical paths (`.yaml`)
 
 | Path | Purpose |
 |------|---------|
-| `.harness/pipelines/ci.yaml` | Backend Coverlet + Vue/React/Angular coverage + baseline compare |
-| `.harness/pipelines/e2e.yaml` | Playwright Vue smoke (API + Vue) |
+| `.harness/ci.yaml` | Backend Coverlet + Vue/React/Angular coverage + baseline compare |
+| `.harness/e2e.yaml` | Playwright Vue smoke (API + Vue) |
+| `.harness/pipelines/ci.yaml` | Same CI pipeline (duplicate for Git Experience layouts) |
+| `.harness/pipelines/e2e.yaml` | Same E2E pipeline |
 | `.harness/triggers/ci-pr.yaml` | Run CI on PR → `main` |
 | `.harness/triggers/ci-push-main.yaml` | Run CI on push to `main` |
 | `.harness/triggers/e2e-pr.yaml` | Run E2E on PR → `main` |
+
+Prefer importing **`.harness/ci.yaml`** and **`.harness/e2e.yaml`**.
 
 ## One-time setup (UI)
 
@@ -21,7 +26,7 @@ Harness CI + triggers so PRs on `harness.homelab.local` get the same gates.
 
 2. **Import pipelines**  
    - Pipelines → Create Pipeline → YAML  
-   - Paste `.harness/pipelines/ci.yaml` (then `e2e.yaml`)  
+   - Paste `.harness/ci.yaml` (then `.harness/e2e.yaml`)  
    - Replace:
      - `PLACEHOLDER_ORG`
      - `PLACEHOLDER_PROJECT`
