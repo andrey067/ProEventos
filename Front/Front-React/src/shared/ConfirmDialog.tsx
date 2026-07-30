@@ -1,9 +1,10 @@
 import { useEffect } from "react";
+import { ModalMotion } from "@/shared/motion";
 
 const btnOutline =
-  "inline-flex items-center justify-center rounded-[length:var(--radius-control)] border border-line bg-panel px-4 py-2 text-sm font-medium text-ink transition-colors hover:bg-surface";
+  "motion-press inline-flex items-center justify-center rounded-[length:var(--radius-control)] border border-line bg-panel px-4 py-2 text-sm font-medium text-ink transition-colors hover:bg-surface";
 const btnDanger =
-  "inline-flex items-center justify-center rounded-[length:var(--radius-control)] bg-danger px-4 py-2 text-sm font-medium text-white transition-colors hover:opacity-90";
+  "motion-press inline-flex items-center justify-center rounded-[length:var(--radius-control)] bg-danger px-4 py-2 text-sm font-medium text-white transition-colors hover:opacity-90";
 
 export type ConfirmDialogProps = {
   open: boolean;
@@ -33,21 +34,14 @@ export function ConfirmDialog({
     return () => window.removeEventListener("keydown", onKeyDown);
   }, [open, onCancel]);
 
-  if (!open) return null;
-
   return (
-    <div
-      className="fixed inset-0 z-50 flex items-center justify-center bg-ink/40 p-4"
-      role="presentation"
-      onClick={onCancel}
-    >
+    <ModalMotion open={open} onCancel={onCancel}>
       <div
         role="dialog"
         aria-modal="true"
         aria-labelledby="confirm-dialog-title"
         aria-describedby="confirm-dialog-message"
         className="w-full max-w-md rounded-[length:var(--radius-control)] border border-line bg-panel p-6 shadow-lg"
-        onClick={(event) => event.stopPropagation()}
       >
         <h2
           id="confirm-dialog-title"
@@ -67,6 +61,6 @@ export function ConfirmDialog({
           </button>
         </div>
       </div>
-    </div>
+    </ModalMotion>
   );
 }

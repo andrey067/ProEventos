@@ -23,7 +23,6 @@ export function ModalMotion({ open, onCancel, children }: Props) {
           transition={{ duration: reduced ? 0 : 0.32 }}
         >
           <motion.div
-            role="presentation"
             onClick={(e) => e.stopPropagation()}
             initial={reduced ? false : { opacity: 0, scale: 0.98 }}
             animate={{ opacity: 1, scale: 1 }}
