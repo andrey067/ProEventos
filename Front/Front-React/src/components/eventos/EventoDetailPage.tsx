@@ -25,6 +25,13 @@ import { loteService } from "@/services/loteService";
 import { palestranteService } from "@/services/palestranteService";
 import { redeSocialService } from "@/services/redeSocialService";
 import { ConfirmDialog } from "@/shared/ConfirmDialog";
+import {
+  AlertMotion,
+  ListStagger,
+  ListStaggerItem,
+  PageEnter,
+  PanelEnter,
+} from "@/shared/motion";
 import { formatDateBr, toApiDate, toDateInputValue } from "@/utils/date";
 import { isRemoteImageUrl } from "@/utils/imageUrl";
 
@@ -332,8 +339,14 @@ export function EventoDetailPage() {
     return <LoadingSpinner loading variant="page" />;
   }
 
+  const alertDangerClass =
+    "rounded-[length:var(--radius-control)] border border-danger-border bg-danger-soft px-4 py-3 text-sm text-danger";
+  const alertSuccessClass =
+    "rounded-[length:var(--radius-control)] border border-line bg-surface px-4 py-3 text-sm text-accent-dark";
+
   return (
-    <div className="flex min-w-0 flex-col gap-6">
+    <PageEnter>
+      <div className="flex min-w-0 flex-col gap-6">
       <div className="flex flex-wrap items-center justify-between gap-4">
         <div>
           <h1 className="text-2xl font-semibold tracking-tight">
@@ -355,16 +368,12 @@ export function EventoDetailPage() {
         </p>
       )}
 
-      {error && (
-        <p className="rounded-[length:var(--radius-control)] border border-danger-border bg-danger-soft px-4 py-3 text-sm text-danger">
-          {error}
-        </p>
-      )}
-      {success && (
-        <p className="rounded-[length:var(--radius-control)] border border-line bg-surface px-4 py-3 text-sm text-accent-dark">
-          {success}
-        </p>
-      )}
+      <AlertMotion show={!!error} className={alertDangerClass}>
+        {error}
+      </AlertMotion>
+      <AlertMotion show={!!success} className={alertSuccessClass}>
+        {success}
+      </AlertMotion>
 
       <form
         onSubmit={handleSubmit(onSubmit)}
@@ -372,7 +381,7 @@ export function EventoDetailPage() {
         noValidate
       >
         <div className="grid gap-6 md:grid-cols-[1fr_minmax(260px,320px)] md:items-start">
-          <section className={panelClass}>
+          <PanelEnter className={panelClass}>
             <h2 className="mb-4 text-lg font-medium text-accent-dark">
               Dados do evento
             </h2>
@@ -447,12 +456,10 @@ export function EventoDetailPage() {
                 <FieldError error={errors.email} />
               </label>
             </div>
-          </section>
+          </PanelEnter>
 
-          <aside
-            className="self-start rounded-[length:var(--radius-control)] border border-line bg-panel p-4 md:sticky md:top-4"
-            data-testid="evento-preview-card"
-          >
+          <PanelEnter className="self-start rounded-[length:var(--radius-control)] border border-line bg-panel p-4 md:sticky md:top-4">
+            <div data-testid="evento-preview-card">
             <button
               type="button"
               className="mb-4 block w-full overflow-hidden rounded-[length:var(--radius-control)] border border-line bg-surface focus:outline-none focus:ring-2 focus:ring-accent/30 disabled:cursor-default"
@@ -519,10 +526,11 @@ export function EventoDetailPage() {
                 <dd>{email || "—"}</dd>
               </div>
             </dl>
-          </aside>
+            </div>
+          </PanelEnter>
         </div>
 
-        <section className={panelClass}>
+        <PanelEnter className={panelClass}>
           <div className="mb-4 flex items-center justify-between">
             <h2 className="text-lg font-medium text-accent-dark">Lotes</h2>
             {writeAllowed && (
@@ -536,11 +544,11 @@ export function EventoDetailPage() {
             )}
           </div>
           <div className="flex flex-col gap-3">
-            {loteFields.map((field, index) => (
-              <div
-                key={field.id}
-                className="grid gap-4 rounded-[length:var(--radius-control)] border border-line bg-surface p-4 md:grid-cols-2"
-              >
+            {loteFields.length > 0 && (
+              <ListStagger>
+                {loteFields.map((field, index) => (
+                  <ListStaggerItem key={field.id} index={index}>
+                    <div className="grid gap-4 rounded-[length:var(--radius-control)] border border-line bg-surface p-4 md:grid-cols-2">
                 <label className="flex flex-col gap-2 text-sm">
                   <span className="font-medium">Nome</span>
                   <input
@@ -646,12 +654,15 @@ export function EventoDetailPage() {
                     </button>
                   </div>
                 )}
-              </div>
-            ))}
+                    </div>
+                  </ListStaggerItem>
+                ))}
+              </ListStagger>
+            )}
           </div>
-        </section>
+        </PanelEnter>
 
-        <section className={panelClass}>
+        <PanelEnter className={panelClass}>
           <div className="mb-4 flex items-center justify-between">
             <h2 className="text-lg font-medium text-accent-dark">
               Redes sociais
@@ -667,11 +678,11 @@ export function EventoDetailPage() {
             )}
           </div>
           <div className="flex flex-col gap-3">
-            {redeFields.map((field, index) => (
-              <div
-                key={field.id}
-                className="grid gap-3 rounded-[length:var(--radius-control)] border border-line bg-surface p-3 md:grid-cols-[1fr_1fr_auto]"
-              >
+            {redeFields.length > 0 && (
+              <ListStagger>
+                {redeFields.map((field, index) => (
+                  <ListStaggerItem key={field.id} index={index}>
+                    <div className="grid gap-3 rounded-[length:var(--radius-control)] border border-line bg-surface p-3 md:grid-cols-[1fr_1fr_auto]">
                 <input
                   className={inputClass}
                   placeholder="Nome"
@@ -700,13 +711,16 @@ export function EventoDetailPage() {
                     Excluir
                   </button>
                 )}
-              </div>
-            ))}
+                    </div>
+                  </ListStaggerItem>
+                ))}
+              </ListStagger>
+            )}
           </div>
-        </section>
+        </PanelEnter>
 
         {!isNew && (
-          <section className={panelClass}>
+          <PanelEnter className={panelClass}>
             <h2 className="mb-4 text-lg font-medium text-accent-dark">
               Palestrantes
             </h2>
@@ -716,23 +730,24 @@ export function EventoDetailPage() {
                   Nenhum palestrante associado.
                 </li>
               ) : (
-                linkedPalestrantes.map((p) => (
-                  <li
-                    key={p.id}
-                    className="flex flex-wrap items-center justify-between gap-2 rounded-[length:var(--radius-control)] border border-line bg-surface px-3 py-2 text-sm"
-                  >
-                    <span className="font-medium">{p.nome}</span>
-                    {writeAllowed && (
-                      <button
-                        type="button"
-                        className={btnSmDanger}
-                        onClick={() => setPendingDisassociate(p)}
-                      >
-                        Desassociar
-                      </button>
-                    )}
-                  </li>
-                ))
+                <ListStagger>
+                  {linkedPalestrantes.map((p, index) => (
+                    <ListStaggerItem key={p.id} index={index}>
+                      <li className="flex flex-wrap items-center justify-between gap-2 rounded-[length:var(--radius-control)] border border-line bg-surface px-3 py-2 text-sm">
+                        <span className="font-medium">{p.nome}</span>
+                        {writeAllowed && (
+                          <button
+                            type="button"
+                            className={btnSmDanger}
+                            onClick={() => setPendingDisassociate(p)}
+                          >
+                            Desassociar
+                          </button>
+                        )}
+                      </li>
+                    </ListStaggerItem>
+                  ))}
+                </ListStagger>
               )}
             </ul>
 
@@ -758,31 +773,36 @@ export function EventoDetailPage() {
                   </button>
                 </div>
                 {speakerResults.length > 0 && (
-                  <ul className="flex flex-col gap-2">
-                    {speakerResults.map((p) => (
-                      <li
-                        key={p.id}
-                        className="flex flex-wrap items-center justify-between gap-2 rounded-[length:var(--radius-control)] border border-line bg-surface px-3 py-2 text-sm"
-                      >
-                        <span>{p.nome}</span>
-                        <button
-                          type="button"
-                          className={btnSmAccent}
-                          onClick={() => void associateSpeaker(p)}
-                        >
-                          Adicionar
-                        </button>
-                      </li>
-                    ))}
-                  </ul>
+                  <ListStagger>
+                    <ul className="flex flex-col gap-2">
+                      {speakerResults.map((p, index) => (
+                        <ListStaggerItem key={p.id} index={index}>
+                          <li className="flex flex-wrap items-center justify-between gap-2 rounded-[length:var(--radius-control)] border border-line bg-surface px-3 py-2 text-sm">
+                            <span>{p.nome}</span>
+                            <button
+                              type="button"
+                              className={btnSmAccent}
+                              onClick={() => void associateSpeaker(p)}
+                            >
+                              Adicionar
+                            </button>
+                          </li>
+                        </ListStaggerItem>
+                      ))}
+                    </ul>
+                  </ListStagger>
                 )}
               </div>
             )}
-          </section>
+          </PanelEnter>
         )}
 
         {writeAllowed && (
-          <button type="submit" disabled={saving} className={btnPrimary}>
+          <button
+            type="submit"
+            disabled={saving}
+            className={`${btnPrimary} motion-press`}
+          >
             {saving ? "Salvando..." : "Salvar"}
           </button>
         )}
@@ -824,6 +844,7 @@ export function EventoDetailPage() {
         onConfirm={() => void confirmDisassociate()}
         onCancel={() => setPendingDisassociate(null)}
       />
-    </div>
+      </div>
+    </PageEnter>
   );
 }

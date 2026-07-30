@@ -6,6 +6,14 @@ import { z } from "zod";
 import { FieldError } from "@/forms/components/FieldError";
 import { LoadingSpinner } from "@/components/LoadingSpinner";
 import { ConfirmDialog } from "@/shared/ConfirmDialog";
+import {
+  AlertMotion,
+  ListStagger,
+  ListStaggerItem,
+  PageEnter,
+  PanelEnter,
+  SkeletonShimmer,
+} from "@/shared/motion";
 import { redeSocialSchema } from "@/forms/schemas/eventoSchema";
 import {
   FUNCAO_OPTIONS,
@@ -262,26 +270,32 @@ export function ProfilePage() {
   const photoSrc =
     imgBroken || !snapshot?.imagemURL ? PLACEHOLDER : snapshot.imagemURL;
 
+  const alertDangerClass =
+    "rounded-[length:var(--radius-control)] border border-danger-border bg-danger-soft px-4 py-3 text-sm text-danger";
+  const alertSuccessClass =
+    "rounded-[length:var(--radius-control)] border border-line bg-surface px-4 py-3 text-sm text-accent-dark";
+  const alertDangerSmClass =
+    "mb-3 rounded-[length:var(--radius-control)] border border-danger-border bg-danger-soft px-3 py-2 text-sm text-danger";
+  const alertSuccessSmClass =
+    "mb-3 rounded-[length:var(--radius-control)] border border-line bg-surface px-3 py-2 text-sm text-accent-dark";
+
   return (
-    <div className="mx-auto flex w-full min-w-0 max-w-5xl flex-col gap-6">
+    <PageEnter>
+      <div className="mx-auto flex w-full min-w-0 max-w-5xl flex-col gap-6">
       <div>
         <h1 className="text-2xl font-semibold tracking-tight">Perfil</h1>
         <p className="mt-1 text-sm text-muted">Atualize seus dados de conta.</p>
       </div>
 
-      {error && (
-        <p className="rounded-[length:var(--radius-control)] border border-danger-border bg-danger-soft px-4 py-3 text-sm text-danger">
-          {error}
-        </p>
-      )}
-      {success && (
-        <p className="rounded-[length:var(--radius-control)] border border-line bg-surface px-4 py-3 text-sm text-accent-dark">
-          {success}
-        </p>
-      )}
+      <AlertMotion show={!!error} className={alertDangerClass}>
+        {error}
+      </AlertMotion>
+      <AlertMotion show={!!success} className={alertSuccessClass}>
+        {success}
+      </AlertMotion>
 
       <div className="grid gap-6 lg:grid-cols-[280px_1fr]">
-        <aside className="flex flex-col overflow-hidden rounded-[length:var(--radius-control)] border border-line bg-panel">
+        <PanelEnter className="flex flex-col overflow-hidden rounded-[length:var(--radius-control)] border border-line bg-panel">
           <div className="flex flex-col items-center gap-3 px-4 pt-6">
             <img
               src={photoSrc}
@@ -313,11 +327,12 @@ export function ProfilePage() {
               <div className="text-xs text-muted">Eventos Participados</div>
             </li>
           </ul>
-        </aside>
+        </PanelEnter>
 
+        <PanelEnter className="flex flex-col gap-4 rounded-[length:var(--radius-control)] border border-line bg-panel p-6">
         <form
           onSubmit={handleSubmit(onSubmit)}
-          className="flex flex-col gap-4 rounded-[length:var(--radius-control)] border border-line bg-panel p-6"
+          className="flex flex-col gap-4"
           noValidate
         >
           <h2 className="border-b border-line pb-2 text-lg font-semibold">
@@ -389,25 +404,23 @@ export function ProfilePage() {
                 </button>
               </div>
 
-              {redesError && (
-                <p className="mb-3 rounded-[length:var(--radius-control)] border border-danger-border bg-danger-soft px-3 py-2 text-sm text-danger">
-                  {redesError}
-                </p>
-              )}
-              {redesSuccess && (
-                <p className="mb-3 rounded-[length:var(--radius-control)] border border-line bg-surface px-3 py-2 text-sm text-accent-dark">
-                  {redesSuccess}
-                </p>
-              )}
+              <AlertMotion show={!!redesError} className={alertDangerSmClass}>
+                {redesError}
+              </AlertMotion>
+              <AlertMotion show={!!redesSuccess} className={alertSuccessSmClass}>
+                {redesSuccess}
+              </AlertMotion>
 
               <LoadingSpinner loading={redesLoading} variant="inline" label="Carregando redes..." />
 
-              <div className="flex flex-col gap-2">
-                {redes.map((rede, index) => (
-                  <div
-                    key={`${rede.id}-${index}`}
-                    className="grid gap-2 rounded-[length:var(--radius-control)] border border-line bg-surface p-3 md:grid-cols-[1fr_1fr_auto]"
-                  >
+              {redesLoading ? (
+                <SkeletonShimmer rows={3} />
+              ) : redes.length > 0 ? (
+                <ListStagger>
+                  <div className="flex flex-col gap-2">
+                    {redes.map((rede, index) => (
+                      <ListStaggerItem key={`${rede.id}-${index}`} index={index}>
+                        <div className="grid gap-2 rounded-[length:var(--radius-control)] border border-line bg-surface p-3 md:grid-cols-[1fr_1fr_auto]">
                     <input
                       className={inputClass}
                       value={rede.nome}
@@ -445,15 +458,18 @@ export function ProfilePage() {
                     >
                       Excluir
                     </button>
+                        </div>
+                      </ListStaggerItem>
+                    ))}
                   </div>
-                ))}
-              </div>
+                </ListStagger>
+              ) : null}
 
               <div className="mt-4 flex justify-end">
                 <button
                   type="button"
                   disabled={savingRedes || redesLoading}
-                  className={`${btnPrimary} gap-2`}
+                  className={`${btnPrimary} motion-press gap-2`}
                   onClick={() => void saveRedes()}
                 >
                   <LoadingSpinner loading={savingRedes} variant="button" />
@@ -500,13 +516,14 @@ export function ProfilePage() {
             <button
               type="submit"
               disabled={saving}
-              className={`${btnPrimary} ml-auto gap-2`}
+              className={`${btnPrimary} motion-press ml-auto gap-2`}
             >
               <LoadingSpinner loading={saving} variant="button" />
               {saving ? "Salvando..." : "Salvar Alteração"}
             </button>
           </div>
         </form>
+        </PanelEnter>
       </div>
 
       <ConfirmDialog
@@ -521,7 +538,8 @@ export function ProfilePage() {
         onConfirm={() => void confirmDeleteRede()}
         onCancel={() => setPendingRedeDelete(null)}
       />
-    </div>
+      </div>
+    </PageEnter>
   );
 }
 

@@ -5,6 +5,7 @@ import { Link, useNavigate } from "react-router-dom";
 import { z } from "zod";
 import { FieldError } from "@/forms/components/FieldError";
 import { LoadingSpinner } from "@/components/LoadingSpinner";
+import { AlertMotion, PageEnter, PanelEnter } from "@/shared/motion";
 import { accountService } from "@/services/accountService";
 import { HttpError } from "@/services/http";
 
@@ -87,8 +88,12 @@ export function RegisterPage() {
     }
   }
 
+  const alertDangerClass =
+    "rounded-[length:var(--radius-control)] border border-danger-border bg-danger-soft px-4 py-3 text-sm text-danger";
+
   return (
-    <section className="-mx-4 -my-6 grid min-h-[calc(100dvh-4.5rem)] grid-cols-1 overflow-hidden md:-my-8 md:grid-cols-[minmax(0,0.4fr)_minmax(0,0.6fr)]">
+    <PageEnter>
+      <section className="-mx-4 -my-6 grid min-h-[calc(100dvh-4.5rem)] grid-cols-1 overflow-hidden md:-my-8 md:grid-cols-[minmax(0,0.4fr)_minmax(0,0.6fr)]">
       <aside
         className="hidden min-h-full items-center justify-center bg-surface px-3 py-8 sm:px-6 sm:py-10 md:flex lg:px-10 lg:py-12"
         aria-hidden="true"
@@ -113,17 +118,16 @@ export function RegisterPage() {
             </p>
           </header>
 
-          {error && (
-            <p className="rounded-[length:var(--radius-control)] border border-danger-border bg-danger-soft px-4 py-3 text-sm text-danger">
-              {error}
-            </p>
-          )}
+          <AlertMotion show={!!error} className={alertDangerClass}>
+            {error}
+          </AlertMotion>
 
-          <form
-            onSubmit={handleSubmit(onSubmit)}
-            className="flex flex-col gap-5"
-            noValidate
-          >
+          <PanelEnter className="flex flex-col gap-5">
+            <form
+              onSubmit={handleSubmit(onSubmit)}
+              className="flex flex-col gap-5"
+              noValidate
+            >
             <label className="flex flex-col gap-2 text-sm">
               <span className="font-medium text-ink">Nome</span>
               <input className={inputClass} {...register("nome")} />
@@ -198,11 +202,16 @@ export function RegisterPage() {
               </>
             )}
 
-            <button type="submit" disabled={submitting} className={`${btnPrimary} gap-2`}>
+            <button
+              type="submit"
+              disabled={submitting}
+              className={`${btnPrimary} motion-press gap-2`}
+            >
               <LoadingSpinner loading={submitting} variant="button" />
               {submitting ? "Cadastrando..." : "Cadastrar"}
             </button>
-          </form>
+            </form>
+          </PanelEnter>
 
           <p className="text-center text-sm text-muted">
             Já tem conta?{" "}
@@ -212,6 +221,7 @@ export function RegisterPage() {
           </p>
         </div>
       </div>
-    </section>
+      </section>
+    </PageEnter>
   );
 }

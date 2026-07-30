@@ -5,6 +5,7 @@ import { Link, useLocation, useNavigate } from "react-router-dom";
 import { z } from "zod";
 import { FieldError } from "@/forms/components/FieldError";
 import { LoadingSpinner } from "@/components/LoadingSpinner";
+import { AlertMotion, PageEnter, PanelEnter } from "@/shared/motion";
 import { accountService } from "@/services/accountService";
 import { HttpError } from "@/services/http";
 
@@ -59,57 +60,66 @@ export function LoginPage() {
     }
   }
 
+  const alertDangerClass =
+    "rounded-[length:var(--radius-control)] border border-danger-border bg-danger-soft px-4 py-3 text-sm text-danger";
+
   return (
-    <div className="mx-auto flex w-full min-w-0 max-w-md flex-col gap-6">
-      <div>
-        <h1 className="text-2xl font-semibold tracking-tight">Login</h1>
-        <p className="mt-1 text-sm text-muted">
-          Entre com seu usuário para editar eventos e palestrantes.
+    <PageEnter>
+      <div className="mx-auto flex w-full min-w-0 max-w-md flex-col gap-6">
+        <div>
+          <h1 className="text-2xl font-semibold tracking-tight">Login</h1>
+          <p className="mt-1 text-sm text-muted">
+            Entre com seu usuário para editar eventos e palestrantes.
+          </p>
+        </div>
+
+        <AlertMotion show={!!error} className={alertDangerClass}>
+          {error}
+        </AlertMotion>
+
+        <PanelEnter className="flex flex-col gap-4 rounded-[length:var(--radius-control)] border border-line bg-panel p-6">
+          <form
+            onSubmit={handleSubmit(onSubmit)}
+            className="flex flex-col gap-4"
+            noValidate
+          >
+            <label className="flex flex-col gap-2 text-sm">
+              <span className="font-medium">Usuário</span>
+              <input
+                className={inputClass}
+                autoComplete="username"
+                {...register("userName")}
+              />
+              <FieldError error={errors.userName} />
+            </label>
+            <label className="flex flex-col gap-2 text-sm">
+              <span className="font-medium">Senha</span>
+              <input
+                className={inputClass}
+                type="password"
+                autoComplete="current-password"
+                {...register("password")}
+              />
+              <FieldError error={errors.password} />
+            </label>
+            <button
+              type="submit"
+              disabled={submitting}
+              className={`${btnPrimary} motion-press gap-2`}
+            >
+              <LoadingSpinner loading={submitting} variant="button" />
+              {submitting ? "Entrando..." : "Entrar"}
+            </button>
+          </form>
+        </PanelEnter>
+
+        <p className="text-center text-sm text-muted">
+          Não tem conta?{" "}
+          <Link to="/register" className={btnLink}>
+            Cadastre-se
+          </Link>
         </p>
       </div>
-
-      {error && (
-        <p className="rounded-[length:var(--radius-control)] border border-danger-border bg-danger-soft px-4 py-3 text-sm text-danger">
-          {error}
-        </p>
-      )}
-
-      <form
-        onSubmit={handleSubmit(onSubmit)}
-        className="flex flex-col gap-4 rounded-[length:var(--radius-control)] border border-line bg-panel p-6"
-        noValidate
-      >
-        <label className="flex flex-col gap-2 text-sm">
-          <span className="font-medium">Usuário</span>
-          <input
-            className={inputClass}
-            autoComplete="username"
-            {...register("userName")}
-          />
-          <FieldError error={errors.userName} />
-        </label>
-        <label className="flex flex-col gap-2 text-sm">
-          <span className="font-medium">Senha</span>
-          <input
-            className={inputClass}
-            type="password"
-            autoComplete="current-password"
-            {...register("password")}
-          />
-          <FieldError error={errors.password} />
-        </label>
-        <button type="submit" disabled={submitting} className={`${btnPrimary} gap-2`}>
-          <LoadingSpinner loading={submitting} variant="button" />
-          {submitting ? "Entrando..." : "Entrar"}
-        </button>
-      </form>
-
-      <p className="text-center text-sm text-muted">
-        Não tem conta?{" "}
-        <Link to="/register" className={btnLink}>
-          Cadastre-se
-        </Link>
-      </p>
-    </div>
+    </PageEnter>
   );
 }

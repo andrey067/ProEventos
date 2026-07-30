@@ -3,6 +3,15 @@ import { useEffect, useState } from "react";
 import { useForm, type Resolver } from "react-hook-form";
 import { Link, useNavigate, useParams } from "react-router-dom";
 import { ConfirmDialog } from "@/shared/ConfirmDialog";
+import {
+  AlertMotion,
+  EmptyState,
+  ListStagger,
+  ListStaggerItem,
+  PageEnter,
+  PanelEnter,
+  SkeletonShimmer,
+} from "@/shared/motion";
 import { LoadingSpinner } from "@/components/LoadingSpinner";
 import { FieldError } from "@/forms/components/FieldError";
 import {
@@ -171,8 +180,14 @@ export function PalestranteFormPage() {
     return <LoadingSpinner loading variant="page" />;
   }
 
+  const alertDangerClass =
+    "rounded-[length:var(--radius-control)] border border-danger-border bg-danger-soft px-4 py-3 text-sm text-danger";
+  const alertSuccessClass =
+    "rounded-[length:var(--radius-control)] border border-line bg-surface px-4 py-3 text-sm text-accent-dark";
+
   return (
-    <div className="flex min-w-0 flex-col gap-6">
+    <PageEnter>
+      <div className="flex min-w-0 flex-col gap-6">
       <div className="flex flex-wrap items-center justify-between gap-4">
         <div>
           <h1 className="text-2xl font-semibold tracking-tight">
@@ -194,23 +209,19 @@ export function PalestranteFormPage() {
         </p>
       )}
 
-      {error && (
-        <p className="rounded-[length:var(--radius-control)] border border-danger-border bg-danger-soft px-4 py-3 text-sm text-danger">
-          {error}
-        </p>
-      )}
-      {success && (
-        <p className="rounded-[length:var(--radius-control)] border border-line bg-surface px-4 py-3 text-sm text-accent-dark">
-          {success}
-        </p>
-      )}
+      <AlertMotion show={!!error} className={alertDangerClass}>
+        {error}
+      </AlertMotion>
+      <AlertMotion show={!!success} className={alertSuccessClass}>
+        {success}
+      </AlertMotion>
 
       <form
         onSubmit={handleSubmit(onSubmit)}
         className="flex flex-col gap-6"
         noValidate
       >
-        <section className={`${panelClass} grid gap-4 md:grid-cols-2`}>
+        <PanelEnter className={`${panelClass} grid gap-4 md:grid-cols-2`}>
           <h2 className="text-lg font-medium text-accent-dark md:col-span-2">
             Dados do palestrante
           </h2>
@@ -277,9 +288,9 @@ export function PalestranteFormPage() {
               </div>
             )}
           </div>
-        </section>
+        </PanelEnter>
 
-        <section className={panelClass}>
+        <PanelEnter className={panelClass}>
           <div className="mb-4 flex items-center justify-between">
             <h2 className="text-lg font-medium text-accent-dark">
               Redes sociais
@@ -304,15 +315,14 @@ export function PalestranteFormPage() {
             variant="inline"
             label="Carregando redes..."
           />
-          {redes.length === 0 ? (
-            <p className="text-sm text-muted">Nenhuma rede cadastrada.</p>
-          ) : (
-            <div className="flex flex-col gap-3">
-              {redes.map((rede, index) => (
-                <div
-                  key={`${rede.id}-${index}`}
-                  className="grid gap-3 rounded-[length:var(--radius-control)] border border-line bg-surface p-3 md:grid-cols-[1fr_1fr_auto]"
-                >
+          {redesLoading ? (
+            <SkeletonShimmer rows={3} />
+          ) : redes.length > 0 ? (
+            <ListStagger>
+              <div className="flex flex-col gap-3">
+                {redes.map((rede, index) => (
+                  <ListStaggerItem key={`${rede.id}-${index}`} index={index}>
+                    <div className="grid gap-3 rounded-[length:var(--radius-control)] border border-line bg-surface p-3 md:grid-cols-[1fr_1fr_auto]">
                   <input
                     className={inputClass}
                     placeholder="Nome"
@@ -356,15 +366,25 @@ export function PalestranteFormPage() {
                       Excluir
                     </button>
                   )}
-                </div>
-              ))}
-            </div>
+                    </div>
+                  </ListStaggerItem>
+                ))}
+              </div>
+            </ListStagger>
+          ) : (
+            <EmptyState show className="text-sm text-muted">
+              Nenhuma rede cadastrada.
+            </EmptyState>
           )}
-        </section>
+        </PanelEnter>
 
         {writeAllowed && (
           <div className="flex flex-wrap gap-2">
-            <button type="submit" disabled={saving} className={btnPrimary}>
+            <button
+              type="submit"
+              disabled={saving}
+              className={`${btnPrimary} motion-press`}
+            >
               {saving ? "Salvando..." : "Salvar"}
             </button>
             <button
@@ -390,6 +410,7 @@ export function PalestranteFormPage() {
         onConfirm={() => void confirmDeleteRede()}
         onCancel={() => setPendingRedeDelete(null)}
       />
-    </div>
+      </div>
+    </PageEnter>
   );
 }
