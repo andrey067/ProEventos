@@ -10,7 +10,10 @@ namespace ProEventos.Services.Dtos
         [Required]
         public string Nome { get; set; }
 
-        [Required]
+        /// <summary>
+        /// Optional on write: create derives from authenticated user when blank;
+        /// update preserves the existing link when blank.
+        /// </summary>
         public string UserId { get; set; }
 
         public string MiniCurriculo { get; set; }

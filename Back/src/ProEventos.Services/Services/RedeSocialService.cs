@@ -3,8 +3,10 @@ using Mapster;
 using ProEventos.Domain.Entities;
 using ProEventos.Domain.Exceptions;
 using ProEventos.Domain.Interfaces;
+using ProEventos.Domain.Interfaces.Repositories;
 using ProEventos.Services.Dtos;
 using ProEventos.Services.Errors;
+using ProEventos.Services.Helpers;
 using ProEventos.Services.Interfaces;
 using System.Collections.Generic;
 using System.Linq;
@@ -15,10 +17,17 @@ namespace ProEventos.Services.Services
     public class RedeSocialService : IRedeSocialService
     {
         private readonly IRepository<RedeSocial> _repository;
+        private readonly IEventoRepository _eventoRepository;
+        private readonly IPalestrantesRepository _palestrantesRepository;
 
-        public RedeSocialService(IRepository<RedeSocial> repository)
+        public RedeSocialService(
+            IRepository<RedeSocial> repository,
+            IEventoRepository eventoRepository,
+            IPalestrantesRepository palestrantesRepository)
         {
             _repository = repository;
+            _eventoRepository = eventoRepository;
+            _palestrantesRepository = palestrantesRepository;
         }
 
         public async Task<ErrorOr<List<RedeSocialDto>>> GetByEventoIdAsync(int eventoId)
@@ -27,8 +36,15 @@ namespace ProEventos.Services.Services
             return all.Where(r => r.EventoId == eventoId).Adapt<List<RedeSocialDto>>();
         }
 
-        public async Task<ErrorOr<List<RedeSocialDto>>> SaveByEventoIdAsync(int eventoId, List<RedeSocialDto> models)
+        public async Task<ErrorOr<List<RedeSocialDto>>> SaveByEventoIdAsync(
+            int eventoId,
+            List<RedeSocialDto> models,
+            string userId)
         {
+            var ownership = await EnsureEventoOwnerAsync(eventoId, userId);
+            if (ownership.IsError)
+                return ownership.Errors;
+
             try
             {
                 foreach (var model in models)
@@ -59,8 +75,12 @@ namespace ProEventos.Services.Services
             }
         }
 
-        public async Task<ErrorOr<Success>> DeleteByEventoIdAsync(int eventoId, int redeSocialId)
+        public async Task<ErrorOr<Success>> DeleteByEventoIdAsync(int eventoId, int redeSocialId, string userId)
         {
+            var ownership = await EnsureEventoOwnerAsync(eventoId, userId);
+            if (ownership.IsError)
+                return ownership.Errors;
+
             try
             {
                 var existing = await _repository.SelectAsync(redeSocialId);
@@ -129,6 +149,79 @@ namespace ProEventos.Services.Services
             {
                 return ex.ToError();
             }
+        }
+
+        public async Task<ErrorOr<List<RedeSocialDto>>> GetMineByUserIdAsync(string userId)
+        {
+            var palestrante = await ResolvePalestranteAsync(userId);
+            if (palestrante.IsError)
+                return palestrante.Errors;
+            return await GetByPalestranteIdAsync(palestrante.Value.Id);
+        }
+
+        public async Task<ErrorOr<List<RedeSocialDto>>> SaveMineByUserIdAsync(string userId, List<RedeSocialDto> models)
+        {
+            var palestrante = await ResolvePalestranteAsync(userId);
+            if (palestrante.IsError)
+                return palestrante.Errors;
+            return await SaveByPalestranteIdAsync(palestrante.Value.Id, models ?? new List<RedeSocialDto>());
+        }
+
+        public async Task<ErrorOr<Success>> DeleteMineByUserIdAsync(string userId, int redeSocialId)
+        {
+            var palestrante = await ResolvePalestranteAsync(userId);
+            if (palestrante.IsError)
+                return palestrante.Errors;
+            return await DeleteByPalestranteIdAsync(palestrante.Value.Id, redeSocialId);
+        }
+
+        /// <summary>
+        /// Mutating by explicit palestranteId: organizers (isOrganizer) may edit any;
+        /// speakers may only edit their own linked profile.
+        /// </summary>
+        public async Task<ErrorOr<Success>> EnsureCanMutatePalestranteRedesAsync(
+            int palestranteId,
+            string userId,
+            bool isOrganizer)
+        {
+            if (isOrganizer)
+                return Result.Success;
+
+            var linked = await _palestrantesRepository.GetPalestranteByUserIdAsync(userId);
+            if (linked == null || linked.Id != palestranteId)
+                return Error.Forbidden(
+                    "RedeSocial.Palestrante.Forbidden",
+                    "Você só pode alterar redes do seu próprio perfil de palestrante.");
+
+            return Result.Success;
+        }
+
+        private async Task<ErrorOr<Success>> EnsureEventoOwnerAsync(int eventoId, string userId)
+        {
+            var evento = await _eventoRepository.GetAllEventosByIdAsync(eventoId, false);
+            if (evento == null)
+                return Error.NotFound("RedeSocial.Evento.NotFound", "Evento não encontrado");
+
+            if (!ResourceOwnership.IsOwner(evento.UserId, userId))
+                return Error.Forbidden(
+                    "RedeSocial.Evento.Forbidden",
+                    "Você não é o dono deste evento.");
+
+            return Result.Success;
+        }
+
+        private async Task<ErrorOr<Palestrante>> ResolvePalestranteAsync(string userId)
+        {
+            if (string.IsNullOrWhiteSpace(userId))
+                return Error.Unauthorized("RedeSocial.Palestrante.Unauthorized", "Usuário não autenticado.");
+
+            var linked = await _palestrantesRepository.GetPalestranteByUserIdAsync(userId);
+            if (linked == null)
+                return Error.Forbidden(
+                    "RedeSocial.Palestrante.NoProfile",
+                    "Perfil de palestrante não encontrado para o usuário autenticado.");
+
+            return linked;
         }
     }
 }

@@ -30,8 +30,12 @@ namespace ProEventos.Services.Mappings
             TypeAdapterConfig<PalestranteDto, Palestrante>.NewConfig()
                 .Map(dest => dest.RedeSociais, src => src.RedesSociais);
 
-            TypeAdapterConfig<RedeSocial, RedeSocialDto>.NewConfig();
-            TypeAdapterConfig<RedeSocialDto, RedeSocial>.NewConfig();
+            TypeAdapterConfig<RedeSocial, RedeSocialDto>.NewConfig()
+                .Ignore(dest => dest.Evento)
+                .Ignore(dest => dest.Palestrante);
+            TypeAdapterConfig<RedeSocialDto, RedeSocial>.NewConfig()
+                .Ignore(dest => dest.Evento)
+                .Ignore(dest => dest.Palestrante);
         }
     }
 }

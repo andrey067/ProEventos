@@ -37,6 +37,9 @@ namespace ProEventos.Services.Dtos
         [EmailAddress(ErrorMessage = "É necessário ser um {0} válido")]
         public string Email { get; set; }
 
+        /// <summary>Owner user id. Set by API from JWT on create; returned on reads.</summary>
+        public string UserId { get; set; }
+
         public IEnumerable<LoteDto> Lotes { get; set; }
         public IEnumerable<RedeSocialDto> RedesSociais { get; set; }
         public IEnumerable<PalestranteDto> Palestrantes { get; set; }
