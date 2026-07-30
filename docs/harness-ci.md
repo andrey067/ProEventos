@@ -36,15 +36,21 @@ Reference: [Harness Open Source pipelines](https://developer.harness.io/docs/ope
 
 ## Canonical paths (`.yaml`)
 
+Two Harness Code pipelines are already configured in the UI against the **root**
+files below. Keep those definitions native (`version: 1` / `kind: pipeline`) with
+real steps — never reintroduce Enterprise YAML or the hello-world stub.
+
 | Path | Purpose |
 |------|---------|
-| `.harness/ci.yaml` | Backend Coverlet + Vue/React/Angular coverage + baseline compare |
-| `.harness/e2e.yaml` | Playwright Vue smoke (API + Vue) |
-| `.harness/pipelines/ci.yaml` | Same CI pipeline (duplicate for layouts that expect `pipelines/`) |
-| `.harness/pipelines/e2e.yaml` | Same E2E pipeline |
+| `.harness/ci.yaml` | **Configured pipeline `ci`** — backend Coverlet + Vue/React/Angular coverage + baseline compare |
+| `.harness/e2e.yaml` | **Configured pipeline `e2e`** — Playwright Vue smoke (API + Vue) |
+| `.harness/pipelines/ci.yaml` | Identical mirror of `.harness/ci.yaml` |
+| `.harness/pipelines/e2e.yaml` | Identical mirror of `.harness/e2e.yaml` |
 | `.harness/triggers/*.yaml` | Legacy Enterprise trigger stubs (optional; not used by native Code runner) |
 
-Harness Code auto-discovers **`.harness/ci.yaml`** and **`.harness/e2e.yaml`**.
+Edit the root files and copy into `pipelines/` so both layouts stay in sync.
+Harness Code binds the two UI pipelines to **`.harness/ci.yaml`** and
+**`.harness/e2e.yaml`**.
 
 ## Clone DNS failure (`Could not resolve host: harness.homelab.local`)
 
@@ -162,11 +168,13 @@ UI / PR checks — not the pipeline clone block.
 
 ## Runtime notes
 
+- Steps use `shell: bash` (scripts need `pipefail`; Debian/Ubuntu `sh` is dash).
 - Workspace is shared across steps in a stage (coverage files from backend/front
   steps remain available for `compare-coverage.mjs`).
 - Images are public (`dotnet/sdk:10.0`, `node:22-bookworm`, Playwright jammy).
 - E2E installs .NET 10 via `dotnet-install.sh` inside the Playwright image, starts
-  API `:5050` and Vue `:5173`, then runs `playwright test --project=vue`.
+  API `:5050` and Vue `:5173`, fails fast if either never becomes ready, then runs
+  `playwright test --project=vue`.
 - Stages use `clone.depth: 50` for a shallow fetch once DNS/container URL works.
   Retries are not configurable in the Open Source `clone` schema (platform logs
   “Cloning with 0 retries”).
