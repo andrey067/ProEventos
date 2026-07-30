@@ -22,6 +22,12 @@ import {
   UserProfile,
 } from '../../../models';
 import { RedeSocialService } from '../../../services/rede-social.service';
+import {
+  alertAnimation,
+  pageEnterAnimation,
+  panelEnterAnimation,
+  SkeletonShimmerComponent,
+} from '../../../shared/motion';
 
 const PLACEHOLDER =
   'data:image/svg+xml,' +
@@ -38,9 +44,15 @@ function passwordMatch(group: AbstractControl): ValidationErrors | null {
 
 @Component({
   selector: 'app-profile',
-  imports: [ReactiveFormsModule, LoadingSpinnerComponent, ConfirmDialogComponent],
+  imports: [
+    ReactiveFormsModule,
+    LoadingSpinnerComponent,
+    ConfirmDialogComponent,
+    SkeletonShimmerComponent,
+  ],
   templateUrl: './profile.component.html',
   styleUrl: './profile.component.scss',
+  animations: [pageEnterAnimation, alertAnimation, panelEnterAnimation],
 })
 export class ProfileComponent implements OnInit {
   private readonly fb = inject(FormBuilder);

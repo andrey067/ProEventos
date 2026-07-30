@@ -1,4 +1,4 @@
-<section class="flex min-w-0 flex-col gap-6">
+<section [@pageEnter] class="flex min-w-0 flex-col gap-6">
   <div class="flex flex-wrap items-center justify-between gap-4">
     <div>
       <h1 class="text-2xl font-semibold tracking-tight">
@@ -30,9 +30,11 @@
 
   @if (loading) {
     <app-loading-spinner [active]="true" variant="page" />
+    <app-skeleton-shimmer [rows]="5" />
   } @else {
     @if (error) {
       <p
+        [@alertMotion]
         class="rounded-[length:var(--radius-control)] border border-danger-border bg-danger-soft px-4 py-3 text-sm text-danger"
       >
         {{ error }}
@@ -40,6 +42,7 @@
     }
     @if (success) {
       <p
+        [@alertMotion]
         class="rounded-[length:var(--radius-control)] border border-line bg-surface px-4 py-3 text-sm text-accent-dark"
       >
         {{ success }}
@@ -48,7 +51,7 @@
 
     <form class="flex flex-col gap-6" [formGroup]="form" (ngSubmit)="save()">
       <div class="grid gap-6 md:grid-cols-[1fr_minmax(260px,320px)] md:items-start">
-        <div class="rounded-[length:var(--radius-control)] border border-line bg-panel p-6">
+        <div [@panelEnter] class="rounded-[length:var(--radius-control)] border border-line bg-panel p-6">
           <h2 class="mb-4 text-lg font-medium text-accent-dark">Dados do evento</h2>
           <div class="grid gap-4 md:grid-cols-2">
             <label class="flex flex-col gap-2 text-sm md:col-span-2">
@@ -116,6 +119,7 @@
         </div>
 
         <aside
+          [@panelEnter]
           class="self-start rounded-[length:var(--radius-control)] border border-line bg-panel p-4 md:sticky md:top-4"
           data-testid="evento-preview-card"
         >
@@ -181,7 +185,7 @@
         </aside>
       </div>
 
-      <div class="rounded-[length:var(--radius-control)] border border-line bg-panel p-6">
+      <div [@panelEnter] class="rounded-[length:var(--radius-control)] border border-line bg-panel p-6">
         <div class="mb-4 flex items-center justify-between">
           <h2 class="text-lg font-medium text-accent-dark">Lotes</h2>
           @if (canWrite) {
@@ -269,7 +273,7 @@
         </div>
       </div>
 
-      <div class="rounded-[length:var(--radius-control)] border border-line bg-panel p-6">
+      <div [@panelEnter] class="rounded-[length:var(--radius-control)] border border-line bg-panel p-6">
         <div class="mb-4 flex items-center justify-between">
           <h2 class="text-lg font-medium text-accent-dark">Redes sociais</h2>
           @if (canWrite) {
@@ -313,7 +317,7 @@
       </div>
 
       @if (!isNew) {
-        <div class="rounded-[length:var(--radius-control)] border border-line bg-panel p-6">
+        <div [@panelEnter] class="rounded-[length:var(--radius-control)] border border-line bg-panel p-6">
           <h2 class="mb-4 text-lg font-medium text-accent-dark">Palestrantes</h2>
           @if (canWrite) {
             <div class="mb-4 flex flex-wrap items-end gap-3">
@@ -366,7 +370,7 @@
       @if (canWrite) {
         <button
           type="submit"
-          class="inline-flex items-center justify-center rounded-[length:var(--radius-control)] bg-accent px-4 py-2 text-sm font-medium text-white transition-transform hover:bg-accent-dark active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-60"
+          class="motion-press inline-flex items-center justify-center rounded-[length:var(--radius-control)] bg-accent px-4 py-2 text-sm font-medium text-white transition-transform hover:bg-accent-dark active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-60"
           [disabled]="saving"
         >
           {{ saving ? 'Salvando...' : 'Salvar' }}

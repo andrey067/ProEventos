@@ -5,12 +5,18 @@ import { passwordMatchValidator } from '../../../forms';
 import { AccountService } from '../../../services/account.service';
 import { LoadingSpinnerComponent } from '../../common/loading-spinner/loading-spinner.component';
 import { apiErrorMessage } from '../../../shared/api-error-message';
+import {
+  alertAnimation,
+  pageEnterAnimation,
+  panelEnterAnimation,
+} from '../../../shared/motion';
 
 @Component({
   selector: 'app-change-password',
   imports: [ReactiveFormsModule, RouterLink, LoadingSpinnerComponent],
   templateUrl: './change-password.component.html',
   styleUrl: './change-password.component.scss',
+  animations: [pageEnterAnimation, alertAnimation, panelEnterAnimation],
 })
 export class ChangePasswordComponent {
   private readonly fb = inject(FormBuilder);

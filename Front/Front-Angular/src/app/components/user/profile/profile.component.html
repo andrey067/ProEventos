@@ -1,4 +1,4 @@
-<section class="mx-auto flex w-full min-w-0 max-w-5xl flex-col gap-6">
+<section [@pageEnter] class="mx-auto flex w-full min-w-0 max-w-5xl flex-col gap-6">
   <div>
     <h1 class="text-2xl font-semibold tracking-tight">Perfil</h1>
     <p class="mt-1 text-sm text-muted">Atualize seus dados de conta.</p>
@@ -6,6 +6,7 @@
 
   @if (error) {
     <p
+      [@alertMotion]
       class="rounded-[length:var(--radius-control)] border border-danger-border bg-danger-soft px-4 py-3 text-sm text-danger"
     >
       {{ error }}
@@ -13,6 +14,7 @@
   }
   @if (success) {
     <p
+      [@alertMotion]
       class="rounded-[length:var(--radius-control)] border border-line bg-surface px-4 py-3 text-sm text-accent-dark"
     >
       {{ success }}
@@ -24,6 +26,7 @@
   } @else {
     <div class="grid gap-6 lg:grid-cols-[280px_1fr]">
       <aside
+        [@panelEnter]
         class="flex flex-col overflow-hidden rounded-[length:var(--radius-control)] border border-line bg-panel"
       >
         <div class="flex flex-col items-center gap-3 px-4 pt-6">
@@ -55,6 +58,7 @@
       </aside>
 
       <form
+        [@panelEnter]
         class="flex flex-col gap-4 rounded-[length:var(--radius-control)] border border-line bg-panel p-6"
         [formGroup]="form"
         (ngSubmit)="submit()"
@@ -144,12 +148,12 @@
             </div>
 
             @if (redesError) {
-              <p class="mb-3 rounded-[length:var(--radius-control)] border border-danger-border bg-danger-soft px-3 py-2 text-sm text-danger">
+              <p [@alertMotion] class="mb-3 rounded-[length:var(--radius-control)] border border-danger-border bg-danger-soft px-3 py-2 text-sm text-danger">
                 {{ redesError }}
               </p>
             }
             @if (redesSuccess) {
-              <p class="mb-3 rounded-[length:var(--radius-control)] border border-line bg-surface px-3 py-2 text-sm text-accent-dark">
+              <p [@alertMotion] class="mb-3 rounded-[length:var(--radius-control)] border border-line bg-surface px-3 py-2 text-sm text-accent-dark">
                 {{ redesSuccess }}
               </p>
             }
@@ -160,6 +164,9 @@
               label="Carregando redes..."
             />
 
+            @if (redesLoading) {
+              <app-skeleton-shimmer [rows]="3" />
+            } @else {
             <div [formGroup]="redesForm">
               <div formArrayName="redes" class="flex flex-col gap-2">
                 @for (rede of redes.controls; track $index) {
@@ -198,11 +205,12 @@
                 }
               </div>
             </div>
+            }
 
             <div class="mt-4 flex justify-end">
               <button
                 type="button"
-                class="inline-flex items-center justify-center gap-2 rounded-[length:var(--radius-control)] bg-accent px-4 py-2 text-sm font-medium text-white hover:bg-accent-dark active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-60"
+                class="motion-press inline-flex items-center justify-center gap-2 rounded-[length:var(--radius-control)] bg-accent px-4 py-2 text-sm font-medium text-white hover:bg-accent-dark active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-60"
                 [disabled]="savingRedes || redesLoading"
                 (click)="saveRedes()"
               >
@@ -251,7 +259,7 @@
           </button>
           <button
             type="submit"
-            class="inline-flex w-full items-center justify-center gap-2 rounded-[length:var(--radius-control)] bg-accent px-4 py-2 text-sm font-medium text-white hover:bg-accent-dark active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-60 sm:ml-auto sm:w-auto"
+            class="motion-press inline-flex w-full items-center justify-center gap-2 rounded-[length:var(--radius-control)] bg-accent px-4 py-2 text-sm font-medium text-white hover:bg-accent-dark active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-60 sm:ml-auto sm:w-auto"
             [disabled]="saving"
           >
             <app-loading-spinner [active]="saving" variant="button" />

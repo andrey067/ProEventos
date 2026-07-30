@@ -1,4 +1,4 @@
-<section class="flex min-w-0 flex-col gap-6">
+<section [@pageEnter] class="flex min-w-0 flex-col gap-6">
   <div class="flex flex-wrap items-center justify-between gap-4">
     <div>
       <h1 class="text-2xl font-semibold tracking-tight">Palestrantes</h1>
@@ -7,7 +7,7 @@
     @if (canWrite) {
       <a
         routerLink="/palestrantes/new"
-        class="inline-flex items-center justify-center rounded-[length:var(--radius-control)] bg-accent px-4 py-2 text-sm font-medium text-white transition-transform hover:bg-accent-dark active:scale-[0.98]"
+        class="motion-press inline-flex items-center justify-center rounded-[length:var(--radius-control)] bg-accent px-4 py-2 text-sm font-medium text-white transition-transform hover:bg-accent-dark active:scale-[0.98]"
       >
         Novo palestrante
       </a>
@@ -30,6 +30,7 @@
 
   @if (error) {
     <p
+      [@alertMotion]
       class="rounded-[length:var(--radius-control)] border border-danger-border bg-danger-soft px-4 py-3 text-sm text-danger"
     >
       {{ error }}
@@ -37,6 +38,7 @@
   }
   @if (success) {
     <p
+      [@alertMotion]
       class="rounded-[length:var(--radius-control)] border border-line bg-surface px-4 py-3 text-sm text-accent-dark"
     >
       {{ success }}
@@ -57,7 +59,7 @@
     </label>
     <button
       type="submit"
-      class="inline-flex items-center justify-center rounded-[length:var(--radius-control)] bg-accent px-4 py-2 text-sm font-medium text-white hover:bg-accent-dark active:scale-[0.98]"
+      class="motion-press inline-flex items-center justify-center rounded-[length:var(--radius-control)] bg-accent px-4 py-2 text-sm font-medium text-white hover:bg-accent-dark active:scale-[0.98]"
     >
       Buscar
     </button>
@@ -70,28 +72,22 @@
     </button>
   </form>
 
-  @if (loading) {
-    <app-loading-spinner [active]="true" variant="page" />
-  } @else {
-    <div class="overflow-x-auto rounded-[length:var(--radius-control)] border border-line bg-panel">
-      <table class="w-full min-w-[560px] text-sm">
-        <thead>
-          <tr class="border-b border-line bg-surface text-left text-muted">
-            <th class="px-4 py-3 font-medium">Foto</th>
-            <th class="px-4 py-3 font-medium">Nome</th>
-            <th class="px-4 py-3 font-medium">E-mail</th>
-            <th class="px-4 py-3 font-medium">Telefone</th>
-            <th class="px-4 py-3 font-medium">Ações</th>
-          </tr>
-        </thead>
-        <tbody class="divide-y divide-line">
-          @if (palestrantes.length === 0) {
-            <tr>
-              <td colspan="5" class="px-4 py-8 text-center text-muted">
-                Nenhum palestrante encontrado.
-              </td>
+  <app-loading-spinner [active]="loading" variant="page" />
+
+  @if (!loading) {
+    @if (palestrantes.length > 0) {
+      <div class="overflow-x-auto rounded-[length:var(--radius-control)] border border-line bg-panel">
+        <table class="w-full min-w-[560px] text-sm">
+          <thead>
+            <tr class="border-b border-line bg-surface text-left text-muted">
+              <th class="px-4 py-3 font-medium">Foto</th>
+              <th class="px-4 py-3 font-medium">Nome</th>
+              <th class="px-4 py-3 font-medium">E-mail</th>
+              <th class="px-4 py-3 font-medium">Telefone</th>
+              <th class="px-4 py-3 font-medium">Ações</th>
             </tr>
-          } @else {
+          </thead>
+          <tbody [@listStagger]="palestrantes.length" class="divide-y divide-line">
             @for (palestrante of palestrantes; track palestrante.id) {
               <tr class="hover:bg-surface">
                 <td class="px-4 py-3">
@@ -132,9 +128,20 @@
                 </td>
               </tr>
             }
-          }
-        </tbody>
-      </table>
+          </tbody>
+        </table>
+      </div>
+    } @else {
+      <p
+        [@emptyFade]
+        class="rounded-[length:var(--radius-control)] border border-line bg-panel px-4 py-8 text-center text-sm text-muted"
+      >
+        Nenhum palestrante encontrado.
+      </p>
+    }
+  } @else {
+    <div class="overflow-x-auto rounded-[length:var(--radius-control)] border border-line bg-panel">
+      <app-skeleton-shimmer [rows]="5" class="p-4" />
     </div>
   }
 

@@ -1,4 +1,4 @@
-<section class="flex min-w-0 flex-col gap-6">
+<section [@pageEnter] class="flex min-w-0 flex-col gap-6">
   <div class="flex flex-wrap items-center justify-between gap-4">
     <div>
       <h1 class="text-2xl font-semibold tracking-tight">
@@ -30,9 +30,11 @@
 
   @if (loading) {
     <app-loading-spinner [active]="true" variant="page" />
+    <app-skeleton-shimmer [rows]="5" />
   } @else {
     @if (error) {
       <p
+        [@alertMotion]
         class="rounded-[length:var(--radius-control)] border border-danger-border bg-danger-soft px-4 py-3 text-sm text-danger"
       >
         {{ error }}
@@ -40,6 +42,7 @@
     }
     @if (success) {
       <p
+        [@alertMotion]
         class="rounded-[length:var(--radius-control)] border border-line bg-surface px-4 py-3 text-sm text-accent-dark"
       >
         {{ success }}
@@ -47,6 +50,7 @@
     }
 
     <form
+      [@panelEnter]
       class="grid min-w-0 gap-4 rounded-[length:var(--radius-control)] border border-line bg-panel p-4 sm:p-6 md:grid-cols-2"
       [formGroup]="form"
       (ngSubmit)="save()"
@@ -112,7 +116,7 @@
         }
       </div>
 
-      <div class="md:col-span-2">
+      <div [@panelEnter] class="md:col-span-2">
         <div class="mb-3 flex items-center justify-between">
           <h3 class="text-sm font-medium text-accent-dark">Redes sociais</h3>
           @if (canWrite) {
@@ -130,6 +134,9 @@
           variant="inline"
           label="Carregando redes..."
         />
+        @if (redesLoading) {
+          <app-skeleton-shimmer [rows]="3" />
+        } @else {
         <div formArrayName="redes" class="flex flex-col gap-2">
           @for (rede of redes.controls; track $index) {
             <div
@@ -158,12 +165,13 @@
             </div>
           }
         </div>
+        }
       </div>
 
       <div class="flex flex-wrap gap-2 md:col-span-2">
         <button
           type="submit"
-          class="inline-flex items-center justify-center rounded-[length:var(--radius-control)] bg-accent px-4 py-2 text-sm font-medium text-white hover:bg-accent-dark active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-60"
+          class="motion-press inline-flex items-center justify-center rounded-[length:var(--radius-control)] bg-accent px-4 py-2 text-sm font-medium text-white hover:bg-accent-dark active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-60"
           [disabled]="saving || !canWrite"
         >
           {{ saving ? 'Salvando...' : editingId ? 'Atualizar' : 'Cadastrar' }}

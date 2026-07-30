@@ -22,6 +22,12 @@ import { formatDateBr, toApiDate } from '../../../shared/date';
 import { isRemoteImageUrl } from '../../../shared/image-url';
 import { DatePickerComponent } from '../../../shared/date-picker/date-picker.component';
 import { NgxCurrencyDirective } from 'ngx-currency';
+import {
+  alertAnimation,
+  pageEnterAnimation,
+  panelEnterAnimation,
+  SkeletonShimmerComponent,
+} from '../../../shared/motion';
 
 type PendingDelete =
   | { kind: 'lote'; index: number }
@@ -38,9 +44,11 @@ type PendingDelete =
     NgxCurrencyDirective,
     ConfirmDialogComponent,
     LoadingSpinnerComponent,
+    SkeletonShimmerComponent,
   ],
   templateUrl: './evento-form.component.html',
   styleUrl: './evento-form.component.scss',
+  animations: [pageEnterAnimation, alertAnimation, panelEnterAnimation],
 })
 export class EventoFormComponent implements OnInit {
   private readonly route = inject(ActivatedRoute);

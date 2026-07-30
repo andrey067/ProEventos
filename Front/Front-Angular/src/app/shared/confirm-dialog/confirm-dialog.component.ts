@@ -1,10 +1,12 @@
 import { Component, EventEmitter, HostListener, Input, Output } from '@angular/core';
+import { modalBackdropAnimation, modalPanelAnimation } from '../motion';
 
 @Component({
   selector: 'app-confirm-dialog',
   standalone: true,
   templateUrl: './confirm-dialog.component.html',
   styleUrl: './confirm-dialog.component.scss',
+  animations: [modalBackdropAnimation, modalPanelAnimation],
 })
 export class ConfirmDialogComponent {
   @Input() open = false;

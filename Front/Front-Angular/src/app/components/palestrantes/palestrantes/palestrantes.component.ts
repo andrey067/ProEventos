@@ -18,6 +18,13 @@ import { LoadingSpinnerComponent } from '../../common/loading-spinner/loading-sp
 import { PAGE_SIZES, PageResult, PageSize, Palestrante } from '../../../models';
 import { AuthTokenService } from '../../../services/auth-token.service';
 import { PalestranteService } from '../../../services/palestrante.service';
+import {
+  alertAnimation,
+  emptyAnimation,
+  listStaggerAnimation,
+  pageEnterAnimation,
+  SkeletonShimmerComponent,
+} from '../../../shared/motion';
 
 @Component({
   selector: 'app-palestrantes',
@@ -27,9 +34,16 @@ import { PalestranteService } from '../../../services/palestrante.service';
     ReactiveFormsModule,
     RouterLink,
     LoadingSpinnerComponent,
+    SkeletonShimmerComponent,
   ],
   templateUrl: './palestrantes.component.html',
   styleUrl: './palestrantes.component.scss',
+  animations: [
+    pageEnterAnimation,
+    alertAnimation,
+    listStaggerAnimation,
+    emptyAnimation,
+  ],
 })
 export class PalestrantesComponent implements OnInit {
   private readonly palestranteService = inject(PalestranteService);

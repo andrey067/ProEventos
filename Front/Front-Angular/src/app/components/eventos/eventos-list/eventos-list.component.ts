@@ -19,6 +19,13 @@ import { Evento, Lote, PAGE_SIZES, PageResult, PageSize } from '../../../models'
 import { AuthTokenService } from '../../../services/auth-token.service';
 import { EventoService } from '../../../services/evento.service';
 import { formatDateBr } from '../../../shared/date';
+import {
+  alertAnimation,
+  emptyAnimation,
+  listStaggerAnimation,
+  pageEnterAnimation,
+  SkeletonShimmerComponent,
+} from '../../../shared/motion';
 
 @Component({
   selector: 'app-eventos-list',
@@ -28,9 +35,16 @@ import { formatDateBr } from '../../../shared/date';
     ReactiveFormsModule,
     ConfirmDialogComponent,
     LoadingSpinnerComponent,
+    SkeletonShimmerComponent,
   ],
   templateUrl: './eventos-list.component.html',
   styleUrl: './eventos-list.component.scss',
+  animations: [
+    pageEnterAnimation,
+    alertAnimation,
+    listStaggerAnimation,
+    emptyAnimation,
+  ],
 })
 export class EventosListComponent implements OnInit {
   private readonly eventoService = inject(EventoService);
