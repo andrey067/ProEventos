@@ -137,6 +137,80 @@ public class LotesServiceTests
     }
 
     [Fact]
+    public async Task SaveLotes_Returns_NotFound_When_Evento_Missing()
+    {
+        _eventos.Setup(e => e.GetAllEventosByIdAsync(404, false)).ReturnsAsync((Evento)null);
+
+        var result = await _sut.SaveLotes(404, new List<LoteDto>
+        {
+            new() { Nome = "A", Preco = 1, Quantidade = 1, DataIncio = DateTime.UtcNow, DataFim = DateTime.UtcNow.AddDays(1) }
+        }, OwnerId);
+
+        result.IsError.Should().BeTrue();
+        result.FirstError.Code.Should().Be("Lote.Evento.NotFound");
+    }
+
+    [Fact]
+    public async Task DeleteLote_Deny_Non_Owner()
+    {
+        var result = await _sut.DeleteLote(1, 2, "other-user");
+
+        result.IsError.Should().BeTrue();
+        result.FirstError.Code.Should().Be("Lote.Evento.Forbidden");
+        _repo.Verify(r => r.DeleteAsync(It.IsAny<int>()), Times.Never);
+    }
+
+    [Fact]
+    public async Task SaveLotes_Handles_Null_Existing_List()
+    {
+        _repo.SetupSequence(r => r.GetLotesByEventoIdAsync(2))
+            .ReturnsAsync((List<Lote>)null)
+            .ReturnsAsync(new List<Lote> { new() { Id = 1, EventoId = 2, Nome = "N", Preco = 1 } });
+        _repo.Setup(r => r.InsertAsync(It.IsAny<Lote>())).ReturnsAsync((Lote l) => { l.Id = 1; return l; });
+
+        var result = await _sut.SaveLotes(2, new List<LoteDto>
+        {
+            new() { Id = 0, Nome = "N", Preco = 1, Quantidade = 1, DataIncio = DateTime.UtcNow, DataFim = DateTime.UtcNow.AddDays(1) }
+        }, OwnerId);
+
+        result.IsError.Should().BeFalse();
+        result.Value.Should().ContainSingle(l => l.Nome == "N");
+    }
+
+    [Fact]
+    public async Task SaveLotes_Propagates_AddLote_AppException()
+    {
+        _repo.Setup(r => r.GetLotesByEventoIdAsync(2)).ReturnsAsync(new List<Lote>());
+        _repo.Setup(r => r.InsertAsync(It.IsAny<Lote>()))
+            .ThrowsAsync(new ConflictException("BaseRepository.InsertAsync", "Item já cadastrado"));
+
+        var result = await _sut.SaveLotes(2, new List<LoteDto>
+        {
+            new() { Id = 0, Nome = "A", Preco = 1, Quantidade = 1, DataIncio = DateTime.UtcNow, DataFim = DateTime.UtcNow.AddDays(1) }
+        }, OwnerId);
+
+        result.IsError.Should().BeTrue();
+        result.FirstError.Type.Should().Be(ErrorType.Conflict);
+    }
+
+    [Fact]
+    public async Task SaveLotes_Maps_AppException_On_Update()
+    {
+        var existing = new Lote { Id = 10, EventoId = 2, Nome = "Old", Preco = 1 };
+        _repo.Setup(r => r.GetLotesByEventoIdAsync(2)).ReturnsAsync(new List<Lote> { existing });
+        _repo.Setup(r => r.UpdateAsync(It.IsAny<Lote>()))
+            .ThrowsAsync(new NotFoundException("BaseRepository.UpdateAsync", "Item não encontrado"));
+
+        var result = await _sut.SaveLotes(2, new List<LoteDto>
+        {
+            new() { Id = 10, Nome = "Updated", Preco = 2, Quantidade = 2, DataIncio = DateTime.UtcNow, DataFim = DateTime.UtcNow.AddDays(1) }
+        }, OwnerId);
+
+        result.IsError.Should().BeTrue();
+        result.FirstError.Type.Should().Be(ErrorType.NotFound);
+    }
+
+    [Fact]
     public async Task SaveLotes_Rejects_Invalid_Price_Quantity_And_Dates()
     {
         var badPrice = await _sut.SaveLotes(1, new List<LoteDto>
