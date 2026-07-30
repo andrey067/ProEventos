@@ -34,4 +34,10 @@ describe("usePrefersReducedMotion", () => {
     const { result } = renderHook(() => usePrefersReducedMotion());
     expect(result.current).toBe(false);
   });
+
+  it("returns false when matchMedia is unavailable", () => {
+    vi.stubGlobal("matchMedia", undefined);
+    const { result } = renderHook(() => usePrefersReducedMotion());
+    expect(result.current).toBe(false);
+  });
 });

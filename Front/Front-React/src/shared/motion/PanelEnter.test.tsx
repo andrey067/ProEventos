@@ -1,6 +1,6 @@
 import { render, screen } from "@testing-library/react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import { PageEnter } from "./PageEnter";
+import { PanelEnter } from "./PanelEnter";
 
 const { mockReduced } = vi.hoisted(() => ({
   mockReduced: vi.fn(() => false),
@@ -10,25 +10,25 @@ vi.mock("./usePrefersReducedMotion", () => ({
   usePrefersReducedMotion: () => mockReduced(),
 }));
 
-describe("PageEnter", () => {
+describe("PanelEnter", () => {
   beforeEach(() => mockReduced.mockReturnValue(false));
 
-  it("renders children with motion when allowed", () => {
+  it("renders children when motion is allowed", () => {
     render(
-      <PageEnter>
-        <h1>Olá</h1>
-      </PageEnter>,
+      <PanelEnter>
+        <p>painel</p>
+      </PanelEnter>,
     );
-    expect(screen.getByRole("heading", { name: "Olá" })).toBeTruthy();
+    expect(screen.getByText("painel")).toBeTruthy();
   });
 
   it("renders static div under reduced motion", () => {
     mockReduced.mockReturnValue(true);
     const { container } = render(
-      <PageEnter className="page">
+      <PanelEnter className="panel">
         <span>static</span>
-      </PageEnter>,
+      </PanelEnter>,
     );
-    expect(container.querySelector("div.page")?.textContent).toBe("static");
+    expect(container.querySelector("div.panel")?.textContent).toBe("static");
   });
 });

@@ -1,12 +1,13 @@
 import { fireEvent, render, screen } from "@testing-library/react";
 import { MemoryRouter } from "react-router-dom";
-import { beforeEach, describe, expect, it } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 import { clearToken, setToken } from "@/services/authToken";
 import { Nav } from "@/shared/Nav";
 
 describe("Nav", () => {
   beforeEach(() => {
     clearToken();
+    vi.unstubAllGlobals();
   });
 
   it("renderiza links principais quando deslogado", () => {
@@ -92,5 +93,35 @@ describe("Nav", () => {
 
     fireEvent.click(screen.getByRole("button", { name: "Sair" }));
     expect(screen.queryByRole("link", { name: "Perfil" })).toBeNull();
+  });
+
+  it("fecha menu mobile ao navegar e cobre reduced motion", () => {
+    vi.stubGlobal(
+      "matchMedia",
+      vi.fn().mockReturnValue({
+        matches: true,
+        addEventListener: vi.fn(),
+        removeEventListener: vi.fn(),
+        media: "(prefers-reduced-motion: reduce)",
+        onchange: null,
+        dispatchEvent: vi.fn(),
+        addListener: vi.fn(),
+        removeListener: vi.fn(),
+      }),
+    );
+
+    setToken("test-token");
+    render(
+      <MemoryRouter initialEntries={["/eventos"]}>
+        <Nav />
+      </MemoryRouter>,
+    );
+
+    fireEvent.click(screen.getByRole("button", { name: "Menu" }));
+    expect(document.getElementById("mobile-nav")).toBeTruthy();
+
+    const sairButtons = screen.getAllByRole("button", { name: "Sair" });
+    fireEvent.click(sairButtons[sairButtons.length - 1]!);
+    expect(document.getElementById("mobile-nav")).toBeNull();
   });
 });

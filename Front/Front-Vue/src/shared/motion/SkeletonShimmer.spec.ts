@@ -1,18 +1,31 @@
 import { mount } from "@vue/test-utils";
-import { describe, expect, it, vi, afterEach } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 import SkeletonShimmer from "./SkeletonShimmer.vue";
 
-afterEach(() => vi.unstubAllGlobals());
-
-it("renders N skeleton rows", () => {
+function stubMotion(matches: boolean) {
   vi.stubGlobal(
     "matchMedia",
     vi.fn().mockReturnValue({
-      matches: false,
+      matches,
       addEventListener: vi.fn(),
       removeEventListener: vi.fn(),
     }),
   );
-  const w = mount(SkeletonShimmer, { props: { rows: 3 } });
-  expect(w.findAll(".motion-skeleton, .bg-line").length).toBe(3);
+}
+
+afterEach(() => vi.unstubAllGlobals());
+
+describe("SkeletonShimmer", () => {
+  it("renders N skeleton rows with motion class", () => {
+    stubMotion(false);
+    const w = mount(SkeletonShimmer, { props: { rows: 3 } });
+    expect(w.findAll(".motion-skeleton").length).toBe(3);
+  });
+
+  it("uses static bg-line under reduced motion", () => {
+    stubMotion(true);
+    const w = mount(SkeletonShimmer, { props: { rows: 2 } });
+    expect(w.findAll(".bg-line").length).toBe(2);
+    expect(w.findAll(".motion-skeleton").length).toBe(0);
+  });
 });
