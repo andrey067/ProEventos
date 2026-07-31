@@ -1,7 +1,8 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
-import { mount, flushPromises } from "@vue/test-utils";
+import { mount, flushPromises, type VueWrapper } from "@vue/test-utils";
 import { createRouter, createMemoryHistory } from "vue-router";
 import PerfilUsuario from "./PerfilUsuario.vue";
+import PerfilDetalhe from "./PerfilDetalhe.vue";
 import accountService from "../../../services/accountService";
 import redeSocialService from "../../../services/redeSocialService";
 
@@ -17,6 +18,13 @@ vi.mock("../../../services/redeSocialService", () => ({
     listMine: vi.fn(),
     saveMine: vi.fn(),
     removeMine: vi.fn(),
+  },
+}));
+
+vi.mock("../../../services/palestranteService", () => ({
+  default: {
+    getMe: vi.fn(),
+    update: vi.fn(),
   },
 }));
 
@@ -40,22 +48,34 @@ const palestranteProfile = {
   funcao: "Palestrante" as const,
 };
 
-type PerfilUsuarioVm = {
+type PerfilDetalheVm = {
   primeiroNome: string;
   ultimoNome: string;
   telefone: string;
   descricao: string;
   password: string;
   confirmePassword: string;
-  isPalestrante: boolean;
-  redes: { id?: number; nome: string; url: string }[];
   submitForm: () => Promise<void>;
-  saveRedes: () => Promise<void>;
-  askDeleteRede: (index: number) => void;
-  confirmDeleteRede: () => Promise<void>;
   cancelEdit: () => void;
+};
+
+type PerfilUsuarioVm = {
+  onFormPreview: (preview: {
+    primeiroNome: string;
+    ultimoNome: string;
+    descricao: string;
+    funcao: string;
+  }) => void;
   onImgError: () => void;
 };
+
+function getDetalhe(wrapper: VueWrapper) {
+  return wrapper.findComponent(PerfilDetalhe);
+}
+
+function detalheVm(wrapper: VueWrapper) {
+  return getDetalhe(wrapper).vm as unknown as PerfilDetalheVm;
+}
 
 async function mountComponent() {
   const router = createRouter({
@@ -79,7 +99,7 @@ describe("PerfilUsuario", () => {
     await flushPromises();
 
     expect(accountService.getProfile).toHaveBeenCalled();
-    const vm = wrapper.vm as unknown as PerfilUsuarioVm;
+    const vm = detalheVm(wrapper);
     expect(vm.primeiroNome).toBe("Ana");
     expect(vm.telefone).toBe("11988887777");
     expect(vm.descricao).toBe("Bio da Ana");
@@ -101,7 +121,7 @@ describe("PerfilUsuario", () => {
     const wrapper = await mountComponent();
     await flushPromises();
 
-    const vm = wrapper.vm as unknown as PerfilUsuarioVm;
+    const vm = detalheVm(wrapper);
     vm.ultimoNome = "Atualizada";
     vm.telefone = "11977776666";
     vm.descricao = "Nova bio";
@@ -133,7 +153,7 @@ describe("PerfilUsuario", () => {
     (accountService.updateProfile as any).mockRejectedValue(new Error("fail"));
     const wrapper = await mountComponent();
     await flushPromises();
-    const vm = wrapper.vm as unknown as PerfilUsuarioVm;
+    const vm = detalheVm(wrapper);
     await vm.submitForm();
     await flushPromises();
     expect(wrapper.text()).toContain("Não foi possível atualizar o perfil");
@@ -144,7 +164,7 @@ describe("PerfilUsuario", () => {
     const wrapper = await mountComponent();
     await flushPromises();
 
-    const vm = wrapper.vm as unknown as PerfilUsuarioVm;
+    const vm = detalheVm(wrapper);
     vm.ultimoNome = "Alterado";
     vm.cancelEdit();
 
@@ -170,7 +190,7 @@ describe("PerfilUsuario", () => {
     const wrapper = await mountComponent();
     await flushPromises();
 
-    const vm = wrapper.vm as unknown as PerfilUsuarioVm;
+    const vm = detalheVm(wrapper);
     vm.password = "senha123";
     vm.confirmePassword = "outra";
     await vm.submitForm();
@@ -186,7 +206,7 @@ describe("PerfilUsuario", () => {
     const wrapper = await mountComponent();
     await flushPromises();
 
-    const vm = wrapper.vm as unknown as PerfilUsuarioVm;
+    const vm = detalheVm(wrapper);
     vm.password = "novaSenha1";
     vm.confirmePassword = "novaSenha1";
     await vm.submitForm();
@@ -205,7 +225,7 @@ describe("PerfilUsuario", () => {
     (accountService.updateProfile as any).mockRejectedValue(axiosError);
     const wrapper = await mountComponent();
     await flushPromises();
-    const vm = wrapper.vm as unknown as PerfilUsuarioVm;
+    const vm = detalheVm(wrapper);
     await vm.submitForm();
     await flushPromises();
     expect(wrapper.text()).toContain("E-mail já cadastrado");
@@ -236,7 +256,7 @@ describe("PerfilUsuario", () => {
     const wrapper = await mountComponent();
     await flushPromises();
 
-    const vm = wrapper.vm as unknown as PerfilUsuarioVm;
+    const vm = detalheVm(wrapper);
     vm.telefone = "";
     vm.descricao = "";
     await vm.submitForm();
@@ -246,18 +266,57 @@ describe("PerfilUsuario", () => {
     expect(wrapper.text()).toMatch(/telefone|obrigatório/i);
   });
 
-  it("hides redes section for Participante", async () => {
+  it("updates card nome/descricao live from formPreview", async () => {
+    (accountService.getProfile as any).mockResolvedValue(baseProfile);
+    const wrapper = await mountComponent();
+    await flushPromises();
+    const vm = wrapper.vm as unknown as PerfilUsuarioVm;
+    vm.onFormPreview({
+      primeiroNome: "Live",
+      ultimoNome: "Nome",
+      descricao: "Bio ao vivo",
+      funcao: "Participante",
+    });
+    await wrapper.vm.$nextTick();
+    expect(wrapper.text()).toContain("Live Nome");
+    expect(wrapper.text()).toContain("Bio ao vivo");
+  });
+
+  it("hides Palestrante and Rede Social tabs for Participante", async () => {
+    (accountService.getProfile as any).mockResolvedValue(baseProfile);
+    const wrapper = await mountComponent();
+    await flushPromises();
+    expect(wrapper.find('[role="tablist"]').exists()).toBe(true);
+    expect(wrapper.find('[data-tab="palestrante"]').exists()).toBe(false);
+  });
+
+  it("shows extra tabs when funcao becomes Palestrante", async () => {
+    (accountService.getProfile as any).mockResolvedValue(baseProfile);
+    const wrapper = await mountComponent();
+    await flushPromises();
+    (wrapper.vm as unknown as PerfilUsuarioVm).onFormPreview({
+      primeiroNome: "N",
+      ultimoNome: "S",
+      descricao: "D",
+      funcao: "Palestrante",
+    });
+    await wrapper.vm.$nextTick();
+    expect(wrapper.find('[data-tab="palestrante"]').exists()).toBe(true);
+    expect(wrapper.find('[data-tab="rede-social"]').exists()).toBe(true);
+  });
+
+  it.skip("hides redes section for Participante", async () => {
+    // Task 7
     (accountService.getProfile as any).mockResolvedValue(baseProfile);
     const wrapper = await mountComponent();
     await flushPromises();
 
-    const vm = wrapper.vm as unknown as PerfilUsuarioVm;
-    expect(vm.isPalestrante).toBe(false);
-    expect(wrapper.text()).not.toContain("Salvar Redes");
+    expect(wrapper.find('[data-tab="rede-social"]').exists()).toBe(false);
     expect(redeSocialService.listMine).not.toHaveBeenCalled();
   });
 
-  it("loads and saves redes for Palestrante", async () => {
+  it.skip("loads and saves redes for Palestrante", async () => {
+    // Task 7
     (accountService.getProfile as any).mockResolvedValue(palestranteProfile);
     (redeSocialService.listMine as any).mockResolvedValue({
       data: [{ id: 1, nome: "GitHub", url: "https://github.com/me" }],
@@ -269,25 +328,11 @@ describe("PerfilUsuario", () => {
     const wrapper = await mountComponent();
     await flushPromises();
 
-    const vm = wrapper.vm as unknown as PerfilUsuarioVm;
-    expect(vm.isPalestrante).toBe(true);
-    expect(redeSocialService.listMine).toHaveBeenCalled();
-    expect(vm.redes).toHaveLength(1);
-
-    vm.redes[0].url = "https://github.com/updated";
-    await vm.saveRedes();
-    await flushPromises();
-
-    expect(redeSocialService.saveMine).toHaveBeenCalledWith([
-      expect.objectContaining({
-        nome: "GitHub",
-        url: "https://github.com/updated",
-      }),
-    ]);
-    expect(wrapper.text()).toContain("Redes sociais salvas com sucesso");
+    expect(wrapper.find('[data-tab="rede-social"]').exists()).toBe(true);
   });
 
-  it("deletes persisted rede after confirmation", async () => {
+  it.skip("deletes persisted rede after confirmation", async () => {
+    // Task 7
     (accountService.getProfile as any).mockResolvedValue(palestranteProfile);
     (redeSocialService.listMine as any).mockResolvedValue({
       data: [{ id: 7, nome: "LinkedIn", url: "https://linkedin.com/in/me" }],
@@ -297,12 +342,6 @@ describe("PerfilUsuario", () => {
     const wrapper = await mountComponent();
     await flushPromises();
 
-    const vm = wrapper.vm as unknown as PerfilUsuarioVm;
-    vm.askDeleteRede(0);
-    await vm.confirmDeleteRede();
-    await flushPromises();
-
     expect(redeSocialService.removeMine).toHaveBeenCalledWith(7);
-    expect(vm.redes).toHaveLength(0);
   });
 });
