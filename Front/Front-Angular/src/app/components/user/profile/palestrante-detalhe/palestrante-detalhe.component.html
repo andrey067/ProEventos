@@ -1,0 +1,79 @@
+<div class="flex flex-col gap-4">
+  @if (error) {
+    <p class="rounded-[length:var(--radius-control)] border border-danger-border bg-danger-soft px-4 py-3 text-sm text-danger">
+      {{ error }}
+    </p>
+  }
+  @if (success) {
+    <p class="rounded-[length:var(--radius-control)] border border-line bg-surface px-4 py-3 text-sm text-accent-dark">
+      {{ success }}
+    </p>
+  }
+
+  @if (loading) {
+    <p class="text-sm text-muted">Carregando detalhe palestrante…</p>
+  } @else {
+    <form class="flex flex-col gap-4" [formGroup]="form" (ngSubmit)="submit()">
+      <h2 class="border-b border-line pb-2 text-lg font-semibold">Detalhe Palestrante</h2>
+
+      <label class="flex flex-col gap-2 text-sm">
+        <span class="font-medium">Nome</span>
+        <input
+          type="text"
+          formControlName="nome"
+          class="w-full rounded-[length:var(--radius-control)] border border-line bg-panel px-3 py-2 text-sm outline-none focus:border-accent focus:ring-2 focus:ring-accent/20"
+        />
+        @if (form.get('nome')?.invalid && form.get('nome')?.touched) {
+          <span class="text-xs text-danger">Nome é obrigatório.</span>
+        }
+      </label>
+
+      <label class="flex flex-col gap-2 text-sm">
+        <span class="font-medium">E-mail</span>
+        <input
+          type="email"
+          formControlName="email"
+          class="w-full rounded-[length:var(--radius-control)] border border-line bg-panel px-3 py-2 text-sm outline-none focus:border-accent focus:ring-2 focus:ring-accent/20"
+        />
+      </label>
+
+      <label class="flex flex-col gap-2 text-sm">
+        <span class="font-medium">Telefone</span>
+        <input
+          type="text"
+          formControlName="telefone"
+          class="w-full rounded-[length:var(--radius-control)] border border-line bg-panel px-3 py-2 text-sm outline-none focus:border-accent focus:ring-2 focus:ring-accent/20"
+        />
+      </label>
+
+      <label class="flex flex-col gap-2 text-sm">
+        <span class="font-medium">URL da imagem</span>
+        <input
+          type="url"
+          formControlName="imagemURL"
+          placeholder="https://..."
+          class="w-full rounded-[length:var(--radius-control)] border border-line bg-panel px-3 py-2 text-sm outline-none focus:border-accent focus:ring-2 focus:ring-accent/20"
+        />
+      </label>
+
+      <label class="flex flex-col gap-2 text-sm">
+        <span class="font-medium">Mini currículo</span>
+        <textarea
+          formControlName="miniCurriculo"
+          rows="3"
+          class="w-full rounded-[length:var(--radius-control)] border border-line bg-panel px-3 py-2 text-sm outline-none focus:border-accent focus:ring-2 focus:ring-accent/20"
+        ></textarea>
+      </label>
+
+      <div class="flex flex-col gap-3 border-t border-line pt-4 sm:flex-row sm:flex-wrap">
+        <button
+          type="submit"
+          class="motion-press inline-flex w-full items-center justify-center gap-2 rounded-[length:var(--radius-control)] bg-accent px-4 py-2 text-sm font-medium text-white hover:bg-accent-dark active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-60 sm:ml-auto sm:w-auto"
+          [disabled]="missingProfile || palestranteId == null || saving"
+        >
+          {{ saving ? 'Salvando...' : 'Salvar Alteração' }}
+        </button>
+      </div>
+    </form>
+  }
+</div>

@@ -44,7 +44,12 @@ describe('ProfileComponent', () => {
         },
         {
           provide: PalestranteService,
-          useValue: { getMe: vi.fn(), update: vi.fn() },
+          useValue: {
+            getMe: vi.fn().mockReturnValue(
+              of({ id: 1, nome: '', email: '', telefone: '', imagemURL: '', miniCurriculo: '' }),
+            ),
+            update: vi.fn(),
+          },
         },
       ],
     }).compileComponents();
@@ -218,6 +223,31 @@ describe('ProfileComponent', () => {
 
     expect(fixture.componentInstance.ehPalestrante).toBe(false);
     expect((fixture.nativeElement as HTMLElement).textContent).not.toContain('Salvar Redes');
+  });
+
+  it('loads palestrante getMe when user becomes Palestrante', async () => {
+    await setup();
+    const account = TestBed.inject(AccountService);
+    const palestrante = TestBed.inject(PalestranteService);
+    vi.mocked(account.getProfile).mockReturnValue(of(baseProfile));
+    vi.mocked(palestrante.getMe).mockReturnValue(
+      of({ id: 1, nome: 'A', email: '', telefone: '', imagemURL: '', miniCurriculo: '' }),
+    );
+    const fixture = TestBed.createComponent(ProfileComponent);
+    fixture.detectChanges();
+    await fixture.whenStable();
+
+    fixture.componentInstance.onFormPreview({
+      primeiroNome: 'N',
+      ultimoNome: 'S',
+      descricao: 'D',
+      funcao: 'Palestrante',
+    });
+    fixture.componentInstance.selectTab('palestrante');
+    fixture.detectChanges();
+    await fixture.whenStable();
+
+    expect(palestrante.getMe).toHaveBeenCalled();
   });
 
   it.skip('loads and saves redes for Palestrante', async () => {
