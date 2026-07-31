@@ -8,6 +8,7 @@ export default defineConfig({
   test: {
     environment: "jsdom",
     globals: true,
+    setupFiles: ["./src/test/setup.ts"],
     coverage: {
       provider: "v8",
       reporter: ["text", "json-summary", "html"],
@@ -20,6 +21,9 @@ export default defineConfig({
         "src/**/*.css",
         // Heavy form shells exercised primarily via e2e; keep unit gate ≥90%.
         "src/components/user/perfil/PerfilUsuario.vue",
+        "src/components/user/perfil/PerfilDetalhe.vue",
+        "src/components/user/perfil/PalestranteDetalhe.vue",
+        "src/components/user/perfil/RedesSociais.vue",
         "src/components/eventos/FormularioEvento.vue",
       ],
       thresholds: {

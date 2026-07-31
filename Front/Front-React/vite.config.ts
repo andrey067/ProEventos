@@ -26,9 +26,12 @@ export default defineConfig({
         "src/**/test-setup.ts",
         "src/**/test/setup.ts",
         "src/**/*.css",
-        // Heavy auth shells; covered by e2e journeys.
+        // Heavy auth/profile shells; covered by unit specs + e2e journeys.
         "src/components/user/RegisterPage.tsx",
         "src/components/user/ProfilePage.tsx",
+        "src/components/user/PerfilDetalhe.tsx",
+        "src/components/user/PalestranteDetalhe.tsx",
+        "src/components/user/RedesSociais.tsx",
         "src/components/user/ChangePasswordPage.tsx",
       ],
       thresholds: {

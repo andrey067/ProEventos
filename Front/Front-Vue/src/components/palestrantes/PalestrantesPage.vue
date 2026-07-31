@@ -6,6 +6,11 @@ import { canWrite, isAuthenticated } from "../../services/authToken";
 import palestranteService from "../../services/palestranteService";
 import ConfirmDialog from "../../shared/ConfirmDialog.vue";
 import LoadingSpinner from "../common/LoadingSpinner.vue";
+import PageEnter from "../../shared/motion/PageEnter.vue";
+import AlertMotion from "../../shared/motion/AlertMotion.vue";
+import ListStagger from "../../shared/motion/ListStagger.vue";
+import SkeletonShimmer from "../../shared/motion/SkeletonShimmer.vue";
+import EmptyState from "../../shared/motion/EmptyState.vue";
 import { debounce } from "../../utils/debounce";
 import { isRemoteImageUrl } from "../../utils/imageUrl";
 import { PAGE_SIZES, type PageSize } from "../../Models/pagination";
@@ -134,6 +139,7 @@ onUnmounted(() => {
 </script>
 
 <template>
+  <PageEnter>
   <div class="flex flex-col gap-6">
     <div class="flex flex-wrap items-center justify-between gap-4">
       <div>
@@ -145,7 +151,7 @@ onUnmounted(() => {
       <button
         v-if="writeAllowed"
         type="button"
-        class="inline-flex items-center justify-center rounded-[length:var(--radius-control)] bg-accent px-4 py-2 text-sm font-medium text-white transition-transform hover:bg-accent-dark active:scale-[0.98]"
+        class="motion-press inline-flex items-center justify-center rounded-[length:var(--radius-control)] bg-accent px-4 py-2 text-sm font-medium text-white transition-transform hover:bg-accent-dark active:scale-[0.98]"
         @click="goToCreate"
       >
         Novo palestrante
@@ -192,23 +198,25 @@ onUnmounted(() => {
       </button>
     </form>
 
-    <p
-      v-if="success"
+    <AlertMotion
+      :show="!!success"
       class="rounded-[length:var(--radius-control)] border border-line bg-accent-soft px-4 py-3 text-sm text-accent-dark"
     >
       {{ success }}
-    </p>
+    </AlertMotion>
 
-    <p
-      v-if="error"
+    <AlertMotion
+      :show="!!error"
       class="rounded-[length:var(--radius-control)] border border-danger-border bg-danger-soft px-4 py-3 text-sm text-danger"
     >
       {{ error }}
-    </p>
+    </AlertMotion>
 
     <LoadingSpinner :active="loading" variant="page" />
 
-    <template v-if="!loading">
+    <SkeletonShimmer v-if="loading" :rows="5" class="p-4" />
+
+    <template v-if="!loading && items.length > 0">
       <div class="overflow-x-auto rounded-[length:var(--radius-control)] border border-line bg-panel">
         <table class="w-full text-sm">
           <thead>
@@ -220,19 +228,16 @@ onUnmounted(() => {
               <th class="px-4 py-3 font-medium">Ações</th>
             </tr>
           </thead>
-          <tbody class="divide-y divide-line">
-            <tr v-if="items.length === 0">
-              <td
-                colspan="5"
-                class="px-4 py-8 text-center text-muted"
-              >
-                Nenhum palestrante cadastrado.
-              </td>
-            </tr>
+          <ListStagger
+            tag="tbody"
+            class="divide-y divide-line"
+            :items-length="paged.items.length"
+          >
             <tr
-              v-for="row in paged.items"
+              v-for="(row, index) in paged.items"
               :key="row.id"
               class="hover:bg-surface"
+              :style="{ '--motion-stagger-index': index }"
             >
               <td class="px-4 py-3">
                 <img
@@ -275,7 +280,7 @@ onUnmounted(() => {
                 >—</span>
               </td>
             </tr>
-          </tbody>
+          </ListStagger>
         </table>
       </div>
 
@@ -323,6 +328,13 @@ onUnmounted(() => {
       </div>
     </template>
 
+    <EmptyState
+      :show="!loading && items.length === 0"
+      class="rounded-[length:var(--radius-control)] border border-line bg-panel px-4 py-8 text-center text-sm text-muted"
+    >
+      Nenhum palestrante cadastrado.
+    </EmptyState>
+
     <ConfirmDialog
       :open="pendingDelete !== null"
       title="Excluir palestrante"
@@ -332,4 +344,5 @@ onUnmounted(() => {
       @cancel="pendingDelete = null"
     />
   </div>
+  </PageEnter>
 </template>

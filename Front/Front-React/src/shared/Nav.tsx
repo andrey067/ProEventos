@@ -1,7 +1,9 @@
 import { useEffect, useState } from "react";
+import { motion } from "motion/react";
 import { NavLink, useLocation, useNavigate } from "react-router-dom";
 import { accountService } from "@/services/accountService";
 import { isAuthenticated } from "@/services/authToken";
+import { usePrefersReducedMotion } from "@/shared/motion";
 
 const linkClass = ({ isActive }: { isActive: boolean }) =>
   [
@@ -58,6 +60,7 @@ function NavLinks({ onNavigate }: { onNavigate?: () => void }) {
 export function Nav() {
   const location = useLocation();
   const [menuOpen, setMenuOpen] = useState(false);
+  const reduced = usePrefersReducedMotion();
 
   useEffect(() => {
     setMenuOpen(false);
@@ -112,14 +115,17 @@ export function Nav() {
         </nav>
       </div>
 
-      {menuOpen && (
-        <nav
+      {menuOpen ? (
+        <motion.nav
           id="mobile-nav"
           className="flex flex-col gap-1 border-t border-line px-4 py-3 md:hidden"
+          initial={reduced ? false : { opacity: 0, y: -6 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: reduced ? 0 : 0.22 }}
         >
           <NavLinks onNavigate={() => setMenuOpen(false)} />
-        </nav>
-      )}
+        </motion.nav>
+      ) : null}
     </header>
   );
 }

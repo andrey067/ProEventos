@@ -49,3 +49,6 @@ e2e-reports/**/*.png
 e2e-reports/**/*.webm
 e2e-reports/**/*.zip
 *.tsbuildinfo
+
+# Git worktrees (local isolation)
+.worktrees/

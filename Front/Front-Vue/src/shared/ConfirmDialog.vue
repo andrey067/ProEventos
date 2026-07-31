@@ -1,17 +1,11 @@
 <template>
-  <div
-    v-if="open"
-    class="fixed inset-0 z-50 flex items-center justify-center bg-ink/40 p-4"
-    role="presentation"
-    @click="emit('cancel')"
-  >
+  <ModalMotion :open="open" @cancel="emit('cancel')">
     <div
       role="dialog"
       aria-modal="true"
       aria-labelledby="confirm-dialog-title"
       aria-describedby="confirm-dialog-message"
       class="w-full max-w-md rounded-[length:var(--radius-control)] border border-line bg-panel p-6 shadow-lg"
-      @click.stop
     >
       <h2
         id="confirm-dialog-title"
@@ -28,25 +22,26 @@
       <div class="mt-6 flex flex-wrap justify-end gap-2">
         <button
           type="button"
-          class="inline-flex items-center justify-center rounded-[length:var(--radius-control)] border border-line bg-panel px-4 py-2 text-sm font-medium text-ink transition-colors hover:bg-surface"
+          class="motion-press inline-flex items-center justify-center rounded-[length:var(--radius-control)] border border-line bg-panel px-4 py-2 text-sm font-medium text-ink transition-colors hover:bg-surface"
           @click="emit('cancel')"
         >
           {{ cancelLabel }}
         </button>
         <button
           type="button"
-          class="inline-flex items-center justify-center rounded-[length:var(--radius-control)] bg-danger px-4 py-2 text-sm font-medium text-white transition-colors hover:opacity-90"
+          class="motion-press inline-flex items-center justify-center rounded-[length:var(--radius-control)] bg-danger px-4 py-2 text-sm font-medium text-white transition-colors hover:opacity-90"
           @click="emit('confirm')"
         >
           {{ confirmLabel }}
         </button>
       </div>
     </div>
-  </div>
+  </ModalMotion>
 </template>
 
 <script setup lang="ts">
 import { onMounted, onUnmounted, watch } from "vue";
+import ModalMotion from "./motion/ModalMotion.vue";
 
 const props = withDefaults(
   defineProps<{

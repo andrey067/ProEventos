@@ -52,6 +52,7 @@ export const palestranteService = {
   /** Aggregates all pages (for association UIs). */
   listAll: () => listAllPages(),
   getById: (id: number) => http.get<Palestrante>(`/palestrantes/${id}`),
+  getMe: () => http.get<Palestrante>("/palestrantes/me"),
   /** @deprecated Prefer list({ q }) — kept for form association helpers. */
   getByNome: (nome: string, params: Omit<PalestranteListParams, "q"> = {}) =>
     getPaged(`/palestrantes${buildQuery({ ...params, q: nome })}`),

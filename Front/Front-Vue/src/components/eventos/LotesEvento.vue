@@ -1,6 +1,6 @@
 <template>
-  <div
-    class="mt-3 rounded-[length:var(--radius-control)] border border-line bg-panel p-4"
+  <PanelEnter
+    class-name="mt-3 rounded-[length:var(--radius-control)] border border-line bg-panel p-4"
   >
     <h2 class="mb-3 text-lg font-medium text-accent-dark">Lote</h2>
     <div class="grid gap-3 md:grid-cols-2">
@@ -45,12 +45,13 @@
         />
       </label>
     </div>
-  </div>
+  </PanelEnter>
 </template>
 
 <script setup lang="ts">
 import { computed } from "vue";
 import { formatDateBr } from "../../utils/date";
+import PanelEnter from "../../shared/motion/PanelEnter.vue";
 
 const props = withDefaults(
   defineProps<{

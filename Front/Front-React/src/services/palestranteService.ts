@@ -45,6 +45,10 @@ export const palestranteService = {
     return http<Palestrante>(`/palestrantes/${id}`);
   },
 
+  getMe(): Promise<Palestrante> {
+    return http<Palestrante>("/palestrantes/me");
+  },
+
   create(palestrante: Omit<Palestrante, "id">): Promise<Palestrante> {
     return http<Palestrante>("/palestrantes", {
       method: "POST",

@@ -52,6 +52,9 @@ export default defineConfig({
         'src/**/*.html',
         // Deep form shells covered by e2e + existing specs.
         'src/app/components/user/profile/profile.component.ts',
+        'src/app/components/user/profile/perfil-detalhe/perfil-detalhe.component.ts',
+        'src/app/components/user/profile/palestrante-detalhe/palestrante-detalhe.component.ts',
+        'src/app/components/user/profile/redes-sociais/redes-sociais.component.ts',
         'src/app/components/eventos/evento-form/evento-form.component.ts',
       ],
       thresholds: {

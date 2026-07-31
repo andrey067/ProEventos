@@ -13,6 +13,7 @@
     <PackageReference Include="Microsoft.Extensions.Configuration.Abstractions" Version="10.0.2" />
     <PackageReference Include="Microsoft.EntityFrameworkCore" Version="10.0.2" />
     <PackageReference Include="NetDevPack.Identity" Version="8.0.0" />
+    <PackageReference Include="NetDevPack.Security.Jwt.Store.FileSystem" Version="8.2.2" />
     <PackageReference Include="System.Security.Cryptography.Xml" Version="10.0.10" />
   </ItemGroup>
   <ItemGroup>

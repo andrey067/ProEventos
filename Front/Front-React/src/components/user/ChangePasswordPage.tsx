@@ -5,6 +5,7 @@ import { Link } from "react-router-dom";
 import { z } from "zod";
 import { FieldError } from "@/forms/components/FieldError";
 import { LoadingSpinner } from "@/components/LoadingSpinner";
+import { AlertMotion, PageEnter, PanelEnter } from "@/shared/motion";
 import { accountService } from "@/services/accountService";
 import { HttpError } from "@/services/http";
 
@@ -70,8 +71,14 @@ export function ChangePasswordPage() {
     }
   }
 
+  const alertDangerClass =
+    "rounded-[length:var(--radius-control)] border border-danger-border bg-danger-soft px-4 py-3 text-sm text-danger";
+  const alertSuccessClass =
+    "rounded-[length:var(--radius-control)] border border-line bg-surface px-4 py-3 text-sm text-accent-dark";
+
   return (
-    <div className="mx-auto flex w-full min-w-0 max-w-lg flex-col gap-6">
+    <PageEnter>
+      <div className="mx-auto flex w-full min-w-0 max-w-lg flex-col gap-6">
       <div className="flex flex-wrap items-center justify-between gap-4">
         <div>
           <h1 className="text-2xl font-semibold tracking-tight">Alterar senha</h1>
@@ -84,22 +91,19 @@ export function ChangePasswordPage() {
         </Link>
       </div>
 
-      {error && (
-        <p className="rounded-[length:var(--radius-control)] border border-danger-border bg-danger-soft px-4 py-3 text-sm text-danger">
-          {error}
-        </p>
-      )}
-      {success && (
-        <p className="rounded-[length:var(--radius-control)] border border-line bg-surface px-4 py-3 text-sm text-accent-dark">
-          {success}
-        </p>
-      )}
+      <AlertMotion show={!!error} className={alertDangerClass}>
+        {error}
+      </AlertMotion>
+      <AlertMotion show={!!success} className={alertSuccessClass}>
+        {success}
+      </AlertMotion>
 
-      <form
-        onSubmit={handleSubmit(onSubmit)}
-        className="flex flex-col gap-4 rounded-[length:var(--radius-control)] border border-line bg-panel p-6"
-        noValidate
-      >
+      <PanelEnter className="flex flex-col gap-4 rounded-[length:var(--radius-control)] border border-line bg-panel p-6">
+        <form
+          onSubmit={handleSubmit(onSubmit)}
+          className="flex flex-col gap-4"
+          noValidate
+        >
         <label className="flex flex-col gap-2 text-sm">
           <span className="font-medium">Senha atual</span>
           <input
@@ -130,11 +134,17 @@ export function ChangePasswordPage() {
           />
           <FieldError error={errors.confirmPassword} />
         </label>
-        <button type="submit" disabled={submitting} className={`${btnPrimary} gap-2`}>
+        <button
+          type="submit"
+          disabled={submitting}
+          className={`${btnPrimary} motion-press gap-2`}
+        >
           <LoadingSpinner loading={submitting} variant="button" />
           {submitting ? "Salvando..." : "Alterar senha"}
         </button>
-      </form>
-    </div>
+        </form>
+      </PanelEnter>
+      </div>
+    </PageEnter>
   );
 }

@@ -1,15 +1,28 @@
+import { animate, style, transition, trigger } from '@angular/animations';
 import { Component, DestroyRef, inject, OnInit } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { NavigationEnd, Router, RouterLink, RouterLinkActive } from '@angular/router';
 import { filter } from 'rxjs';
 import { AccountService } from '../../services/account.service';
 import { AuthTokenService } from '../../services/auth-token.service';
+import { motionDuration } from '../motion/motion-timing';
+
+const navDrawerAnimation = trigger('navDrawer', [
+  transition(':enter', [
+    style({ opacity: 0, transform: 'translateY(-6px)' }),
+    animate(motionDuration(220), style({ opacity: 1, transform: 'translateY(0)' })),
+  ]),
+  transition(':leave', [
+    animate(motionDuration(220), style({ opacity: 0, transform: 'translateY(-6px)' })),
+  ]),
+]);
 
 @Component({
   selector: 'app-nav',
   imports: [RouterLink, RouterLinkActive],
   templateUrl: './nav.component.html',
   styleUrl: './nav.component.scss',
+  animations: [navDrawerAnimation],
 })
 export class NavComponent implements OnInit {
   menuOpen = false;

@@ -16,7 +16,10 @@ namespace ProEventos.CrossCutting.DependencyInjection
             serviceCollection.AddScoped<IEventoRepository, EventoRepository>();
             serviceCollection.AddScoped<ILotesRepository, LostesRepostory>();
             serviceCollection.AddScoped<IPalestrantesRepository, PalestrantesRepository>();
-            serviceCollection.AddDbContext<DataContext>(options => options.UseSqlite(configuration.GetConnectionString("Default")));
+            serviceCollection.AddDbContext<DataContext>(options =>
+                options.UseSqlite(
+                    configuration.GetConnectionString("Default"),
+                    sqlite => sqlite.UseQuerySplittingBehavior(QuerySplittingBehavior.SplitQuery)));
         }
 
         public static void AddSeeds(DataContext dataContext)

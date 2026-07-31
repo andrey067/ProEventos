@@ -1,4 +1,5 @@
 <section
+  [@pageEnter]
   class="-mx-4 -my-6 grid min-h-[calc(100dvh-4.5rem)] grid-cols-1 overflow-hidden md:-my-8 md:grid-cols-[minmax(0,0.4fr)_minmax(0,0.6fr)]"
 >
   <aside
@@ -25,6 +26,16 @@
         </p>
       </header>
 
+      @if (error) {
+        <p
+          [@alertMotion]
+          class="rounded-[length:var(--radius-control)] border border-danger-border bg-danger-soft px-4 py-3 text-sm text-danger"
+        >
+          {{ error }}
+        </p>
+      }
+
+      <div [@panelEnter] class="flex flex-col gap-5">
       <form class="flex flex-col gap-5" [formGroup]="form" (ngSubmit)="submit()">
         <label class="flex flex-col gap-2 text-sm">
           <span class="font-medium text-ink">Nome</span>
@@ -117,22 +128,16 @@
           </label>
         }
 
-        @if (error) {
-          <p
-            class="rounded-[length:var(--radius-control)] border border-danger-border bg-danger-soft px-4 py-3 text-sm text-danger"
-          >
-            {{ error }}
-          </p>
-        }
         <button
           type="submit"
-          class="mt-1 inline-flex w-full items-center justify-center gap-2 rounded-[length:var(--radius-control)] bg-accent px-4 py-2.5 text-sm font-medium text-white transition-[transform,background-color] hover:bg-accent-dark active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-60"
+          class="motion-press mt-1 inline-flex w-full items-center justify-center gap-2 rounded-[length:var(--radius-control)] bg-accent px-4 py-2.5 text-sm font-medium text-white transition-[transform,background-color] hover:bg-accent-dark active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-60"
           [disabled]="saving"
         >
           <app-loading-spinner [active]="saving" variant="button" />
           {{ saving ? 'Cadastrando...' : 'Cadastrar' }}
         </button>
       </form>
+      </div>
 
       <p class="text-center text-sm text-muted">
         Já tem conta?

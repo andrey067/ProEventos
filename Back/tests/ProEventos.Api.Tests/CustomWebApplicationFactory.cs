@@ -6,6 +6,8 @@ using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
+using NetDevPack.Security.Jwt.Core;
+using NetDevPack.Security.Jwt.Core.Interfaces;
 using ProEventos.Persistence;
 
 namespace ProEventos.Api.Tests;
@@ -52,13 +54,15 @@ public class CustomWebApplicationFactory : WebApplicationFactory<Program>
             services.AddDbContext<DataContext>(options =>
                 options.UseInMemoryDatabase(_databaseName));
 
-            // Parallel WebApplicationFactory hosts must not share ~/.aspnet/DataProtection-Keys:
-            // NetDevPack JWKS signing keys live there, and key rotation across hosts causes flaky 401s.
+            // Parallel WebApplicationFactory hosts must not share JWKS / DataProtection key stores:
+            // shared signing keys across hosts cause flaky 401s.
             var keyDir = new DirectoryInfo(Path.Combine(Path.GetTempPath(), "proeventos-test-dp", _databaseName));
             keyDir.Create();
             services.AddDataProtection()
                 .PersistKeysToFileSystem(keyDir)
                 .SetApplicationName($"ProEventosTests-{_databaseName}");
+            services.RemoveAll<IJsonWebKeyStore>();
+            new JwksBuilder(services).PersistKeysInMemory();
 
             _configureTestServices?.Invoke(services);
         });

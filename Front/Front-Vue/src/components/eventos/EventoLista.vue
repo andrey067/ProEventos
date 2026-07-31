@@ -1,4 +1,5 @@
 <template>
+  <PageEnter>
   <div class="flex flex-col gap-6">
     <div class="flex flex-wrap items-center justify-between gap-4">
       <div>
@@ -10,7 +11,7 @@
       <button
         v-if="writeAllowed"
         type="button"
-        class="inline-flex items-center justify-center rounded-[length:var(--radius-control)] bg-accent px-4 py-2 text-sm font-medium text-white transition-transform hover:bg-accent-dark active:scale-[0.98]"
+        class="motion-press inline-flex items-center justify-center rounded-[length:var(--radius-control)] bg-accent px-4 py-2 text-sm font-medium text-white transition-transform hover:bg-accent-dark active:scale-[0.98]"
         @click="router.push('/eventos/detalhes')"
       >
         Novo evento
@@ -40,36 +41,38 @@
       </label>
       <button
         type="submit"
-        class="inline-flex items-center justify-center rounded-[length:var(--radius-control)] bg-accent px-4 py-2 text-sm font-medium text-white transition-transform hover:bg-accent-dark active:scale-[0.98]"
+        class="motion-press inline-flex items-center justify-center rounded-[length:var(--radius-control)] bg-accent px-4 py-2 text-sm font-medium text-white transition-transform hover:bg-accent-dark active:scale-[0.98]"
       >
         Buscar
       </button>
       <button
         type="button"
-        class="inline-flex items-center justify-center rounded-[length:var(--radius-control)] border border-line bg-panel px-4 py-2 text-sm font-medium text-ink transition-colors hover:bg-surface"
+        class="motion-press inline-flex items-center justify-center rounded-[length:var(--radius-control)] border border-line bg-panel px-4 py-2 text-sm font-medium text-ink transition-colors hover:bg-surface"
         @click="limpar"
       >
         Limpar
       </button>
     </form>
 
-    <p
-      v-if="success"
+    <AlertMotion
+      :show="!!success"
       class="rounded-[length:var(--radius-control)] border border-line bg-accent-soft px-4 py-3 text-sm text-accent-dark"
     >
       {{ success }}
-    </p>
+    </AlertMotion>
 
-    <p
-      v-if="error"
+    <AlertMotion
+      :show="!!error"
       class="rounded-[length:var(--radius-control)] border border-danger-border bg-danger-soft px-4 py-3 text-sm text-danger"
     >
       {{ error }}
-    </p>
+    </AlertMotion>
 
     <LoadingSpinner :active="loading" variant="page" />
 
-    <template v-if="!loading">
+    <SkeletonShimmer v-if="loading" :rows="5" class="p-4" />
+
+    <template v-if="!loading && eventos.length > 0">
       <div class="overflow-x-auto rounded-[length:var(--radius-control)] border border-line bg-panel">
         <table class="w-full text-sm">
           <thead>
@@ -129,19 +132,16 @@
               <th class="px-4 py-3 font-medium">Ações</th>
             </tr>
           </thead>
-          <tbody class="divide-y divide-line">
-            <tr v-if="eventos.length === 0">
-              <td
-                :colspan="colSpan"
-                class="px-4 py-8 text-center text-muted"
-              >
-                Nenhum evento encontrado.
-              </td>
-            </tr>
+          <ListStagger
+            tag="tbody"
+            class="divide-y divide-line"
+            :items-length="paged.items.length"
+          >
             <tr
-              v-for="evento in paged.items"
+              v-for="(evento, index) in paged.items"
               :key="evento.id"
               class="hover:bg-surface"
+              :style="{ '--motion-stagger-index': index }"
             >
               <td class="px-4 py-3">
                 <img
@@ -189,7 +189,7 @@
                 >—</span>
               </td>
             </tr>
-          </tbody>
+          </ListStagger>
         </table>
       </div>
 
@@ -237,6 +237,13 @@
       </div>
     </template>
 
+    <EmptyState
+      :show="!loading && eventos.length === 0"
+      class="rounded-[length:var(--radius-control)] border border-line bg-panel px-4 py-8 text-center text-sm text-muted"
+    >
+      Nenhum evento encontrado.
+    </EmptyState>
+
     <ConfirmDialog
       :open="pendingDelete !== null"
       title="Excluir evento"
@@ -246,6 +253,7 @@
       @cancel="pendingDelete = null"
     />
   </div>
+  </PageEnter>
 </template>
 
 <script setup lang="ts">
@@ -262,6 +270,11 @@ import eventoService from "../../services/eventoService";
 import { useRouter } from "vue-router";
 import ConfirmDialog from "../../shared/ConfirmDialog.vue";
 import LoadingSpinner from "../common/LoadingSpinner.vue";
+import PageEnter from "../../shared/motion/PageEnter.vue";
+import AlertMotion from "../../shared/motion/AlertMotion.vue";
+import ListStagger from "../../shared/motion/ListStagger.vue";
+import SkeletonShimmer from "../../shared/motion/SkeletonShimmer.vue";
+import EmptyState from "../../shared/motion/EmptyState.vue";
 import { formatDateBr } from "../../utils/date";
 import { debounce } from "../../utils/debounce";
 import { PAGE_SIZES, type PageSize } from "../../Models/pagination";
@@ -307,8 +320,6 @@ const paged = computed(() => ({
   pageSize: pageSize.value,
   totalPages: totalPages.value,
 }));
-const colSpan = 7;
-
 const deleteMessage = computed(() =>
   pendingDelete.value
     ? `Deseja deletar o evento "${pendingDelete.value.tema}"?`

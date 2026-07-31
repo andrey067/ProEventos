@@ -13,12 +13,25 @@ import { AuthTokenService } from '../../../services/auth-token.service';
 import { PalestranteService } from '../../../services/palestrante.service';
 import { RedeSocialService } from '../../../services/rede-social.service';
 import { isRemoteImageUrl } from '../../../shared/image-url';
+import {
+  alertAnimation,
+  pageEnterAnimation,
+  panelEnterAnimation,
+  SkeletonShimmerComponent,
+} from '../../../shared/motion';
 
 @Component({
   selector: 'app-palestrante-form',
-  imports: [ReactiveFormsModule, ConfirmDialogComponent, RouterLink, LoadingSpinnerComponent],
+  imports: [
+    ReactiveFormsModule,
+    ConfirmDialogComponent,
+    RouterLink,
+    LoadingSpinnerComponent,
+    SkeletonShimmerComponent,
+  ],
   templateUrl: './palestrante-form.component.html',
   styleUrl: './palestrante-form.component.scss',
+  animations: [pageEnterAnimation, alertAnimation, panelEnterAnimation],
 })
 export class PalestranteFormComponent implements OnInit {
   private readonly route = inject(ActivatedRoute);

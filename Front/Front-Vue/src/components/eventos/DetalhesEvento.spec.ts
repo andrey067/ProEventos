@@ -5,7 +5,13 @@ import FormularioEvento from "./FormularioEvento.vue";
 
 describe("DetalhesEvento", () => {
   it("renders FormularioEvento", () => {
-    const wrapper = shallowMount(DetalhesEvento);
+    const wrapper = shallowMount(DetalhesEvento, {
+      global: {
+        stubs: {
+          PageEnter: { template: "<div><slot /></div>" },
+        },
+      },
+    });
     expect(wrapper.findComponent(FormularioEvento).exists()).toBe(true);
   });
 });

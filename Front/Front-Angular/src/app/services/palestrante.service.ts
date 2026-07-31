@@ -51,6 +51,10 @@ export class PalestranteService {
     return this.http.get<Palestrante>(`${this.baseUrl}/${id}`);
   }
 
+  getMe(): Observable<Palestrante> {
+    return this.http.get<Palestrante>(`${this.baseUrl}/me`);
+  }
+
   create(palestrante: Omit<Palestrante, 'id'>): Observable<Palestrante> {
     return this.http.post<Palestrante>(this.baseUrl, palestrante);
   }

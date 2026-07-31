@@ -16,8 +16,9 @@
       "@app/*": ["./src/*"],
       "@environments/*": ["./src/environments/*"]
     },
-    "skipLibCheck": true    
+    "skipLibCheck": true
   },
   "include": ["src/**/*.ts", "src/**/*.d.ts", "src/**/*.tsx", "src/**/*.vue"],
+  "exclude": ["src/**/*.spec.ts", "src/test/**"],
   "references": [{ "path": "./tsconfig.node.json" }]
 }

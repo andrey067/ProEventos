@@ -4,12 +4,18 @@ import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { AccountService } from '../../../services/account.service';
 import { LoadingSpinnerComponent } from '../../common/loading-spinner/loading-spinner.component';
 import { apiErrorMessage } from '../../../shared/api-error-message';
+import {
+  alertAnimation,
+  pageEnterAnimation,
+  panelEnterAnimation,
+} from '../../../shared/motion';
 
 @Component({
   selector: 'app-login',
   imports: [ReactiveFormsModule, RouterLink, LoadingSpinnerComponent],
   templateUrl: './login.component.html',
   styleUrl: './login.component.scss',
+  animations: [pageEnterAnimation, alertAnimation, panelEnterAnimation],
 })
 export class LoginComponent {
   private readonly fb = inject(FormBuilder);

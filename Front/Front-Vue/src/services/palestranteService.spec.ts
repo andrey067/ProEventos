@@ -76,6 +76,12 @@ describe("palestranteService", () => {
     expect(http.get).toHaveBeenCalledWith("/palestrantes/1");
   });
 
+  it("getMe calls GET /palestrantes/me", async () => {
+    (http.get as any).mockResolvedValue({ data: { id: 1, nome: "Eu" } });
+    await palestranteService.getMe();
+    expect(http.get).toHaveBeenCalledWith("/palestrantes/me");
+  });
+
   it("create calls POST /palestrantes", async () => {
     const payload = { nome: "Ana" };
     (http.post as any).mockResolvedValue({ data: { id: 2, ...payload } });

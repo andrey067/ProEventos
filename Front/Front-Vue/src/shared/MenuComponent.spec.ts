@@ -129,6 +129,37 @@ describe("MenuComponent", () => {
     expect(wrapper.find("#mobile-nav").exists()).toBe(false);
   });
 
+  it("opens mobile menu under reduced motion", async () => {
+    vi.stubGlobal(
+      "matchMedia",
+      vi.fn().mockReturnValue({
+        matches: true,
+        addEventListener: vi.fn(),
+        removeEventListener: vi.fn(),
+      }),
+    );
+    const router = createRouter({
+      history: createMemoryHistory(),
+      routes: [
+        { path: "/", component: { template: "<div />" } },
+        {
+          path: "/eventos/lista",
+          name: "lista",
+          component: { template: "<div />" },
+        },
+      ],
+    });
+    await router.push("/");
+    await router.isReady();
+
+    const wrapper = mount(MenuComponent, {
+      global: { plugins: [router] },
+    });
+    await wrapper.find('button[aria-label="Menu"]').trigger("click");
+    expect(wrapper.find("#mobile-nav").exists()).toBe(true);
+    vi.unstubAllGlobals();
+  });
+
   it("closes mobile menu when route changes", async () => {
     const router = createRouter({
       history: createMemoryHistory(),

@@ -3,6 +3,7 @@ import { MemoryRouter } from "react-router-dom";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { ProfilePage } from "@/components/user/ProfilePage";
 import { accountService } from "@/services/accountService";
+import { palestranteService } from "@/services/palestranteService";
 import { redeSocialService } from "@/services/redeSocialService";
 
 vi.mock("@/services/accountService", () => ({
@@ -17,6 +18,13 @@ vi.mock("@/services/redeSocialService", () => ({
     getMine: vi.fn(),
     saveMine: vi.fn(),
     deleteMine: vi.fn(),
+  },
+}));
+
+vi.mock("@/services/palestranteService", () => ({
+  palestranteService: {
+    getMe: vi.fn(),
+    update: vi.fn(),
   },
 }));
 
@@ -35,11 +43,6 @@ const baseProfile = {
   eventosParticipados: 0,
 };
 
-const palestranteProfile = {
-  ...baseProfile,
-  funcao: "Palestrante" as const,
-};
-
 describe("ProfilePage", () => {
   beforeEach(() => {
     vi.mocked(accountService.getProfile).mockReset();
@@ -47,6 +50,17 @@ describe("ProfilePage", () => {
     vi.mocked(redeSocialService.getMine).mockReset();
     vi.mocked(redeSocialService.saveMine).mockReset();
     vi.mocked(redeSocialService.deleteMine).mockReset();
+    vi.mocked(palestranteService.getMe).mockReset();
+    vi.mocked(palestranteService.update).mockReset();
+    vi.mocked(palestranteService.getMe).mockResolvedValue({
+      id: 1,
+      nome: "",
+      email: "",
+      telefone: "",
+      imagemURL: "",
+      miniCurriculo: "",
+    });
+    vi.mocked(redeSocialService.getMine).mockResolvedValue([]);
   });
 
   it("carrega telefone e descricao no formulário", async () => {
@@ -180,62 +194,60 @@ describe("ProfilePage", () => {
     expect(redeSocialService.getMine).not.toHaveBeenCalled();
   });
 
-  it("carrega e salva redes para Palestrante", async () => {
-    vi.mocked(accountService.getProfile).mockResolvedValue(palestranteProfile);
-    vi.mocked(redeSocialService.getMine).mockResolvedValue([
-      { id: 1, nome: "GitHub", url: "https://github.com/me" },
-    ]);
-    vi.mocked(redeSocialService.saveMine).mockResolvedValue([
-      { id: 1, nome: "GitHub", url: "https://github.com/updated" },
-    ]);
-
+  it("atualiza card nome/descricao ao vivo", async () => {
+    vi.mocked(accountService.getProfile).mockResolvedValue(baseProfile);
     render(
       <MemoryRouter>
         <ProfilePage />
       </MemoryRouter>,
     );
-
-    await screen.findByText("Redes sociais");
-    expect(redeSocialService.getMine).toHaveBeenCalled();
-
-    const urlInput = screen.getByDisplayValue("https://github.com/me");
-    fireEvent.change(urlInput, { target: { value: "https://github.com/updated" } });
-    fireEvent.click(screen.getByRole("button", { name: "Salvar Redes" }));
-
-    await waitFor(() => {
-      expect(redeSocialService.saveMine).toHaveBeenCalledWith([
-        expect.objectContaining({
-          nome: "GitHub",
-          url: "https://github.com/updated",
-        }),
-      ]);
-    });
-    expect(
-      await screen.findByText("Redes sociais salvas com sucesso."),
-    ).toBeTruthy();
+    await screen.findByDisplayValue(baseProfile.primeiroNome);
+    const primeiro = screen.getByLabelText(/primeiro nome/i);
+    fireEvent.change(primeiro, { target: { value: "Live" } });
+    expect(await screen.findByText(/Live/)).toBeTruthy();
   });
 
-  it("exclui rede persistida após confirmação", async () => {
-    vi.mocked(accountService.getProfile).mockResolvedValue(palestranteProfile);
-    vi.mocked(redeSocialService.getMine).mockResolvedValue([
-      { id: 8, nome: "LinkedIn", url: "https://linkedin.com/in/me" },
-    ]);
-    vi.mocked(redeSocialService.deleteMine).mockResolvedValue({ message: "Removido" });
-
+  it("oculta tabs Palestrante e Rede Social para Participante", async () => {
+    vi.mocked(accountService.getProfile).mockResolvedValue(baseProfile);
     render(
       <MemoryRouter>
         <ProfilePage />
       </MemoryRouter>,
     );
-
-    await screen.findByText("Redes sociais");
-    fireEvent.click(screen.getByRole("button", { name: "Excluir" }));
-    const confirmButtons = await screen.findAllByRole("button", { name: "Excluir" });
-    fireEvent.click(confirmButtons[confirmButtons.length - 1]);
-
-    await waitFor(() => {
-      expect(redeSocialService.deleteMine).toHaveBeenCalledWith(8);
-    });
-    expect(screen.queryByDisplayValue("https://linkedin.com/in/me")).toBeNull();
+    await screen.findByRole("tablist");
+    expect(screen.queryByRole("tab", { name: "Palestrante" })).not.toBeInTheDocument();
+    expect(screen.queryByRole("tab", { name: "Rede Social" })).not.toBeInTheDocument();
   });
+
+  it("mostra tabs extras ao selecionar função Palestrante", async () => {
+    vi.mocked(accountService.getProfile).mockResolvedValue(baseProfile);
+    render(
+      <MemoryRouter>
+        <ProfilePage />
+      </MemoryRouter>,
+    );
+    await screen.findByLabelText(/função/i);
+    fireEvent.change(screen.getByLabelText(/função/i), {
+      target: { value: "Palestrante" },
+    });
+    expect(await screen.findByRole("tab", { name: "Palestrante" })).toBeTruthy();
+    expect(screen.getByRole("tab", { name: "Rede Social" })).toBeTruthy();
+  });
+
+  it("chama getMe ao tornar-se Palestrante", async () => {
+    vi.mocked(accountService.getProfile).mockResolvedValue(baseProfile);
+    render(
+      <MemoryRouter>
+        <ProfilePage />
+      </MemoryRouter>,
+    );
+    await screen.findByLabelText(/função/i);
+    fireEvent.change(screen.getByLabelText(/função/i), {
+      target: { value: "Palestrante" },
+    });
+    await waitFor(() => {
+      expect(palestranteService.getMe).toHaveBeenCalled();
+    });
+  });
+
 });

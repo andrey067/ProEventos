@@ -14,6 +14,9 @@ import redeSocialService, {
   type RedeSocialPayload,
 } from "../../services/redeSocialService";
 import LoadingSpinner from "../common/LoadingSpinner.vue";
+import PageEnter from "../../shared/motion/PageEnter.vue";
+import AlertMotion from "../../shared/motion/AlertMotion.vue";
+import PanelEnter from "../../shared/motion/PanelEnter.vue";
 import { isRemoteImageUrl } from "../../utils/imageUrl";
 
 interface RedeDraft {
@@ -190,6 +193,7 @@ onMounted(() => {
 </script>
 
 <template>
+  <PageEnter>
   <div class="flex min-w-0 flex-col gap-6">
     <div class="flex flex-wrap items-center justify-between gap-4">
       <div>
@@ -222,27 +226,30 @@ onMounted(() => {
       </template>
     </p>
 
-    <p
-      v-if="success"
+    <AlertMotion
+      :show="!!success"
       class="rounded-[length:var(--radius-control)] border border-line bg-accent-soft px-4 py-3 text-sm text-accent-dark"
     >
       {{ success }}
-    </p>
+    </AlertMotion>
 
-    <p
-      v-if="error"
+    <AlertMotion
+      :show="!!error"
       class="rounded-[length:var(--radius-control)] border border-danger-border bg-danger-soft px-4 py-3 text-sm text-danger"
     >
       {{ error }}
-    </p>
+    </AlertMotion>
 
     <LoadingSpinner :active="loading" variant="page" />
 
-    <form
+    <PanelEnter
       v-if="!loading && writeAllowed"
-      class="grid min-w-0 gap-4 rounded-[length:var(--radius-control)] border border-line bg-panel p-4 sm:p-6 md:grid-cols-2"
-      @submit.prevent="save"
+      class-name="grid min-w-0 gap-4 rounded-[length:var(--radius-control)] border border-line bg-panel p-4 sm:p-6 md:grid-cols-2"
     >
+      <form
+        class="contents"
+        @submit.prevent="save"
+      >
       <label class="flex flex-col gap-2 text-sm md:col-span-2">
         <span class="font-medium">Nome</span>
         <input
@@ -355,7 +362,7 @@ onMounted(() => {
       <div class="flex flex-wrap gap-2 md:col-span-2">
         <button
           type="submit"
-          class="inline-flex items-center justify-center rounded-[length:var(--radius-control)] bg-accent px-4 py-2 text-sm font-medium text-white hover:bg-accent-dark active:scale-[0.98]"
+          class="motion-press inline-flex items-center justify-center rounded-[length:var(--radius-control)] bg-accent px-4 py-2 text-sm font-medium text-white hover:bg-accent-dark active:scale-[0.98]"
         >
           {{ isNew ? "Salvar" : "Atualizar" }}
         </button>
@@ -367,6 +374,8 @@ onMounted(() => {
           Cancelar
         </button>
       </div>
-    </form>
+      </form>
+    </PanelEnter>
   </div>
+  </PageEnter>
 </template>

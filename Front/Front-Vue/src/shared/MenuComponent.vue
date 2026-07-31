@@ -75,11 +75,12 @@
       </nav>
     </div>
 
-    <nav
-      v-if="menuOpen"
-      id="mobile-nav"
-      class="flex flex-col gap-1 border-t border-line px-4 py-3 md:hidden"
-    >
+    <Transition :name="reduced ? undefined : 'motion-nav-drawer'">
+      <nav
+        v-if="menuOpen"
+        id="mobile-nav"
+        class="flex flex-col gap-1 border-t border-line px-4 py-3 md:hidden"
+      >
       <router-link
         v-for="link in links"
         :key="`mobile-${link.key}`"
@@ -102,12 +103,14 @@
       >
         Sair
       </button>
-    </nav>
+      </nav>
+    </Transition>
   </header>
 </template>
 
 <script setup lang="ts">
 import { computed, ref, watch } from "vue";
+import { usePrefersReducedMotion } from "./motion/usePrefersReducedMotion";
 import { useRoute, useRouter } from "vue-router";
 import { isAuthenticated } from "../services/authToken";
 import accountService from "../services/accountService";
@@ -116,6 +119,7 @@ const route = useRoute();
 const router = useRouter();
 const authenticated = ref(isAuthenticated());
 const menuOpen = ref(false);
+const reduced = usePrefersReducedMotion();
 
 watch(
   () => route.fullPath,
