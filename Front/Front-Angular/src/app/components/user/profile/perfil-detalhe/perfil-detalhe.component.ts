@@ -141,7 +141,7 @@ export class PerfilDetalheComponent implements OnInit, OnChanges {
       },
       error: (err) => {
         this.saving = false;
-        this.error = apiErrorMessage(err, 'Erro ao salvar perfil.');
+        this.error = apiErrorMessage(err.error, 'Erro ao salvar perfil.');
       },
     });
   }

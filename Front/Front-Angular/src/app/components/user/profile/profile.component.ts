@@ -53,7 +53,7 @@ export class ProfileComponent implements OnInit {
       next: (p) => this.applySnapshot(p),
       error: (err) => {
         this.loading = false;
-        this.error = apiErrorMessage(err, 'Erro ao carregar perfil.');
+        this.error = apiErrorMessage(err.error, 'Erro ao carregar perfil.');
       },
     });
   }

@@ -97,20 +97,36 @@
           }
         </div>
 
-        <div class="border border-t-0 border-transparent p-6" role="tabpanel">
-          @if (activeTab === 'perfil' && snapshot) {
-            <app-perfil-detalhe
-              [profile]="snapshot"
-              (formPreview)="onFormPreview($event)"
-              (saved)="onPerfilSaved($event)"
-              (cancelled)="onPerfilCancelled()"
-            />
+        <div class="border border-t-0 border-transparent p-6">
+          @if (snapshot) {
+            <div
+              role="tabpanel"
+              [hidden]="activeTab !== 'perfil'"
+              [attr.aria-hidden]="activeTab !== 'perfil'"
+            >
+              <app-perfil-detalhe
+                [profile]="snapshot"
+                (formPreview)="onFormPreview($event)"
+                (saved)="onPerfilSaved($event)"
+                (cancelled)="onPerfilCancelled()"
+              />
+            </div>
           }
-          @if (activeTab === 'palestrante' && ehPalestrante) {
-            <app-palestrante-detalhe />
-          }
-          @if (activeTab === 'rede-social' && ehPalestrante) {
-            <app-redes-sociais />
+          @if (ehPalestrante) {
+            <div
+              role="tabpanel"
+              [hidden]="activeTab !== 'palestrante'"
+              [attr.aria-hidden]="activeTab !== 'palestrante'"
+            >
+              <app-palestrante-detalhe />
+            </div>
+            <div
+              role="tabpanel"
+              [hidden]="activeTab !== 'rede-social'"
+              [attr.aria-hidden]="activeTab !== 'rede-social'"
+            >
+              <app-redes-sociais />
+            </div>
           }
         </div>
       </div>
