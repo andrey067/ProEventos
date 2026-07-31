@@ -4,6 +4,7 @@ import { createRouter, createMemoryHistory } from "vue-router";
 import PerfilUsuario from "./PerfilUsuario.vue";
 import PerfilDetalhe from "./PerfilDetalhe.vue";
 import accountService from "../../../services/accountService";
+import palestranteService from "../../../services/palestranteService";
 import redeSocialService from "../../../services/redeSocialService";
 
 vi.mock("../../../services/accountService", () => ({
@@ -303,6 +304,26 @@ describe("PerfilUsuario", () => {
     await wrapper.vm.$nextTick();
     expect(wrapper.find('[data-tab="palestrante"]').exists()).toBe(true);
     expect(wrapper.find('[data-tab="rede-social"]').exists()).toBe(true);
+  });
+
+  it("loads palestrante getMe when user becomes Palestrante", async () => {
+    (accountService.getProfile as any).mockResolvedValue(baseProfile);
+    (palestranteService.getMe as any).mockResolvedValue({
+      data: { id: 1, nome: "A", email: "", telefone: "", imagemURL: "", miniCurriculo: "" },
+    });
+    const wrapper = await mountComponent();
+    await flushPromises();
+
+    (wrapper.vm as unknown as PerfilUsuarioVm).onFormPreview({
+      primeiroNome: "N",
+      ultimoNome: "S",
+      descricao: "D",
+      funcao: "Palestrante",
+    });
+    await wrapper.vm.$nextTick();
+    await flushPromises();
+
+    expect(palestranteService.getMe).toHaveBeenCalled();
   });
 
   it.skip("hides redes section for Participante", async () => {
