@@ -250,11 +250,24 @@ describe('ProfileComponent', () => {
     expect(palestrante.getMe).toHaveBeenCalled();
   });
 
-  it.skip('loads and saves redes for Palestrante', async () => {
-    // Task 4
-  });
+  it('shows Rede Social tab for Palestrante and renders child', async () => {
+    await setup();
+    const account = TestBed.inject(AccountService);
+    vi.mocked(account.getProfile).mockReturnValue(of(baseProfile));
+    const fixture = TestBed.createComponent(ProfileComponent);
+    fixture.detectChanges();
+    await fixture.whenStable();
 
-  it.skip('deletes persisted rede via deleteMine after confirmation', async () => {
-    // Task 4
+    fixture.componentInstance.onFormPreview({
+      primeiroNome: 'Nome',
+      ultimoNome: 'Sobrenome',
+      descricao: 'Bio',
+      funcao: 'Palestrante',
+    });
+    fixture.componentInstance.selectTab('rede-social');
+    fixture.detectChanges();
+    await fixture.whenStable();
+
+    expect(fixture.nativeElement.querySelector('app-redes-sociais')).toBeTruthy();
   });
 });
