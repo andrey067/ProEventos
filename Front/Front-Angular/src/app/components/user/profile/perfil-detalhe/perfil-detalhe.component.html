@@ -1,0 +1,130 @@
+<div class="flex flex-col gap-4">
+  @if (error) {
+    <p class="rounded-[length:var(--radius-control)] border border-danger-border bg-danger-soft px-4 py-3 text-sm text-danger">
+      {{ error }}
+    </p>
+  }
+  @if (success) {
+    <p class="rounded-[length:var(--radius-control)] border border-line bg-surface px-4 py-3 text-sm text-accent-dark">
+      {{ success }}
+    </p>
+  }
+
+  <form class="flex flex-col gap-4" [formGroup]="form" (ngSubmit)="submit()">
+    <h2 class="border-b border-line pb-2 text-lg font-semibold">Detalhe Perfil</h2>
+
+    <div class="grid gap-4 md:grid-cols-3">
+      <label class="flex flex-col gap-2 text-sm">
+        <span class="font-medium">Título</span>
+        <select
+          formControlName="titulo"
+          class="w-full rounded-[length:var(--radius-control)] border border-line bg-panel px-3 py-2 text-sm outline-none focus:border-accent focus:ring-2 focus:ring-accent/20"
+        >
+          @for (opt of tituloOptions; track opt.value) {
+            <option [value]="opt.value">{{ opt.label }}</option>
+          }
+        </select>
+      </label>
+      <label class="flex flex-col gap-2 text-sm">
+        <span class="font-medium">Primeiro Nome</span>
+        <input
+          type="text"
+          formControlName="primeiroNome"
+          class="w-full rounded-[length:var(--radius-control)] border border-line bg-panel px-3 py-2 text-sm outline-none focus:border-accent focus:ring-2 focus:ring-accent/20"
+        />
+      </label>
+      <label class="flex flex-col gap-2 text-sm">
+        <span class="font-medium">Último nome</span>
+        <input
+          type="text"
+          formControlName="ultimoNome"
+          class="w-full rounded-[length:var(--radius-control)] border border-line bg-panel px-3 py-2 text-sm outline-none focus:border-accent focus:ring-2 focus:ring-accent/20"
+        />
+      </label>
+    </div>
+
+    <div class="grid gap-4 md:grid-cols-3">
+      <label class="flex flex-col gap-2 text-sm">
+        <span class="font-medium">E-mail</span>
+        <input
+          type="email"
+          formControlName="email"
+          class="w-full rounded-[length:var(--radius-control)] border border-line bg-panel px-3 py-2 text-sm outline-none focus:border-accent focus:ring-2 focus:ring-accent/20"
+        />
+      </label>
+      <label class="flex flex-col gap-2 text-sm">
+        <span class="font-medium">Telefone</span>
+        <input
+          type="text"
+          formControlName="telefone"
+          class="w-full rounded-[length:var(--radius-control)] border border-line bg-panel px-3 py-2 text-sm outline-none focus:border-accent focus:ring-2 focus:ring-accent/20"
+        />
+      </label>
+      <label class="flex flex-col gap-2 text-sm">
+        <span class="font-medium">Função</span>
+        <select
+          formControlName="funcao"
+          class="w-full rounded-[length:var(--radius-control)] border border-line bg-panel px-3 py-2 text-sm outline-none focus:border-accent focus:ring-2 focus:ring-accent/20"
+        >
+          @for (opt of funcaoOptions; track opt.value) {
+            <option [value]="opt.value">{{ opt.label }}</option>
+          }
+        </select>
+      </label>
+    </div>
+
+    <label class="flex flex-col gap-2 text-sm">
+      <span class="font-medium">Descrição</span>
+      <textarea
+        formControlName="descricao"
+        rows="3"
+        class="w-full rounded-[length:var(--radius-control)] border border-line bg-panel px-3 py-2 text-sm outline-none focus:border-accent focus:ring-2 focus:ring-accent/20"
+      ></textarea>
+    </label>
+
+    <div>
+      <h3 class="border-b border-line pb-2 pt-2 text-lg font-semibold">Mudar Senha</h3>
+      <p class="mt-2 text-sm text-muted">Caso mude de senha, preencha os campos abaixo:</p>
+    </div>
+    <div class="grid gap-4 md:grid-cols-2">
+      <label class="flex flex-col gap-2 text-sm">
+        <span class="font-medium">Senha</span>
+        <input
+          type="password"
+          formControlName="password"
+          autocomplete="new-password"
+          class="w-full rounded-[length:var(--radius-control)] border border-line bg-panel px-3 py-2 text-sm outline-none focus:border-accent focus:ring-2 focus:ring-accent/20"
+        />
+      </label>
+      <label class="flex flex-col gap-2 text-sm">
+        <span class="font-medium">Confirmar Senha</span>
+        <input
+          type="password"
+          formControlName="confirmePassword"
+          autocomplete="new-password"
+          class="w-full rounded-[length:var(--radius-control)] border border-line bg-panel px-3 py-2 text-sm outline-none focus:border-accent focus:ring-2 focus:ring-accent/20"
+        />
+        @if (form.hasError('passwordMismatch') && form.get('confirmePassword')?.touched) {
+          <span class="text-xs text-danger">As senhas não coincidem.</span>
+        }
+      </label>
+    </div>
+
+    <div class="flex flex-col gap-3 border-t border-line pt-4 sm:flex-row sm:flex-wrap">
+      <button
+        type="button"
+        class="inline-flex w-full items-center justify-center rounded-[length:var(--radius-control)] border border-line bg-panel px-4 py-2 text-sm font-medium sm:w-auto"
+        (click)="cancelEdit()"
+      >
+        Cancelar Alteração
+      </button>
+      <button
+        type="submit"
+        class="motion-press inline-flex w-full items-center justify-center gap-2 rounded-[length:var(--radius-control)] bg-accent px-4 py-2 text-sm font-medium text-white hover:bg-accent-dark active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-60 sm:ml-auto sm:w-auto"
+        [disabled]="saving"
+      >
+        {{ saving ? 'Salvando...' : 'Salvar Alteração' }}
+      </button>
+    </div>
+  </form>
+</div>
