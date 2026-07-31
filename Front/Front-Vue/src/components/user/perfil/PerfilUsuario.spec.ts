@@ -289,6 +289,8 @@ describe("PerfilUsuario", () => {
     await flushPromises();
     expect(wrapper.find('[role="tablist"]').exists()).toBe(true);
     expect(wrapper.find('[data-tab="palestrante"]').exists()).toBe(false);
+    expect(wrapper.find('[data-tab="rede-social"]').exists()).toBe(false);
+    expect(redeSocialService.listMine).not.toHaveBeenCalled();
   });
 
   it("shows extra tabs when funcao becomes Palestrante", async () => {
@@ -326,43 +328,11 @@ describe("PerfilUsuario", () => {
     expect(palestranteService.getMe).toHaveBeenCalled();
   });
 
-  it.skip("hides redes section for Participante", async () => {
-    // Task 7
-    (accountService.getProfile as any).mockResolvedValue(baseProfile);
-    const wrapper = await mountComponent();
-    await flushPromises();
-
-    expect(wrapper.find('[data-tab="rede-social"]').exists()).toBe(false);
-    expect(redeSocialService.listMine).not.toHaveBeenCalled();
-  });
-
-  it.skip("loads and saves redes for Palestrante", async () => {
-    // Task 7
+  it("shows Rede Social tab for Palestrante profile", async () => {
     (accountService.getProfile as any).mockResolvedValue(palestranteProfile);
-    (redeSocialService.listMine as any).mockResolvedValue({
-      data: [{ id: 1, nome: "GitHub", url: "https://github.com/me" }],
-    });
-    (redeSocialService.saveMine as any).mockResolvedValue({
-      data: [{ id: 1, nome: "GitHub", url: "https://github.com/updated" }],
-    });
-
     const wrapper = await mountComponent();
     await flushPromises();
 
     expect(wrapper.find('[data-tab="rede-social"]').exists()).toBe(true);
-  });
-
-  it.skip("deletes persisted rede after confirmation", async () => {
-    // Task 7
-    (accountService.getProfile as any).mockResolvedValue(palestranteProfile);
-    (redeSocialService.listMine as any).mockResolvedValue({
-      data: [{ id: 7, nome: "LinkedIn", url: "https://linkedin.com/in/me" }],
-    });
-    (redeSocialService.removeMine as any).mockResolvedValue({ status: 200 });
-
-    const wrapper = await mountComponent();
-    await flushPromises();
-
-    expect(redeSocialService.removeMine).toHaveBeenCalledWith(7);
   });
 });
