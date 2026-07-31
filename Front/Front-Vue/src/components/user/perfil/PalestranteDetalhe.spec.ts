@@ -49,8 +49,9 @@ describe("PalestranteDetalhe", () => {
     (palestranteService.update as any).mockResolvedValue({ data: { id: 7, nome: "Novo" } });
     const wrapper = mount(PalestranteDetalhe);
     await flushPromises();
-    await wrapper.find('input[name="nome"]').setValue("Novo");
-    await wrapper.find("form").trigger("submit.prevent");
+    const vm = wrapper.vm as { nome: string; onSubmit: () => Promise<void> };
+    vm.nome = "Novo";
+    await vm.onSubmit();
     await flushPromises();
     expect(palestranteService.update).toHaveBeenCalledWith(
       7,

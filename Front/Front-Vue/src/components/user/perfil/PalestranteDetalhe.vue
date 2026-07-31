@@ -16,7 +16,7 @@
 
     <p v-if="loading" class="text-sm text-muted">Carregando detalhe palestrante…</p>
 
-    <form v-else class="flex flex-col gap-4" @submit.prevent="submitForm">
+    <form v-else class="flex flex-col gap-4" @submit.prevent="onSubmit">
       <h2 class="border-b border-line pb-2 text-lg font-semibold">Detalhe Palestrante</h2>
 
       <label class="flex flex-col gap-2 text-sm">
@@ -97,6 +97,7 @@ import palestranteService from "../../../services/palestranteService";
 import {
   defaultPalestranteFormValues,
   palestranteSchema,
+  type PalestranteFormValues,
 } from "../../../forms/schemas";
 import { toTypedSchema } from "../../../forms/toTyped";
 import AlertMotion from "../../../shared/motion/AlertMotion.vue";
@@ -109,7 +110,7 @@ const error = ref<string | null>(null);
 const success = ref<string | null>(null);
 const missingProfile = ref(false);
 
-const { defineField, errors, setValues } = useForm({
+const { defineField, handleSubmit, errors, setValues } = useForm({
   validationSchema: toTypedSchema(palestranteSchema),
   initialValues: defaultPalestranteFormValues(),
 });
@@ -149,23 +150,14 @@ async function load() {
   }
 }
 
-async function submitForm() {
-  const formValues = {
-    nome: nome.value ?? "",
-    email: email.value ?? "",
-    telefone: telefone.value ?? "",
-    imagemURL: imagemURL.value ?? "",
-    miniCurriculo: miniCurriculo.value ?? "",
-  };
-  const parsed = palestranteSchema.safeParse(formValues);
-  if (!parsed.success) return;
+const onSubmit = handleSubmit(async (formValues: PalestranteFormValues) => {
   if (palestranteId.value == null) return;
 
   saving.value = true;
   error.value = null;
   success.value = null;
   try {
-    await palestranteService.update(palestranteId.value, parsed.data);
+    await palestranteService.update(palestranteId.value, formValues);
     success.value = "Palestrante atualizado.";
   } catch (err) {
     if (isAxiosError(err)) {
@@ -176,7 +168,7 @@ async function submitForm() {
   } finally {
     saving.value = false;
   }
-}
+});
 
 onMounted(() => {
   void load();
