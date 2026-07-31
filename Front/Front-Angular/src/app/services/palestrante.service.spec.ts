@@ -69,6 +69,25 @@ describe('PalestranteService', () => {
     req.flush(mock);
   });
 
+  it('should fetch current user palestrante via getMe', () => {
+    const mock = {
+      id: 9,
+      nome: 'Eu',
+      miniCurriculo: 'Bio',
+      imagemURL: '',
+      telefone: '11',
+      email: 'eu@x.com',
+    };
+
+    service.getMe().subscribe((data) => {
+      expect(data).toEqual(mock);
+    });
+
+    const req = httpMock.expectOne(`${environment.apiUrl}/palestrantes/me`);
+    expect(req.request.method).toBe('GET');
+    req.flush(mock);
+  });
+
   it('should create palestrante', () => {
     const payload = { nome: 'Carla', miniCurriculo: '', imagemURL: '', telefone: '', email: '' };
     const created = { id: 3, ...payload };

@@ -71,6 +71,22 @@ describe("palestranteService", () => {
     expect(result).toEqual(mockPalestrante);
   });
 
+  it("busca palestrante do usuário logado via getMe", async () => {
+    vi.mocked(fetch).mockResolvedValueOnce({
+      ok: true,
+      status: 200,
+      json: async () => mockPalestrante,
+    } as Response);
+
+    const result = await palestranteService.getMe();
+
+    expect(fetch).toHaveBeenCalledWith(
+      "http://localhost:5050/palestrantes/me",
+      expect.any(Object),
+    );
+    expect(result).toEqual(mockPalestrante);
+  });
+
   it("cria palestrante", async () => {
     const { id: _id, ...payload } = mockPalestrante;
     vi.mocked(fetch).mockResolvedValueOnce({
