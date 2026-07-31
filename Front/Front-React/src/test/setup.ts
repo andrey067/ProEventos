@@ -20,9 +20,11 @@ const localStorageMock: Storage = {
   },
 };
 
-vi.stubGlobal("localStorage", localStorageMock);
+function stubLocalStorage(): void {
+  vi.stubGlobal("localStorage", localStorageMock);
+}
 
-if (typeof window.matchMedia !== "function") {
+function stubDefaultMatchMedia(): void {
   vi.stubGlobal(
     "matchMedia",
     vi.fn().mockImplementation((query: string) => ({
@@ -38,6 +40,13 @@ if (typeof window.matchMedia !== "function") {
   );
 }
 
+stubLocalStorage();
+if (typeof window.matchMedia !== "function") {
+  stubDefaultMatchMedia();
+}
+
 beforeEach(() => {
   store.clear();
+  // Re-apply after any test that called vi.unstubAllGlobals()
+  stubLocalStorage();
 });

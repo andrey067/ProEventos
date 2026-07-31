@@ -19,7 +19,21 @@ function mockMatchMedia(matches: boolean) {
 }
 
 afterEach(() => {
-  vi.unstubAllGlobals();
+  // Restore default matchMedia; do not vi.unstubAllGlobals() — that
+  // removes the localStorage stub from src/test/setup.ts.
+  vi.stubGlobal(
+    "matchMedia",
+    vi.fn().mockImplementation((query: string) => ({
+      matches: false,
+      media: query,
+      addEventListener: vi.fn(),
+      removeEventListener: vi.fn(),
+      addListener: vi.fn(),
+      removeListener: vi.fn(),
+      dispatchEvent: vi.fn(),
+      onchange: null,
+    })),
+  );
 });
 
 describe("usePrefersReducedMotion", () => {

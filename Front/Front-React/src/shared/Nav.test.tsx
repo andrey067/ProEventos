@@ -1,13 +1,29 @@
 import { fireEvent, render, screen } from "@testing-library/react";
 import { MemoryRouter } from "react-router-dom";
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { clearToken, setToken } from "@/services/authToken";
 import { Nav } from "@/shared/Nav";
 
 describe("Nav", () => {
   beforeEach(() => {
     clearToken();
-    vi.unstubAllGlobals();
+  });
+
+  afterEach(() => {
+    // Restore default matchMedia without wiping setup's localStorage stub
+    vi.stubGlobal(
+      "matchMedia",
+      vi.fn().mockImplementation((query: string) => ({
+        matches: false,
+        media: query,
+        addEventListener: vi.fn(),
+        removeEventListener: vi.fn(),
+        addListener: vi.fn(),
+        removeListener: vi.fn(),
+        dispatchEvent: vi.fn(),
+        onchange: null,
+      })),
+    );
   });
 
   it("renderiza links principais quando deslogado", () => {
