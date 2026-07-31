@@ -1,42 +1,19 @@
-import { zodResolver } from "@hookform/resolvers/zod";
-import { useEffect, useMemo, useState } from "react";
-import { useForm } from "react-hook-form";
+import { useEffect, useState } from "react";
 import { Navigate } from "react-router-dom";
-import { z } from "zod";
-import { FieldError } from "@/forms/components/FieldError";
 import { LoadingSpinner } from "@/components/LoadingSpinner";
-import { ConfirmDialog } from "@/shared/ConfirmDialog";
 import {
   AlertMotion,
-  ListStagger,
-  ListStaggerItem,
   PageEnter,
   PanelEnter,
-  SkeletonShimmer,
 } from "@/shared/motion";
-import { redeSocialSchema } from "@/forms/schemas/eventoSchema";
-import {
-  FUNCAO_OPTIONS,
-  TITULO_OPTIONS,
-  type Funcao,
-  type RedeSocial,
-  type Titulo,
-  type UserProfile,
-} from "@/models";
+import type { Funcao, UserProfile } from "@/models";
 import { accountService } from "@/services/accountService";
-import { redeSocialService } from "@/services/redeSocialService";
-import { HttpError } from "@/services/http";
-
-const inputClass =
-  "w-full rounded-[length:var(--radius-control)] border border-line bg-panel px-3 py-2 text-sm outline-none focus:border-accent focus:ring-2 focus:ring-accent/20 disabled:cursor-not-allowed disabled:opacity-60";
-const btnPrimary =
-  "inline-flex items-center justify-center rounded-[length:var(--radius-control)] bg-accent px-4 py-2 text-sm font-medium text-white transition-transform hover:bg-accent-dark active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-60";
-const btnOutline =
-  "inline-flex items-center justify-center rounded-[length:var(--radius-control)] border border-line bg-panel px-4 py-2 text-sm font-medium text-ink transition-colors hover:bg-surface";
-const btnSmAccent =
-  "inline-flex items-center justify-center rounded-[length:var(--radius-control)] border border-accent/30 bg-panel px-2 py-1 text-xs font-medium text-accent-dark hover:bg-accent-soft disabled:cursor-not-allowed disabled:opacity-60";
-const btnSmDanger =
-  "inline-flex items-center justify-center rounded-[length:var(--radius-control)] border border-danger-border bg-panel px-2 py-1 text-xs font-medium text-danger hover:bg-danger-soft";
+import { PalestranteDetalhe } from "@/components/user/PalestranteDetalhe";
+import {
+  PerfilDetalhe,
+  type ProfileFormPreview,
+} from "@/components/user/PerfilDetalhe";
+import { RedesSociais } from "@/components/user/RedesSociais";
 
 const PLACEHOLDER =
   "data:image/svg+xml," +
@@ -44,115 +21,72 @@ const PLACEHOLDER =
     `<svg xmlns="http://www.w3.org/2000/svg" width="120" height="120"><rect fill="#e5e7eb" width="120" height="120"/><circle cx="60" cy="46" r="22" fill="#9ca3af"/><ellipse cx="60" cy="100" rx="36" ry="28" fill="#9ca3af"/></svg>`,
   );
 
-const profileSchema = z
-  .object({
-    titulo: z.string().min(1),
-    primeiroNome: z.string().trim().min(1, "Primeiro nome é obrigatório"),
-    ultimoNome: z.string().trim().min(1, "Último nome é obrigatório"),
-    email: z.string().trim().min(1, "E-mail é obrigatório").email("E-mail inválido"),
-    telefone: z.string().trim().min(1, "Telefone é obrigatório"),
-    funcao: z.string().min(1),
-    descricao: z.string().trim().min(1, "Descrição é obrigatória"),
-    password: z.string().optional(),
-    confirmePassword: z.string().optional(),
-  })
-  .refine(
-    (v) => (!v.password && !v.confirmePassword) || v.password === v.confirmePassword,
-    { message: "As senhas não coincidem", path: ["confirmePassword"] },
-  );
+type ProfileTab = "perfil" | "palestrante" | "rede-social";
 
-type ProfileFormValues = z.infer<typeof profileSchema>;
+type CardSnapshot = {
+  userName: string;
+  nome: string;
+  primeiroNome: string;
+  ultimoNome: string;
+  descricao: string;
+  funcao: Funcao;
+  imagemURL: string | null;
+  eventosMinistrados: number;
+  eventosParticipados: number;
+};
 
-function emptyRedeDraft(): RedeSocial {
-  return { id: 0, nome: "", url: "" };
+type CardView = {
+  nome: string;
+  primeiroNome: string;
+  ultimoNome: string;
+  descricao: string;
+};
+
+function toCardSnapshot(p: UserProfile): CardSnapshot {
+  return {
+    userName: p.userName,
+    nome: p.nome,
+    primeiroNome: p.primeiroNome ?? "",
+    ultimoNome: p.ultimoNome ?? "",
+    descricao: p.descricao ?? "",
+    funcao: p.funcao ?? "Participante",
+    imagemURL: p.imagemURL ?? null,
+    eventosMinistrados: p.eventosMinistrados ?? 0,
+    eventosParticipados: p.eventosParticipados ?? 0,
+  };
 }
 
-function toFormValues(profile: UserProfile): ProfileFormValues {
+function toCardView(p: UserProfile): CardView {
   return {
-    titulo: profile.titulo ?? "NaoInformado",
-    primeiroNome: profile.primeiroNome ?? "",
-    ultimoNome: profile.ultimoNome ?? "",
-    email: profile.email,
-    telefone: profile.telefone ?? "",
-    funcao: profile.funcao ?? "Participante",
-    descricao: profile.descricao ?? "",
-    password: "",
-    confirmePassword: "",
+    nome: p.nome,
+    primeiroNome: p.primeiroNome ?? "",
+    ultimoNome: p.ultimoNome ?? "",
+    descricao: p.descricao ?? "",
   };
 }
 
 export function ProfilePage() {
   const [loading, setLoading] = useState(true);
-  const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [success, setSuccess] = useState<string | null>(null);
-  const [snapshot, setSnapshot] = useState<UserProfile | null>(null);
-  const [imgBroken, setImgBroken] = useState(false);
-  const [redes, setRedes] = useState<RedeSocial[]>([]);
-  const [redesLoading, setRedesLoading] = useState(false);
-  const [savingRedes, setSavingRedes] = useState(false);
-  const [redesError, setRedesError] = useState<string | null>(null);
-  const [redesSuccess, setRedesSuccess] = useState<string | null>(null);
-  const [pendingRedeDelete, setPendingRedeDelete] = useState<{
-    index: number;
-    id: number;
-    nome: string;
-  } | null>(null);
-
-  const {
-    register,
-    handleSubmit,
-    reset,
-    watch,
-    formState: { errors },
-  } = useForm<ProfileFormValues>({
-    resolver: zodResolver(profileSchema),
-    defaultValues: {
-      titulo: "NaoInformado",
-      primeiroNome: "",
-      ultimoNome: "",
-      email: "",
-      telefone: "",
-      funcao: "Participante",
-      descricao: "",
-      password: "",
-      confirmePassword: "",
-    },
+  const [profile, setProfile] = useState<UserProfile | null>(null);
+  const [snapshot, setSnapshot] = useState<CardSnapshot | null>(null);
+  const [cardView, setCardView] = useState<CardView>({
+    nome: "",
+    primeiroNome: "",
+    ultimoNome: "",
+    descricao: "",
   });
-
-  const funcaoValue = watch("funcao");
-  const isPalestrante = useMemo(
-    () => (funcaoValue ?? snapshot?.funcao ?? "Participante") === "Palestrante",
-    [funcaoValue, snapshot?.funcao],
-  );
-
-  async function loadRedes() {
-    setRedesLoading(true);
-    setRedesError(null);
-    try {
-      const loaded = await redeSocialService.getMine();
-      setRedes(loaded);
-    } catch {
-      setRedesError("Não foi possível carregar redes sociais.");
-    } finally {
-      setRedesLoading(false);
-    }
-  }
+  const [ehPalestrante, setEhPalestrante] = useState(false);
+  const [activeTab, setActiveTab] = useState<ProfileTab>("perfil");
+  const [imgBroken, setImgBroken] = useState(false);
 
   useEffect(() => {
     async function load() {
       setLoading(true);
       setError(null);
       try {
-        const profile = await accountService.getProfile();
-        setSnapshot(profile);
-        reset(toFormValues(profile));
-        setImgBroken(false);
-        if (profile.funcao === "Palestrante") {
-          await loadRedes();
-        } else {
-          setRedes([]);
-        }
+        const loaded = await accountService.getProfile();
+        applySnapshot(loaded);
       } catch {
         setError("Não foi possível carregar o perfil.");
       } finally {
@@ -161,106 +95,48 @@ export function ProfilePage() {
     }
 
     void load();
-  }, [reset]);
+  }, []);
 
-  function validateRedes(items: RedeSocial[]): boolean {
-    for (const rede of items) {
-      const result = redeSocialSchema.safeParse(rede);
-      if (!result.success) {
-        setRedesError("Preencha nome e URL de todas as redes.");
-        return false;
-      }
-    }
-    return true;
-  }
-
-  async function saveRedes() {
-    if (!validateRedes(redes)) return;
-
-    setSavingRedes(true);
-    setRedesError(null);
-    setRedesSuccess(null);
-
-    try {
-      const saved = await redeSocialService.saveMine(redes);
-      setRedes(saved);
-      setRedesSuccess("Redes sociais salvas com sucesso.");
-    } catch {
-      setRedesError("Erro ao salvar redes sociais.");
-    } finally {
-      setSavingRedes(false);
+  function applySnapshot(p: UserProfile) {
+    setProfile(p);
+    setSnapshot(toCardSnapshot(p));
+    setCardView(toCardView(p));
+    const isPalestrante = p.funcao === "Palestrante";
+    setEhPalestrante(isPalestrante);
+    setImgBroken(false);
+    if (!isPalestrante && activeTab !== "perfil") {
+      setActiveTab("perfil");
     }
   }
 
-  async function confirmDeleteRede() {
-    if (!pendingRedeDelete) return;
-    const { index, id: redeId } = pendingRedeDelete;
-    setPendingRedeDelete(null);
-    setRedesError(null);
-    setRedesSuccess(null);
-
-    try {
-      if (redeId > 0) {
-        await redeSocialService.deleteMine(redeId);
-      }
-      setRedes((prev) => prev.filter((_, i) => i !== index));
-      setRedesSuccess("Rede social excluída.");
-    } catch {
-      setRedesError("Erro ao excluir rede social.");
+  function handlePreview(preview: ProfileFormPreview) {
+    setCardView({
+      nome: "",
+      primeiroNome: preview.primeiroNome,
+      ultimoNome: preview.ultimoNome,
+      descricao: preview.descricao,
+    });
+    const wasPalestrante = ehPalestrante;
+    const nowPalestrante = preview.funcao === "Palestrante";
+    setEhPalestrante(nowPalestrante);
+    if (wasPalestrante && !nowPalestrante && activeTab !== "perfil") {
+      setActiveTab("perfil");
     }
   }
 
-  async function onSubmit(values: ProfileFormValues) {
-    if (!snapshot) return;
-    setSaving(true);
-    setError(null);
-    setSuccess(null);
+  function handlePerfilSaved(p: UserProfile) {
+    applySnapshot(p);
+  }
 
-    try {
-      const updated = await accountService.updateProfile({
-        userName: snapshot.userName,
-        email: values.email,
-        primeiroNome: values.primeiroNome,
-        ultimoNome: values.ultimoNome,
-        titulo: values.titulo as Titulo,
-        funcao: values.funcao as Funcao,
-        telefone: values.telefone,
-        descricao: values.descricao,
-        ...(values.password ? { password: values.password } : {}),
-      });
-      setSnapshot(updated);
-      reset(toFormValues(updated));
-      setImgBroken(false);
-      if (updated.funcao === "Palestrante") {
-        await loadRedes();
-      } else {
-        setRedes([]);
-      }
-      setSuccess("Perfil atualizado com sucesso.");
-    } catch (err) {
-      if (err instanceof HttpError && (err.status === 400 || err.status === 409)) {
-        setError(err.message);
-      } else {
-        setError("Erro ao salvar perfil.");
-      }
-    } finally {
-      setSaving(false);
+  function handlePerfilCancelled() {
+    if (profile) {
+      applySnapshot(profile);
     }
   }
 
-  function cancelEdit() {
-    if (snapshot) {
-      reset(toFormValues(snapshot));
-      if (snapshot.funcao === "Palestrante") {
-        void loadRedes();
-      } else {
-        setRedes([]);
-      }
-    }
-    setError(null);
-    setSuccess(null);
-    setRedesError(null);
-    setRedesSuccess(null);
+  function selectTab(tab: ProfileTab) {
+    if (tab !== "perfil" && !ehPalestrante) return;
+    setActiveTab(tab);
   }
 
   if (loading) {
@@ -272,272 +148,136 @@ export function ProfilePage() {
 
   const alertDangerClass =
     "rounded-[length:var(--radius-control)] border border-danger-border bg-danger-soft px-4 py-3 text-sm text-danger";
-  const alertSuccessClass =
-    "rounded-[length:var(--radius-control)] border border-line bg-surface px-4 py-3 text-sm text-accent-dark";
-  const alertDangerSmClass =
-    "mb-3 rounded-[length:var(--radius-control)] border border-danger-border bg-danger-soft px-3 py-2 text-sm text-danger";
-  const alertSuccessSmClass =
-    "mb-3 rounded-[length:var(--radius-control)] border border-line bg-surface px-3 py-2 text-sm text-accent-dark";
+
+  const tabClass = (tab: ProfileTab) =>
+    `px-4 py-2 text-sm font-medium ${
+      activeTab === tab
+        ? "border-b-2 border-accent text-accent"
+        : "text-muted"
+    }`;
 
   return (
     <PageEnter>
       <div className="mx-auto flex w-full min-w-0 max-w-5xl flex-col gap-6">
-      <div>
-        <h1 className="text-2xl font-semibold tracking-tight">Perfil</h1>
-        <p className="mt-1 text-sm text-muted">Atualize seus dados de conta.</p>
-      </div>
+        <div>
+          <h1 className="text-2xl font-semibold tracking-tight">Perfil</h1>
+          <p className="mt-1 text-sm text-muted">Atualize seus dados de conta.</p>
+        </div>
 
-      <AlertMotion show={!!error} className={alertDangerClass}>
-        {error}
-      </AlertMotion>
-      <AlertMotion show={!!success} className={alertSuccessClass}>
-        {success}
-      </AlertMotion>
+        <AlertMotion show={!!error} className={alertDangerClass}>
+          {error}
+        </AlertMotion>
 
-      <div className="grid gap-6 lg:grid-cols-[280px_1fr]">
-        <PanelEnter className="flex flex-col overflow-hidden rounded-[length:var(--radius-control)] border border-line bg-panel">
-          <div className="flex flex-col items-center gap-3 px-4 pt-6">
-            <img
-              src={photoSrc}
-              alt="Foto de perfil"
-              className="h-28 w-28 rounded-full object-cover ring-1 ring-line"
-              onError={() => setImgBroken(true)}
-            />
-            <p className="text-lg font-medium text-muted">@{snapshot?.userName}</p>
-          </div>
-          <div className="flex flex-col gap-2 px-4 py-4 text-sm">
-            <p>
-              <span className="font-semibold">Nome:</span>{" "}
-              {snapshot?.nome ||
-                `${snapshot?.primeiroNome ?? ""} ${snapshot?.ultimoNome ?? ""}`}
-            </p>
-            <p className="text-muted">{snapshot?.descricao}</p>
-          </div>
-          <ul className="mt-auto grid grid-cols-2 border-t border-line text-center text-sm">
-            <li className="border-r border-line px-2 py-3">
-              <div className="text-lg font-semibold">
-                {snapshot?.eventosMinistrados ?? 0}
+        {profile && snapshot && (
+          <div className="grid gap-6 lg:grid-cols-[280px_1fr]">
+            <PanelEnter className="flex flex-col overflow-hidden rounded-[length:var(--radius-control)] border border-line bg-panel">
+              <div className="flex flex-col items-center gap-3 px-4 pt-6">
+                <img
+                  src={photoSrc}
+                  alt="Foto de perfil"
+                  className="h-28 w-28 rounded-full object-cover ring-1 ring-line"
+                  onError={() => setImgBroken(true)}
+                />
+                <p className="text-lg font-medium text-muted">@{snapshot.userName}</p>
               </div>
-              <div className="text-xs text-muted">Eventos Ministrados</div>
-            </li>
-            <li className="px-2 py-3">
-              <div className="text-lg font-semibold">
-                {snapshot?.eventosParticipados ?? 0}
+              <div className="flex flex-col gap-2 px-4 py-4 text-sm">
+                <p>
+                  <span className="font-semibold">Nome:</span>{" "}
+                  {cardView.nome ||
+                    `${cardView.primeiroNome} ${cardView.ultimoNome}`}
+                </p>
+                <p className="text-muted">{cardView.descricao}</p>
               </div>
-              <div className="text-xs text-muted">Eventos Participados</div>
-            </li>
-          </ul>
-        </PanelEnter>
+              <ul className="mt-auto grid grid-cols-2 border-t border-line text-center text-sm">
+                <li className="border-r border-line px-2 py-3">
+                  <div className="text-lg font-semibold">
+                    {snapshot.eventosMinistrados}
+                  </div>
+                  <div className="text-xs text-muted">Eventos Ministrados</div>
+                </li>
+                <li className="px-2 py-3">
+                  <div className="text-lg font-semibold">
+                    {snapshot.eventosParticipados}
+                  </div>
+                  <div className="text-xs text-muted">Eventos Participados</div>
+                </li>
+              </ul>
+            </PanelEnter>
 
-        <PanelEnter className="flex flex-col gap-4 rounded-[length:var(--radius-control)] border border-line bg-panel p-6">
-        <form
-          onSubmit={handleSubmit(onSubmit)}
-          className="flex flex-col gap-4"
-          noValidate
-        >
-          <h2 className="border-b border-line pb-2 text-lg font-semibold">
-            Detalhe Perfil
-          </h2>
-
-          <div className="grid gap-4 sm:grid-cols-3">
-            <label className="flex flex-col gap-2 text-sm">
-              <span className="font-medium">Título</span>
-              <select className={inputClass} {...register("titulo")}>
-                {TITULO_OPTIONS.map((o) => (
-                  <option key={o.value} value={o.value}>
-                    {o.label}
-                  </option>
-                ))}
-              </select>
-            </label>
-            <label className="flex flex-col gap-2 text-sm">
-              <span className="font-medium">Primeiro Nome</span>
-              <input className={inputClass} {...register("primeiroNome")} />
-              <FieldError error={errors.primeiroNome} />
-            </label>
-            <label className="flex flex-col gap-2 text-sm">
-              <span className="font-medium">Último nome</span>
-              <input className={inputClass} {...register("ultimoNome")} />
-              <FieldError error={errors.ultimoNome} />
-            </label>
-          </div>
-
-          <div className="grid gap-4 sm:grid-cols-3">
-            <label className="flex flex-col gap-2 text-sm">
-              <span className="font-medium">E-mail</span>
-              <input className={inputClass} type="email" {...register("email")} />
-              <FieldError error={errors.email} />
-            </label>
-            <label className="flex flex-col gap-2 text-sm">
-              <span className="font-medium">Telefone</span>
-              <input className={inputClass} {...register("telefone")} />
-              <FieldError error={errors.telefone} />
-            </label>
-            <label className="flex flex-col gap-2 text-sm">
-              <span className="font-medium">Função</span>
-              <select className={inputClass} {...register("funcao")}>
-                {FUNCAO_OPTIONS.map((o) => (
-                  <option key={o.value} value={o.value}>
-                    {o.label}
-                  </option>
-                ))}
-              </select>
-            </label>
-          </div>
-
-          <label className="flex flex-col gap-2 text-sm">
-            <span className="font-medium">Descrição</span>
-            <textarea className={inputClass} rows={3} {...register("descricao")} />
-            <FieldError error={errors.descricao} />
-          </label>
-
-          {isPalestrante && (
-            <div className="border-t border-line pt-4">
-              <div className="mb-3 flex items-center justify-between">
-                <h3 className="text-lg font-semibold">Redes sociais</h3>
+            <PanelEnter className="flex flex-col rounded-[length:var(--radius-control)] border border-line bg-panel">
+              <div
+                role="tablist"
+                aria-label="Seções do perfil"
+                className="flex gap-1 border-b border-line px-2 pt-2"
+              >
                 <button
                   type="button"
-                  className={btnSmAccent}
-                  onClick={() => setRedes((prev) => [...prev, emptyRedeDraft()])}
+                  role="tab"
+                  data-tab="perfil"
+                  aria-selected={activeTab === "perfil"}
+                  className={tabClass("perfil")}
+                  onClick={() => selectTab("perfil")}
                 >
-                  + Rede
+                  Perfil
                 </button>
-              </div>
-
-              <AlertMotion show={!!redesError} className={alertDangerSmClass}>
-                {redesError}
-              </AlertMotion>
-              <AlertMotion show={!!redesSuccess} className={alertSuccessSmClass}>
-                {redesSuccess}
-              </AlertMotion>
-
-              <LoadingSpinner loading={redesLoading} variant="inline" label="Carregando redes..." />
-
-              {redesLoading ? (
-                <SkeletonShimmer rows={3} />
-              ) : redes.length > 0 ? (
-                <ListStagger>
-                  <div className="flex flex-col gap-2">
-                    {redes.map((rede, index) => (
-                      <ListStaggerItem key={`${rede.id}-${index}`} index={index}>
-                        <div className="grid gap-2 rounded-[length:var(--radius-control)] border border-line bg-surface p-3 md:grid-cols-[1fr_1fr_auto]">
-                    <input
-                      className={inputClass}
-                      value={rede.nome}
-                      placeholder="Nome"
-                      onChange={(e) =>
-                        setRedes((prev) =>
-                          prev.map((item, i) =>
-                            i === index ? { ...item, nome: e.target.value } : item,
-                          ),
-                        )
-                      }
-                    />
-                    <input
-                      className={inputClass}
-                      value={rede.url}
-                      placeholder="URL"
-                      onChange={(e) =>
-                        setRedes((prev) =>
-                          prev.map((item, i) =>
-                            i === index ? { ...item, url: e.target.value } : item,
-                          ),
-                        )
-                      }
-                    />
+                {ehPalestrante && (
+                  <>
                     <button
                       type="button"
-                      className={btnSmDanger}
-                      onClick={() =>
-                        setPendingRedeDelete({
-                          index,
-                          id: rede.id,
-                          nome: rede.nome,
-                        })
-                      }
+                      role="tab"
+                      data-tab="palestrante"
+                      aria-selected={activeTab === "palestrante"}
+                      className={tabClass("palestrante")}
+                      onClick={() => selectTab("palestrante")}
                     >
-                      Excluir
+                      Palestrante
                     </button>
-                        </div>
-                      </ListStaggerItem>
-                    ))}
-                  </div>
-                </ListStagger>
-              ) : null}
-
-              <div className="mt-4 flex justify-end">
-                <button
-                  type="button"
-                  disabled={savingRedes || redesLoading}
-                  className={`${btnPrimary} motion-press gap-2`}
-                  onClick={() => void saveRedes()}
-                >
-                  <LoadingSpinner loading={savingRedes} variant="button" />
-                  {savingRedes ? "Salvando..." : "Salvar Redes"}
-                </button>
+                    <button
+                      type="button"
+                      role="tab"
+                      data-tab="rede-social"
+                      aria-selected={activeTab === "rede-social"}
+                      className={tabClass("rede-social")}
+                      onClick={() => selectTab("rede-social")}
+                    >
+                      Rede Social
+                    </button>
+                  </>
+                )}
               </div>
-            </div>
-          )}
 
-          <div>
-            <h3 className="border-b border-line pb-2 pt-2 text-lg font-semibold">
-              Mudar Senha
-            </h3>
-            <p className="mt-2 text-sm text-muted">
-              Caso mude de senha, preencha os campos abaixo:
-            </p>
+              <div
+                className="border border-t-0 border-transparent p-6"
+                role="tabpanel"
+              >
+                <div hidden={activeTab !== "perfil"} aria-hidden={activeTab !== "perfil"}>
+                  <PerfilDetalhe
+                    profile={profile}
+                    onPreview={handlePreview}
+                    onSaved={handlePerfilSaved}
+                    onCancelled={handlePerfilCancelled}
+                  />
+                </div>
+                {ehPalestrante && (
+                  <>
+                    <div
+                      hidden={activeTab !== "palestrante"}
+                      aria-hidden={activeTab !== "palestrante"}
+                    >
+                      <PalestranteDetalhe />
+                    </div>
+                    <div
+                      hidden={activeTab !== "rede-social"}
+                      aria-hidden={activeTab !== "rede-social"}
+                    >
+                      <RedesSociais />
+                    </div>
+                  </>
+                )}
+              </div>
+            </PanelEnter>
           </div>
-          <div className="grid gap-4 sm:grid-cols-2">
-            <label className="flex flex-col gap-2 text-sm">
-              <span className="font-medium">Senha</span>
-              <input
-                className={inputClass}
-                type="password"
-                autoComplete="new-password"
-                {...register("password")}
-              />
-            </label>
-            <label className="flex flex-col gap-2 text-sm">
-              <span className="font-medium">Confirmar Senha</span>
-              <input
-                className={inputClass}
-                type="password"
-                autoComplete="new-password"
-                {...register("confirmePassword")}
-              />
-              <FieldError error={errors.confirmePassword} />
-            </label>
-          </div>
-
-          <div className="flex flex-wrap gap-3 border-t border-line pt-4">
-            <button type="button" className={btnOutline} onClick={cancelEdit}>
-              Cancelar Alteração
-            </button>
-            <button
-              type="submit"
-              disabled={saving}
-              className={`${btnPrimary} motion-press ml-auto gap-2`}
-            >
-              <LoadingSpinner loading={saving} variant="button" />
-              {saving ? "Salvando..." : "Salvar Alteração"}
-            </button>
-          </div>
-        </form>
-        </PanelEnter>
-      </div>
-
-      <ConfirmDialog
-        open={pendingRedeDelete !== null}
-        title="Excluir rede social"
-        message={
-          pendingRedeDelete
-            ? `Deseja excluir a rede "${pendingRedeDelete.nome || "esta rede"}"?`
-            : ""
-        }
-        confirmLabel="Excluir"
-        onConfirm={() => void confirmDeleteRede()}
-        onCancel={() => setPendingRedeDelete(null)}
-      />
+        )}
       </div>
     </PageEnter>
   );
