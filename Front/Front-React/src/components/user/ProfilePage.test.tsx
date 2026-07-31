@@ -57,6 +57,14 @@ describe("ProfilePage", () => {
     vi.mocked(redeSocialService.deleteMine).mockReset();
     vi.mocked(palestranteService.getMe).mockReset();
     vi.mocked(palestranteService.update).mockReset();
+    vi.mocked(palestranteService.getMe).mockResolvedValue({
+      id: 1,
+      nome: "",
+      email: "",
+      telefone: "",
+      imagemURL: "",
+      miniCurriculo: "",
+    });
   });
 
   it("carrega telefone e descricao no formulário", async () => {
@@ -228,6 +236,22 @@ describe("ProfilePage", () => {
     });
     expect(await screen.findByRole("tab", { name: "Palestrante" })).toBeTruthy();
     expect(screen.getByRole("tab", { name: "Rede Social" })).toBeTruthy();
+  });
+
+  it("chama getMe ao tornar-se Palestrante", async () => {
+    vi.mocked(accountService.getProfile).mockResolvedValue(baseProfile);
+    render(
+      <MemoryRouter>
+        <ProfilePage />
+      </MemoryRouter>,
+    );
+    await screen.findByLabelText(/função/i);
+    fireEvent.change(screen.getByLabelText(/função/i), {
+      target: { value: "Palestrante" },
+    });
+    await waitFor(() => {
+      expect(palestranteService.getMe).toHaveBeenCalled();
+    });
   });
 
   // Task 10
