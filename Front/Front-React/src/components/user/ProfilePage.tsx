@@ -212,8 +212,10 @@ export function ProfilePage() {
               >
                 <button
                   type="button"
+                  id="tab-perfil"
                   role="tab"
                   data-tab="perfil"
+                  aria-controls="panel-perfil"
                   aria-selected={activeTab === "perfil"}
                   className={tabClass("perfil")}
                   onClick={() => selectTab("perfil")}
@@ -224,8 +226,10 @@ export function ProfilePage() {
                   <>
                     <button
                       type="button"
+                      id="tab-palestrante"
                       role="tab"
                       data-tab="palestrante"
+                      aria-controls="panel-palestrante"
                       aria-selected={activeTab === "palestrante"}
                       className={tabClass("palestrante")}
                       onClick={() => selectTab("palestrante")}
@@ -234,8 +238,10 @@ export function ProfilePage() {
                     </button>
                     <button
                       type="button"
+                      id="tab-rede-social"
                       role="tab"
                       data-tab="rede-social"
+                      aria-controls="panel-rede-social"
                       aria-selected={activeTab === "rede-social"}
                       className={tabClass("rede-social")}
                       onClick={() => selectTab("rede-social")}
@@ -246,11 +252,14 @@ export function ProfilePage() {
                 )}
               </div>
 
-              <div
-                className="border border-t-0 border-transparent p-6"
-                role="tabpanel"
-              >
-                <div hidden={activeTab !== "perfil"} aria-hidden={activeTab !== "perfil"}>
+              <div className="border border-t-0 border-transparent p-6">
+                <div
+                  id="panel-perfil"
+                  role="tabpanel"
+                  aria-labelledby="tab-perfil"
+                  hidden={activeTab !== "perfil"}
+                  aria-hidden={activeTab !== "perfil"}
+                >
                   <PerfilDetalhe
                     profile={profile}
                     onPreview={handlePreview}
@@ -261,12 +270,18 @@ export function ProfilePage() {
                 {ehPalestrante && (
                   <>
                     <div
+                      id="panel-palestrante"
+                      role="tabpanel"
+                      aria-labelledby="tab-palestrante"
                       hidden={activeTab !== "palestrante"}
                       aria-hidden={activeTab !== "palestrante"}
                     >
                       <PalestranteDetalhe />
                     </div>
                     <div
+                      id="panel-rede-social"
+                      role="tabpanel"
+                      aria-labelledby="tab-rede-social"
                       hidden={activeTab !== "rede-social"}
                       aria-hidden={activeTab !== "rede-social"}
                     >

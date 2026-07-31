@@ -53,8 +53,10 @@
         <div role="tablist" aria-label="Seções do perfil" class="flex gap-1 border-b border-line px-2 pt-2">
           <button
             type="button"
+            id="tab-perfil"
             role="tab"
             data-tab="perfil"
+            aria-controls="panel-perfil"
             [attr.aria-selected]="activeTab === 'perfil'"
             class="px-4 py-2 text-sm font-medium"
             [class.border-b-2]="activeTab === 'perfil'"
@@ -68,8 +70,10 @@
           @if (ehPalestrante) {
             <button
               type="button"
+              id="tab-palestrante"
               role="tab"
               data-tab="palestrante"
+              aria-controls="panel-palestrante"
               [attr.aria-selected]="activeTab === 'palestrante'"
               class="px-4 py-2 text-sm font-medium"
               [class.border-b-2]="activeTab === 'palestrante'"
@@ -82,8 +86,10 @@
             </button>
             <button
               type="button"
+              id="tab-rede-social"
               role="tab"
               data-tab="rede-social"
+              aria-controls="panel-rede-social"
               [attr.aria-selected]="activeTab === 'rede-social'"
               class="px-4 py-2 text-sm font-medium"
               [class.border-b-2]="activeTab === 'rede-social'"
@@ -100,7 +106,9 @@
         <div class="border border-t-0 border-transparent p-6">
           @if (snapshot) {
             <div
+              id="panel-perfil"
               role="tabpanel"
+              aria-labelledby="tab-perfil"
               [hidden]="activeTab !== 'perfil'"
               [attr.aria-hidden]="activeTab !== 'perfil'"
             >
@@ -114,14 +122,18 @@
           }
           @if (ehPalestrante) {
             <div
+              id="panel-palestrante"
               role="tabpanel"
+              aria-labelledby="tab-palestrante"
               [hidden]="activeTab !== 'palestrante'"
               [attr.aria-hidden]="activeTab !== 'palestrante'"
             >
               <app-palestrante-detalhe />
             </div>
             <div
+              id="panel-rede-social"
               role="tabpanel"
+              aria-labelledby="tab-rede-social"
               [hidden]="activeTab !== 'rede-social'"
               [attr.aria-hidden]="activeTab !== 'rede-social'"
             >

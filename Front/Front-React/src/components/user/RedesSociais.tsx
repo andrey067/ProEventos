@@ -2,7 +2,9 @@ import { useEffect, useState } from "react";
 import { LoadingSpinner } from "@/components/LoadingSpinner";
 import { redeSocialSchema } from "@/forms/schemas/eventoSchema";
 import type { RedeSocial } from "@/models";
+import { HttpError } from "@/services/http";
 import { redeSocialService } from "@/services/redeSocialService";
+import { apiErrorMessage } from "@/utils/apiErrorMessage";
 import { ConfirmDialog } from "@/shared/ConfirmDialog";
 import {
   AlertMotion,
@@ -46,8 +48,14 @@ export function RedesSociais() {
     try {
       const loaded = await redeSocialService.getMine();
       setRedes(loaded ?? []);
-    } catch {
-      setRedesError("Não foi possível carregar redes sociais.");
+    } catch (err) {
+      if (err instanceof HttpError) {
+        setRedesError(
+          apiErrorMessage(err.message, "Não foi possível carregar redes sociais."),
+        );
+      } else {
+        setRedesError("Não foi possível carregar redes sociais.");
+      }
     } finally {
       setRedesLoading(false);
     }
@@ -79,8 +87,12 @@ export function RedesSociais() {
       const saved = await redeSocialService.saveMine(redes);
       setRedes(saved);
       setRedesSuccess("Redes sociais salvas com sucesso.");
-    } catch {
-      setRedesError("Erro ao salvar redes sociais.");
+    } catch (err) {
+      if (err instanceof HttpError) {
+        setRedesError(apiErrorMessage(err.message, "Erro ao salvar redes sociais."));
+      } else {
+        setRedesError("Erro ao salvar redes sociais.");
+      }
     } finally {
       setSavingRedes(false);
     }
@@ -99,8 +111,12 @@ export function RedesSociais() {
       }
       setRedes((prev) => prev.filter((_, i) => i !== index));
       setRedesSuccess("Rede social excluída.");
-    } catch {
-      setRedesError("Erro ao excluir rede social.");
+    } catch (err) {
+      if (err instanceof HttpError) {
+        setRedesError(apiErrorMessage(err.message, "Erro ao excluir rede social."));
+      } else {
+        setRedesError("Erro ao excluir rede social.");
+      }
     }
   }
 

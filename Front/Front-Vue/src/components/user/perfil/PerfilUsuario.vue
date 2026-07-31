@@ -55,8 +55,10 @@
         <div role="tablist" aria-label="Seções do perfil" class="flex gap-1 border-b border-line px-2 pt-2">
           <button
             type="button"
+            id="tab-perfil"
             role="tab"
             data-tab="perfil"
+            aria-controls="panel-perfil"
             :aria-selected="activeTab === 'perfil'"
             class="px-4 py-2 text-sm font-medium"
             :class="{
@@ -70,8 +72,10 @@
           <template v-if="ehPalestrante">
             <button
               type="button"
+              id="tab-palestrante"
               role="tab"
               data-tab="palestrante"
+              aria-controls="panel-palestrante"
               :aria-selected="activeTab === 'palestrante'"
               class="px-4 py-2 text-sm font-medium"
               :class="{
@@ -84,8 +88,10 @@
             </button>
             <button
               type="button"
+              id="tab-rede-social"
               role="tab"
               data-tab="rede-social"
+              aria-controls="panel-rede-social"
               :aria-selected="activeTab === 'rede-social'"
               class="px-4 py-2 text-sm font-medium"
               :class="{
@@ -99,16 +105,38 @@
           </template>
         </div>
 
-        <div class="border border-t-0 border-transparent p-6" role="tabpanel">
-          <PerfilDetalhe
+        <div class="border border-t-0 border-transparent p-6">
+          <div
+            id="panel-perfil"
+            role="tabpanel"
+            aria-labelledby="tab-perfil"
             v-show="activeTab === 'perfil'"
-            :profile="profile"
-            @form-preview="onFormPreview"
-            @saved="onPerfilSaved"
-            @cancelled="onPerfilCancelled"
-          />
-          <PalestranteDetalhe v-if="ehPalestrante" v-show="activeTab === 'palestrante'" />
-          <RedesSociais v-if="ehPalestrante" v-show="activeTab === 'rede-social'" />
+          >
+            <PerfilDetalhe
+              :profile="profile"
+              @form-preview="onFormPreview"
+              @saved="onPerfilSaved"
+              @cancelled="onPerfilCancelled"
+            />
+          </div>
+          <div
+            v-if="ehPalestrante"
+            id="panel-palestrante"
+            role="tabpanel"
+            aria-labelledby="tab-palestrante"
+            v-show="activeTab === 'palestrante'"
+          >
+            <PalestranteDetalhe />
+          </div>
+          <div
+            v-if="ehPalestrante"
+            id="panel-rede-social"
+            role="tabpanel"
+            aria-labelledby="tab-rede-social"
+            v-show="activeTab === 'rede-social'"
+          >
+            <RedesSociais />
+          </div>
         </div>
       </PanelEnter>
     </div>
