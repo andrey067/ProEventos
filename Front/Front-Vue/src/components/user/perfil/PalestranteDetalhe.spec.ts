@@ -58,4 +58,65 @@ describe("PalestranteDetalhe", () => {
       expect.objectContaining({ nome: "Novo" }),
     );
   });
+
+  it("shows axios load error when getMe fails with non-404", async () => {
+    const err = new AxiosError("server");
+    (err as any).response = { status: 500, data: { message: "falha servidor" } };
+    (palestranteService.getMe as any).mockRejectedValue(err);
+    const wrapper = mount(PalestranteDetalhe);
+    await flushPromises();
+    expect(wrapper.text()).toContain("falha servidor");
+  });
+
+  it("shows generic load error for non-axios failures", async () => {
+    (palestranteService.getMe as any).mockRejectedValue(new Error("boom"));
+    const wrapper = mount(PalestranteDetalhe);
+    await flushPromises();
+    expect(wrapper.text()).toContain("Erro ao carregar palestrante");
+  });
+
+  it("shows axios save error when update fails", async () => {
+    (palestranteService.getMe as any).mockResolvedValue({
+      data: { id: 7, nome: "Speaker", email: "", telefone: "", imagemURL: "", miniCurriculo: "" },
+    });
+    const err = new AxiosError("bad");
+    (err as any).response = { status: 400, data: { message: "nome inválido" } };
+    (palestranteService.update as any).mockRejectedValue(err);
+    const wrapper = mount(PalestranteDetalhe);
+    await flushPromises();
+    const vm = wrapper.vm as { onSubmit: () => Promise<void> };
+    await vm.onSubmit();
+    await flushPromises();
+    expect(wrapper.text()).toContain("nome inválido");
+  });
+
+  it("shows generic save error for non-axios failures", async () => {
+    (palestranteService.getMe as any).mockResolvedValue({
+      data: { id: 7, nome: "Speaker", email: "", telefone: "", imagemURL: "", miniCurriculo: "" },
+    });
+    (palestranteService.update as any).mockRejectedValue(new Error("boom"));
+    const wrapper = mount(PalestranteDetalhe);
+    await flushPromises();
+    const vm = wrapper.vm as { onSubmit: () => Promise<void> };
+    await vm.onSubmit();
+    await flushPromises();
+    expect(wrapper.text()).toContain("Erro ao salvar palestrante");
+  });
+
+  it("coalesces nullish getMe fields into empty strings", async () => {
+    (palestranteService.getMe as any).mockResolvedValue({
+      data: {
+        id: 7,
+        nome: null,
+        email: null,
+        telefone: null,
+        imagemURL: null,
+        miniCurriculo: null,
+      },
+    });
+    const wrapper = mount(PalestranteDetalhe);
+    await flushPromises();
+    expect((wrapper.find('input[name="nome"]').element as HTMLInputElement).value).toBe("");
+    expect((wrapper.find('input[name="email"]').element as HTMLInputElement).value).toBe("");
+  });
 });

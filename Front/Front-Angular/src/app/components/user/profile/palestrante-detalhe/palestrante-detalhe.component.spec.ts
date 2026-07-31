@@ -76,4 +76,66 @@ describe('PalestranteDetalheComponent', () => {
       expect.objectContaining({ id: 7, nome: 'Novo' }),
     );
   });
+
+  it('shows generic load error when getMe fails with non-404', async () => {
+    await setup();
+    const svc = TestBed.inject(PalestranteService);
+    vi.mocked(svc.getMe).mockReturnValue(
+      throwError(
+        () =>
+          new HttpErrorResponse({
+            status: 500,
+            error: { message: 'falha servidor' },
+          }),
+      ),
+    );
+    const fixture = TestBed.createComponent(PalestranteDetalheComponent);
+    fixture.detectChanges();
+    await fixture.whenStable();
+    expect(fixture.componentInstance.missingProfile).toBe(false);
+    expect(fixture.componentInstance.error).toBe('falha servidor');
+  });
+
+  it('does not submit when palestranteId is null or form invalid', async () => {
+    await setup();
+    const svc = TestBed.inject(PalestranteService);
+    vi.mocked(svc.getMe).mockReturnValue(
+      throwError(() => new HttpErrorResponse({ status: 404 })),
+    );
+    const fixture = TestBed.createComponent(PalestranteDetalheComponent);
+    fixture.detectChanges();
+    await fixture.whenStable();
+    fixture.componentInstance.submit();
+    expect(svc.update).not.toHaveBeenCalled();
+  });
+
+  it('shows error when update fails', async () => {
+    await setup();
+    const svc = TestBed.inject(PalestranteService);
+    const me = {
+      id: 7,
+      nome: 'Speaker',
+      email: 's@x.com',
+      telefone: '11',
+      imagemURL: '',
+      miniCurriculo: 'Mini',
+    };
+    vi.mocked(svc.getMe).mockReturnValue(of(me));
+    vi.mocked(svc.update).mockReturnValue(
+      throwError(
+        () =>
+          new HttpErrorResponse({
+            status: 400,
+            error: { message: 'nome inválido' },
+          }),
+      ),
+    );
+    const fixture = TestBed.createComponent(PalestranteDetalheComponent);
+    fixture.detectChanges();
+    await fixture.whenStable();
+    fixture.componentInstance.submit();
+    await fixture.whenStable();
+    expect(fixture.componentInstance.saving).toBe(false);
+    expect(fixture.componentInstance.error).toBe('nome inválido');
+  });
 });

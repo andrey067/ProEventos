@@ -223,4 +223,50 @@ describe('PerfilDetalheComponent', () => {
     expect(fixture.componentInstance.form.get('titulo')?.value).toBe('NaoInformado');
     expect(fixture.componentInstance.form.get('telefone')?.value).toBe('');
   });
+
+  it('reapplies profile when @Input profile changes after first change', async () => {
+    await setup();
+    const fixture = TestBed.createComponent(PerfilDetalheComponent);
+    fixture.componentRef.setInput('profile', baseProfile);
+    fixture.detectChanges();
+    await fixture.whenStable();
+
+    fixture.componentInstance.form.patchValue({ primeiroNome: 'Editado' });
+    fixture.componentRef.setInput('profile', {
+      ...baseProfile,
+      primeiroNome: 'Novo',
+      ultimoNome: 'Perfil',
+      descricao: 'Outra bio',
+    });
+    fixture.detectChanges();
+    await fixture.whenStable();
+
+    expect(fixture.componentInstance.form.get('primeiroNome')?.value).toBe('Novo');
+    expect(fixture.componentInstance.form.get('descricao')?.value).toBe('Outra bio');
+  });
+
+  it('emits empty strings when preview fields are nullish', async () => {
+    await setup();
+    const fixture = TestBed.createComponent(PerfilDetalheComponent);
+    fixture.componentRef.setInput('profile', baseProfile);
+    fixture.detectChanges();
+    await fixture.whenStable();
+
+    const emitSpy = vi.spyOn(fixture.componentInstance.formPreview, 'emit');
+    emitSpy.mockClear();
+    fixture.componentInstance.form.patchValue({
+      primeiroNome: null,
+      ultimoNome: null,
+      descricao: null,
+      funcao: null,
+    });
+    fixture.detectChanges();
+
+    expect(emitSpy).toHaveBeenCalledWith({
+      primeiroNome: '',
+      ultimoNome: '',
+      descricao: '',
+      funcao: 'Participante',
+    });
+  });
 });

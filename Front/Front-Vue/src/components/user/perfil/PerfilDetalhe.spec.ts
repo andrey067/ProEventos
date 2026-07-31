@@ -85,4 +85,96 @@ describe("PerfilDetalhe", () => {
     expect(vm.ultimoNome).toBe("Silva");
     expect(wrapper.emitted("cancelled")).toBeTruthy();
   });
+
+  it("shows validation errors for required fields", async () => {
+    const wrapper = mount(PerfilDetalhe, {
+      props: { profile: baseProfile },
+    });
+    await flushPromises();
+
+    const vm = wrapper.vm as any;
+    vm.primeiroNome = "";
+    vm.ultimoNome = "";
+    await vm.submitForm();
+    await flushPromises();
+
+    expect(accountService.updateProfile).not.toHaveBeenCalled();
+    expect(wrapper.text()).toMatch(/primeiro|último|obrigat/i);
+  });
+
+  it("shows axios error message when update fails", async () => {
+    const { AxiosError } = await import("axios");
+    const err = new AxiosError("conflict");
+    (err as any).response = { status: 409, data: { message: "email em uso" } };
+    (accountService.updateProfile as any).mockRejectedValue(err);
+
+    const wrapper = mount(PerfilDetalhe, {
+      props: { profile: baseProfile },
+    });
+    await flushPromises();
+    const vm = wrapper.vm as any;
+    await vm.submitForm();
+    await flushPromises();
+
+    expect(wrapper.text()).toContain("email em uso");
+  });
+
+  it("shows generic error for non-axios failures", async () => {
+    (accountService.updateProfile as any).mockRejectedValue(new Error("boom"));
+    const wrapper = mount(PerfilDetalhe, {
+      props: { profile: baseProfile },
+    });
+    await flushPromises();
+    const vm = wrapper.vm as any;
+    await vm.submitForm();
+    await flushPromises();
+
+    expect(wrapper.text()).toContain("Não foi possível atualizar o perfil");
+  });
+
+  it("includes password in payload when provided", async () => {
+    (accountService.updateProfile as any).mockResolvedValue(baseProfile);
+    const wrapper = mount(PerfilDetalhe, {
+      props: { profile: baseProfile },
+    });
+    await flushPromises();
+    const vm = wrapper.vm as any;
+    vm.password = "Senha@123";
+    vm.confirmePassword = "Senha@123";
+    await vm.submitForm();
+    await flushPromises();
+
+    expect(accountService.updateProfile).toHaveBeenCalledWith(
+      expect.objectContaining({ password: "Senha@123" }),
+    );
+  });
+
+  it("maps nullish profile fields to empty form defaults", async () => {
+    const wrapper = mount(PerfilDetalhe, {
+      props: {
+        profile: {
+          userName: "ana",
+          email: "ana@test.com",
+          nome: "",
+          primeiroNome: null as unknown as string,
+          ultimoNome: null as unknown as string,
+          titulo: undefined as unknown as typeof baseProfile.titulo,
+          funcao: undefined as unknown as typeof baseProfile.funcao,
+          telefone: null as unknown as string,
+          descricao: null as unknown as string,
+          imagemURL: null,
+          eventosMinistrados: 0,
+          eventosParticipados: 0,
+        },
+      },
+    });
+    await flushPromises();
+    const previews = wrapper.emitted("formPreview");
+    expect(previews![previews!.length - 1][0]).toEqual({
+      primeiroNome: "",
+      ultimoNome: "",
+      descricao: "",
+      funcao: "Participante",
+    });
+  });
 });
